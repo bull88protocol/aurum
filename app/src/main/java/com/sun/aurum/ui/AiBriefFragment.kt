@@ -31,8 +31,9 @@ class AiBriefFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        binding.btnAiAddKey.setOnClickListener {
-            startActivity(Intent(requireContext(), SettingsActivity::class.java))
+        binding.swipeRefresh.setOnRefreshListener { vm.refresh() }
+        viewLifecycleOwner.lifecycleScope.launch {
+            vm.isRefreshing.collectLatest { binding.swipeRefresh.isRefreshing = it }
         }
         viewLifecycleOwner.lifecycleScope.launch {
             vm.states.collectLatest { states -> states[symbol]?.let { render(it) } }
@@ -47,6 +48,19 @@ class AiBriefFragment : Fragment() {
         if (!hasBrief) {
             binding.aiScroll.visibility = View.GONE
             binding.aiEmptyState.visibility = View.VISIBLE
+            if (vm.hasGeminiKey) {
+                binding.tvAiEmptyMsg.text =
+                    "No AI brief loaded yet. Pull down to refresh and fetch today's analysis."
+                binding.btnAiAction.text = "Refresh"
+                binding.btnAiAction.setOnClickListener { vm.refresh() }
+            } else {
+                binding.tvAiEmptyMsg.text =
+                    "Add a free Gemini key to unlock daily AI analysis — market sentiment, a last-session recap, the next-session outlook, and the key factors moving gold."
+                binding.btnAiAction.text = "Add Gemini Key"
+                binding.btnAiAction.setOnClickListener {
+                    startActivity(Intent(requireContext(), SettingsActivity::class.java))
+                }
+            }
             return
         }
         binding.aiEmptyState.visibility = View.GONE

@@ -41,6 +41,10 @@ class QuoteFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        binding.swipeRefresh.setOnRefreshListener { vm.refresh() }
+        viewLifecycleOwner.lifecycleScope.launch {
+            vm.isRefreshing.collectLatest { binding.swipeRefresh.isRefreshing = it }
+        }
         viewLifecycleOwner.lifecycleScope.launch {
             vm.states.collectLatest { states ->
                 states[symbol]?.let { render(it) }
@@ -49,7 +53,9 @@ class QuoteFragment : Fragment() {
     }
 
     private fun render(state: SymbolState) {
-        if (state.loading) {
+        // Full-screen spinner only on the first load (no data yet); later refreshes
+        // keep content visible and use the pull-to-refresh spinner instead.
+        if (state.loading && state.quote == null && state.goldIndexReport == null) {
             binding.progressBar.visibility = View.VISIBLE
             binding.scrollContent.visibility = View.GONE
             return

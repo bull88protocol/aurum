@@ -3,12 +3,6 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item
-        android:id="@+id/action_refresh"
-        android:title="Refresh"
-        app:actionLayout="@layout/toolbar_refresh_btn"
-        app:showAsAction="always" />
-
-    <item
         android:id="@+id/action_clear_cache"
         android:title="Clear Cache"
         android:icon="@drawable/ic_clear_cache"

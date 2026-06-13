@@ -49,6 +49,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     val isGoogleSignedIn: Boolean get() = googleAuth.isSignedIn()
     val googleEmail: String?      get() = googleAuth.getEmail()
 
+    val hasGeminiKey: Boolean get() = prefs.geminiApiKey.isNotBlank()
+    val hasFredKey: Boolean   get() = prefs.fredApiKey.isNotBlank()
+
     init {
         // Load cached data instantly (e.g. from 9 AM background fetch)
         repo.loadCache()?.let { _states.value = it }

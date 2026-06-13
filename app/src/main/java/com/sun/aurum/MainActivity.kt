@@ -5,34 +5,25 @@ import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
-import android.view.animation.Animation
-import android.view.animation.LinearInterpolator
-import android.view.animation.RotateAnimation
-import android.widget.ImageButton
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.biometric.BiometricPrompt
-import androidx.lifecycle.lifecycleScope
-import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.tabs.TabLayoutMediator
 import com.sun.aurum.data.BiometricAuth
 import com.sun.aurum.databinding.ActivityMainBinding
 import com.sun.aurum.ui.QuotePagerAdapter
 import com.sun.aurum.ui.SettingsActivity
 import com.sun.aurum.worker.DailyRefreshWorker
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private val vm: MainViewModel by viewModels()
-    private var refreshBtn: ImageButton? = null
-    private val currentTabFlow = MutableStateFlow(0)
     private lateinit var biometricAuth: BiometricAuth
+
+    // Track API-key presence so returning from Settings with a new key auto-refreshes.
+    private var lastGeminiPresent = false
+    private var lastFredPresent = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -48,33 +39,31 @@ class MainActivity : AppCompatActivity() {
             tab.text = QuotePagerAdapter.TAB_TITLES[pos]
         }.attach()
 
-        // Track current tab so refresh targets the right symbol
-        binding.viewPager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
-            override fun onPageSelected(position: Int) { currentTabFlow.value = position }
-        })
-
-        // Spin the refresh icon while the current tab's symbol is loading
-        lifecycleScope.launch {
-            // Tabs are sections of one instrument (gold); the spinner tracks that symbol.
-            combine(vm.states, currentTabFlow) { states, _ ->
-                states[MainViewModel.SYMBOLS.first()]?.loading == true
-            }.distinctUntilChanged().collectLatest { loading ->
-                if (loading) startSpinning() else stopSpinning()
-            }
-        }
-
         // Retry button on the lock overlay
         binding.btnRetryAuth.setOnClickListener { triggerBiometricPrompt() }
 
         DailyRefreshWorker.schedule(this)
 
-        // Initial load if nothing cached (biometric check in onResume handles the auth gate)
+        // Initial load if nothing cached (biometric check in onResume handles the auth gate).
+        // Pull-to-refresh on any tab triggers vm.refresh() afterwards.
         if (vm.states.value.values.all { it.lastUpdated == 0L }) vm.refresh()
+
+        lastGeminiPresent = vm.hasGeminiKey
+        lastFredPresent   = vm.hasFredKey
     }
 
     override fun onResume() {
         super.onResume()
         checkBiometricSession()
+        // If the user just added/removed a key in Settings, refetch so the new
+        // data (AI brief, news, FRED components) shows without a manual refresh.
+        val gemini = vm.hasGeminiKey
+        val fred   = vm.hasFredKey
+        if (gemini != lastGeminiPresent || fred != lastFredPresent) {
+            lastGeminiPresent = gemini
+            lastFredPresent   = fred
+            vm.refresh()
+        }
     }
 
     // ── Biometric auth ────────────────────────────────────────────────────────
@@ -123,13 +112,6 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.main_menu, menu)
-        val refreshItem = menu.findItem(R.id.action_refresh)
-        refreshBtn = refreshItem?.actionView as? ImageButton
-        refreshBtn?.setOnClickListener {
-            vm.refreshSymbol(MainViewModel.SYMBOLS.first())
-        }
-        // Sync animation if already loading
-        if (vm.states.value[MainViewModel.SYMBOLS.first()]?.loading == true) startSpinning()
         return true
     }
 
@@ -184,7 +166,7 @@ class MainActivity : AppCompatActivity() {
             Without the keys:
             The app still runs, but the Gold Index uses only 2 of its 5 pillars (USD + Technicals), and the AI analysis and news sections stay hidden.
 
-            Step-by-step links to grab both keys are in Settings.
+            Tip: pull down on any tab to refresh. Step-by-step links to grab both keys are in Settings.
         """.trimIndent()
 
         androidx.appcompat.app.AlertDialog.Builder(this)
@@ -195,23 +177,5 @@ class MainActivity : AppCompatActivity() {
             }
             .setNegativeButton("Got it", null)
             .show()
-    }
-
-    // ── Refresh spinner ───────────────────────────────────────────────────────
-
-    private fun startSpinning() {
-        val btn = refreshBtn ?: return
-        if (btn.animation != null) return   // already spinning
-        btn.startAnimation(RotateAnimation(0f, 360f,
-            Animation.RELATIVE_TO_SELF, 0.5f,
-            Animation.RELATIVE_TO_SELF, 0.5f).apply {
-            duration = 700
-            repeatCount = Animation.INFINITE
-            interpolator = LinearInterpolator()
-        })
-    }
-
-    private fun stopSpinning() {
-        refreshBtn?.clearAnimation()
     }
 }

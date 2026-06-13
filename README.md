@@ -44,6 +44,9 @@ It distills the gold macro picture into one number and a clear read, across thre
 - **News** — the day's most relevant gold headlines, with source links
   *(needs a free Gemini key)*.
 
+**Pull down on any tab to refresh.** Data is cached for instant open and auto-refreshes
+each morning; adding a key in Settings refreshes the relevant tabs automatically.
+
 > The components above are what the engine weighs; the exact thresholds, regime
 > bands, and scoring math are intentionally not published.
 

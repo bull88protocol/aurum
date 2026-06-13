@@ -35,8 +35,9 @@ class NewsFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        binding.btnNewsAddKey.setOnClickListener {
-            startActivity(Intent(requireContext(), SettingsActivity::class.java))
+        binding.swipeRefresh.setOnRefreshListener { vm.refresh() }
+        viewLifecycleOwner.lifecycleScope.launch {
+            vm.isRefreshing.collectLatest { binding.swipeRefresh.isRefreshing = it }
         }
         viewLifecycleOwner.lifecycleScope.launch {
             vm.states.collectLatest { states -> states[symbol]?.let { render(it) } }
@@ -48,6 +49,19 @@ class NewsFragment : Fragment() {
         if (state.news.isEmpty()) {
             binding.newsScroll.visibility = View.GONE
             binding.newsEmptyState.visibility = View.VISIBLE
+            if (vm.hasGeminiKey) {
+                binding.tvNewsEmptyMsg.text =
+                    "No news loaded yet. Pull down to refresh and fetch today's gold headlines."
+                binding.btnNewsAction.text = "Refresh"
+                binding.btnNewsAction.setOnClickListener { vm.refresh() }
+            } else {
+                binding.tvNewsEmptyMsg.text =
+                    "Add a free Gemini key to see the latest gold-market headlines, pulled fresh each day with links to the source."
+                binding.btnNewsAction.text = "Add Gemini Key"
+                binding.btnNewsAction.setOnClickListener {
+                    startActivity(Intent(requireContext(), SettingsActivity::class.java))
+                }
+            }
             return
         }
         binding.newsEmptyState.visibility = View.GONE
