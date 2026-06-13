@@ -90,5 +90,5 @@ Questions, bug reports, or feedback: **sunny@bull88protocol.com**
 - [Terms of Use / EULA](TERMS.md)
 - [Privacy Policy](PRIVACY.md)
 
-© Bull88 Protocol · "Aurum88 Protocol" and related marks are property of Bull88 Protocol.
+© CoinTranscend · "Aurum88 Protocol" and "Bull88 Protocol" are products of CoinTranscend.
 *The Macro Pulse of Gold.*

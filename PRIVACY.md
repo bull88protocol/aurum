@@ -1,9 +1,9 @@
-# Privacy Policy — Aurum
+# Privacy Policy — Aurum88 Protocol
 
 **Last updated: 2026-06-13**
 
-This Privacy Policy explains how the **Aurum** application ("the App"), provided
-by **CoinTranscend** ("we", "us"), handles your data. The App is designed to keep
+This Privacy Policy explains how the **Aurum88 Protocol** application ("the App"),
+a product of **CoinTranscend** ("we", "us"), handles your data. The App is designed to keep
 your data on your device and under your control.
 
 > Plain-language summary: **We run no servers and collect nothing about you.**
@@ -51,9 +51,8 @@ device to these services. We are not a party to these connections:
 Your use of these services is governed by **their** privacy policies and terms.
 
 ## 4. Optional Google Sheets sync (your own sheet)
-If you sign in with Google and enable sync, the App creates/updates a sheet titled
-**"Aurum Market Data"** in **your own** Google Drive and writes the market data it
-displays there. This lives in your Google account; we have no access to it. Sign-in
+If you sign in with Google and enable sync, the App creates/updates a Google Sheet
+in **your own** Google Drive and writes the market data it displays there. This lives in your Google account; we have no access to it. Sign-in
 is optional and the email is used only as a label and sync target.
 
 ## 5. No advertising, no tracking

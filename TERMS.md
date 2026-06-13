@@ -1,9 +1,9 @@
-# Terms of Use / End-User License Agreement (EULA) — Aurum (Beta)
+# Terms of Use / End-User License Agreement (EULA) — Aurum88 Protocol (Beta)
 
 **Last updated: 2026-06-13**
 
-These Terms of Use ("Terms") govern your use of the **Aurum** beta application
-("the App"), provided by **CoinTranscend** ("we", "us"). **By downloading,
+These Terms of Use ("Terms") govern your use of the **Aurum88 Protocol** beta
+application ("the App"), a product of **CoinTranscend** ("we", "us"). **By downloading,
 installing, or using the App, you agree to these Terms. If you do not agree, do
 not install or use the App.**
 
