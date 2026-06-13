@@ -60,6 +60,8 @@ Trading and investing involve substantial risk of loss.
 - [ ] Confirm `applicationId = com.sun.aurum` is unique on this Play account.
 - [ ] Upload the AAB from `app/build/outputs/bundle/release/app-release.aab`.
 - [ ] Confirm Play App Signing accepts the Bull88 upload key for this new app.
-- [x] Privacy Policy hosted at https://www.cointranscend.com/privacy-policy-aurum88-protocol/ (wired into app Settings → About). TERMS.md still to host.
+- [x] Privacy Policy + Terms hosted and wired into app Settings → About:
+      https://www.cointranscend.com/privacy-policy-aurum88-protocol/
+      https://www.cointranscend.com/terms-aurum88-protocol/
 - [ ] Fill Data Safety + Content Rating questionnaires.
 - [ ] Add screenshots, finalize short/full description.

@@ -38,10 +38,15 @@ class SettingsActivity : AppCompatActivity() {
         val versionName = packageManager.getPackageInfo(packageName, 0).versionName
         binding.tvVersion.text = versionName
 
-        // Privacy Policy link
+        // Legal links
         binding.tvPrivacyPolicy.setOnClickListener {
             runCatching {
                 startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(getString(R.string.privacy_url))))
+            }
+        }
+        binding.tvTerms.setOnClickListener {
+            runCatching {
+                startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(getString(R.string.terms_url))))
             }
         }
 

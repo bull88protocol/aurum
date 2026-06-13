@@ -9,6 +9,9 @@
         <item name="android:windowBackground">@drawable/bg_window_gradient</item>
         <item name="android:statusBarColor">@color/background</item>
         <item name="android:navigationBarColor">@color/background</item>
+        <!-- Dark status/nav icons in light mode, light icons in dark mode (see bools.xml) -->
+        <item name="android:windowLightStatusBar">@bool/light_system_bars</item>
+        <item name="android:windowLightNavigationBar">@bool/light_system_bars</item>
     </style>
 
     <!-- Royal serif wordmark for the toolbar title. -->
