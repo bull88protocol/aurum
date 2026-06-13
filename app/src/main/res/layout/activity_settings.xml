@@ -350,24 +350,46 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:padding="16dp"
-                android:gravity="center_vertical">
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="16dp"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Version"
+                        android:textSize="14sp"
+                        android:textColor="@color/text_primary" />
+
+                    <TextView
+                        android:id="@+id/tvVersion"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="14sp"
+                        android:textColor="@color/text_secondary" />
+
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="@color/news_divider" />
 
                 <TextView
-                    android:layout_width="0dp"
+                    android:id="@+id/tvPrivacyPolicy"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Version"
+                    android:text="Privacy Policy"
                     android:textSize="14sp"
-                    android:textColor="@color/text_primary" />
-
-                <TextView
-                    android:id="@+id/tvVersion"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textSize="14sp"
-                    android:textColor="@color/text_secondary" />
+                    android:textColor="@color/accent"
+                    android:padding="16dp"
+                    android:background="?android:attr/selectableItemBackground" />
 
             </LinearLayout>
 

@@ -9,6 +9,7 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.lifecycle.lifecycleScope
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.common.api.ApiException
+import com.sun.aurum.R
 import com.sun.aurum.data.GoogleAuthManager
 import com.sun.aurum.data.SecurePrefs
 import com.sun.aurum.databinding.ActivitySettingsBinding
@@ -36,6 +37,13 @@ class SettingsActivity : AppCompatActivity() {
         // Version display
         val versionName = packageManager.getPackageInfo(packageName, 0).versionName
         binding.tvVersion.text = versionName
+
+        // Privacy Policy link
+        binding.tvPrivacyPolicy.setOnClickListener {
+            runCatching {
+                startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(getString(R.string.privacy_url))))
+            }
+        }
 
         // Dark mode toggle
         val appPrefs = getSharedPreferences("app_settings", MODE_PRIVATE)
