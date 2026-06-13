@@ -173,10 +173,10 @@ class MainActivity : AppCompatActivity() {
             To unlock the full macro picture, add two free keys in Settings:
 
             🔑  FRED key  (free, instant)
-            Adds the Real Yield (35%) and Inflation (15%) drivers — the two biggest inputs to the Gold Index.
+            Adds the Real Yield and Inflation drivers — two of the biggest inputs to the Gold Index.
 
             🔑  Gemini key  (free tier, no card)
-            Adds AI market analysis, daily news, and the Central Bank Demand (20%) pillar.
+            Adds AI market analysis, daily news, and the Central Bank Demand pillar.
 
             🔓  Optional — Sign in with Google
             Switches quotes to real-time Google Finance (otherwise Yahoo Finance is used).

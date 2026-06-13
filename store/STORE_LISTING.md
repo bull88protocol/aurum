@@ -19,11 +19,11 @@ central-bank demand, inflation expectations, and price action all at once. Aurum
 reads all of them and gives you one clear **Gold Index from 0 to 100**, weighted
 the way a commodity macro desk weights them:
 
-• Real yields — 35% (the dominant driver)
-• US dollar — 25% (the inverse gold–dollar pull)
-• Central-bank demand — 20% (the structural bid)
-• Inflation expectations — 15% (the hedge bid)
-• Price technicals — 5% (timing only)
+• Real yields (the dominant driver)
+• US dollar (the inverse gold–dollar pull)
+• Central-bank demand (the structural bid)
+• Inflation expectations (the hedge bid)
+• Price technicals (timing only)
 
 **What you get**
 • A single composite Gold Index with a plain-language read

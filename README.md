@@ -31,12 +31,13 @@ It distills the gold macro picture into one number and a clear read, across thre
 
 - **Gold** — a composite **0–100 Gold Index** from five components, weighted the way
   a commodity macro desk weights them:
-  - **Real yields (35%)** — the dominant driver (10-yr TIPS / FRED `DFII10`).
-  - **US dollar (25%)** — the inverse gold–dollar relationship (DXY).
-  - **Central-bank demand (20%)** — structural, persistent bid.
-  - **Inflation expectations (15%)** — the inflation-hedge bid (FRED `T10YIE`).
-  - **Price technicals (5%)** — timing only.
-  Plus a **forward signal** (3–6 month lean), a **history chart** with regime bands,
+  - **Real yields** — the dominant driver (10-yr TIPS / FRED `DFII10`).
+  - **US dollar** — the inverse gold–dollar relationship (DXY).
+  - **Central-bank demand** — structural, persistent bid.
+  - **Inflation expectations** — the inflation-hedge bid (FRED `T10YIE`).
+  - **Price technicals** — timing only.
+  Each component is macro-weighted by our proprietary model. Plus a **forward
+  signal** (3–6 month lean), a **history chart** with regime bands,
   and one-tap **CSV export** of the full index history.
 - **AI Brief** — a daily AI-generated market read: sentiment, last-session recap,
   next-session outlook, and the key factors moving gold *(needs a free Gemini key)*.

@@ -37,11 +37,11 @@ object GoldIndexEngine {
         val closes = candles.map { it.close }
 
         // Five components — macro-weighted (commodity trader / economist perspective)
-        val comp1 = scoreRealYield(inputs.realYield)        // 35% — dominant driver
-        val comp2 = scoreUSD(inputs.dxyCandles)             // 25% — inverse gold-dollar
-        val comp3 = scoreCentralBank(inputs.centralBankScore) // 20% — structural demand
-        val comp4 = scoreInflation(inputs.inflation)         // 15% — inflation hedge
-        val comp5 = scoreTechnical(closes)                   //  5% — timing only
+        val comp1 = scoreRealYield(inputs.realYield)         // dominant driver
+        val comp2 = scoreUSD(inputs.dxyCandles)              // inverse gold-dollar
+        val comp3 = scoreCentralBank(inputs.centralBankScore) // structural demand
+        val comp4 = scoreInflation(inputs.inflation)         // inflation hedge
+        val comp5 = scoreTechnical(closes)                   // timing only
 
         val components = listOf(comp1, comp2, comp3, comp4, comp5)
         val weightPairs = listOf(comp1 to 0.35f, comp2 to 0.25f, comp3 to 0.20f, comp4 to 0.15f, comp5 to 0.05f)
@@ -70,7 +70,7 @@ object GoldIndexEngine {
 
     private fun scoreRealYield(obs: List<FredClient.Obs>): GoldComponentScore {
         if (obs.size < 5) return GoldComponentScore(
-            name = "Real Yield Pressure (35%)", score = 50f, label = "N/A",
+            name = "Real Yield Pressure", score = 50f, label = "N/A",
             detail = "FRED API key required → Settings", available = false,
         )
         val vals = obs.map { it.value }
@@ -84,14 +84,14 @@ object GoldIndexEngine {
             else -> "→ Stable"
         }
         return GoldComponentScore(
-            name = "Real Yield Pressure (35%)", score = score, label = toLabel(score),
+            name = "Real Yield Pressure", score = score, label = toLabel(score),
             detail = "${String.format("%.2f", current)}%  $trend",
         )
     }
 
     private fun scoreUSD(dxy: List<Candle>): GoldComponentScore {
         if (dxy.size < 5) return GoldComponentScore(
-            name = "USD Strength (25%)", score = 50f, label = "NEUTRAL",
+            name = "USD Strength", score = 50f, label = "NEUTRAL",
             detail = if (dxy.isEmpty()) "Fetching DXY..." else "Insufficient data",
             available = dxy.isNotEmpty(),
         )
@@ -106,14 +106,14 @@ object GoldIndexEngine {
             else -> "→ Stable"
         }
         return GoldComponentScore(
-            name = "USD Strength (25%)", score = score, label = toLabel(score),
+            name = "USD Strength", score = score, label = toLabel(score),
             detail = "${String.format("%.1f", current)} (DXY)  $trend",
         )
     }
 
     private fun scoreInflation(obs: List<FredClient.Obs>): GoldComponentScore {
         if (obs.size < 5) return GoldComponentScore(
-            name = "Inflation Expectations (15%)", score = 50f, label = "N/A",
+            name = "Inflation Expectations", score = 50f, label = "N/A",
             detail = "FRED API key required → Settings", available = false,
         )
         val vals = obs.map { it.value }
@@ -127,14 +127,14 @@ object GoldIndexEngine {
             else -> "→ Stable"
         }
         return GoldComponentScore(
-            name = "Inflation Expectations (15%)", score = score, label = toLabel(score),
+            name = "Inflation Expectations", score = score, label = toLabel(score),
             detail = "${String.format("%.2f", current)}%  $trend",
         )
     }
 
     fun scoreTechnical(closes: List<Double>): GoldComponentScore {
         if (closes.size < 20) return GoldComponentScore(
-            name = "Technical Momentum (5%)", score = 50f, label = "NEUTRAL",
+            name = "Technical Momentum", score = 50f, label = "NEUTRAL",
             detail = "Insufficient data", available = false,
         )
         val n = closes.size
@@ -163,18 +163,18 @@ object GoldIndexEngine {
         val total = (trendScore + rsiScore + rocScore).coerceIn(0f, 100f)
         val dir = if (roc > 1.0) "↑ Uptrend" else if (roc < -1.0) "↓ Downtrend" else "→ Ranging"
         return GoldComponentScore(
-            name = "Technical Momentum (5%)", score = total, label = toLabel(total),
+            name = "Technical Momentum", score = total, label = toLabel(total),
             detail = "ROC(20): ${String.format("%.1f", roc)}%  $dir",
         )
     }
 
     private fun scoreCentralBank(geminiScore: Int?): GoldComponentScore {
         if (geminiScore == null) return GoldComponentScore(
-            name = "Central Bank Demand (20%)", score = 50f, label = "N/A",
+            name = "Central Bank Demand", score = 50f, label = "N/A",
             detail = "Gemini API key required → Settings", available = false,
         )
         return GoldComponentScore(
-            name = "Central Bank Demand (20%)", score = geminiScore.toFloat(),
+            name = "Central Bank Demand", score = geminiScore.toFloat(),
             label = toLabel(geminiScore.toFloat()), detail = "AI-estimated score (Gemini)",
         )
     }
@@ -199,7 +199,7 @@ object GoldIndexEngine {
 
     private fun scoreRealYieldDelta(obs: List<FredClient.Obs>): GoldComponentScore {
         if (obs.size < 60) return GoldComponentScore(
-            name = "Real Yield Delta (40%)", score = 50f, label = "N/A",
+            name = "Real Yield Delta", score = 50f, label = "N/A",
             detail = "FRED API key required → Settings", available = false,
         )
         val vals   = obs.map { it.value }
@@ -211,14 +211,14 @@ object GoldIndexEngine {
         }
         val dir = if (delta < -0.05) "↓ Falling (Bullish)" else if (delta > 0.05) "↑ Rising (Bearish)" else "→ Stable"
         return GoldComponentScore(
-            name = "Real Yield Delta (40%)", score = score, label = toLabel(score),
+            name = "Real Yield Delta", score = score, label = toLabel(score),
             detail = "${if (delta >= 0) "+" else ""}${String.format("%.2f", delta)}% (3M)  $dir",
         )
     }
 
     private fun scoreUSDDelta(dxy: List<Candle>): GoldComponentScore {
         if (dxy.size < 60) return GoldComponentScore(
-            name = "USD Delta (30%)", score = 50f, label = "NEUTRAL",
+            name = "USD Delta", score = 50f, label = "NEUTRAL",
             detail = if (dxy.isEmpty()) "Fetching DXY..." else "Insufficient data",
             available = dxy.isNotEmpty(),
         )
@@ -231,14 +231,14 @@ object GoldIndexEngine {
         }
         val dir = if (deltaPct < -0.5) "↓ Weaker (Bullish)" else if (deltaPct > 0.5) "↑ Stronger (Bearish)" else "→ Stable"
         return GoldComponentScore(
-            name = "USD Delta (30%)", score = score, label = toLabel(score),
+            name = "USD Delta", score = score, label = toLabel(score),
             detail = "${if (deltaPct >= 0) "+" else ""}${String.format("%.1f", deltaPct)}% (3M)  $dir",
         )
     }
 
     private fun scoreInflationDelta(obs: List<FredClient.Obs>, ryObs: List<FredClient.Obs>): GoldComponentScore {
         if (obs.size < 60) return GoldComponentScore(
-            name = "Inflation Delta (20%)", score = 50f, label = "N/A",
+            name = "Inflation Delta", score = 50f, label = "N/A",
             detail = "FRED API key required → Settings", available = false,
         )
         val vals  = obs.map { it.value }
@@ -255,14 +255,14 @@ object GoldIndexEngine {
         val dir     = if (delta > 0.05) "↑ Rising (Bullish)" else if (delta < -0.05) "↓ Falling (Bearish)" else "→ Stable"
         val note    = if (muted) " ⚠ muted (yields↑)" else ""
         return GoldComponentScore(
-            name = "Inflation Delta (20%)", score = score, label = toLabel(score),
+            name = "Inflation Delta", score = score, label = toLabel(score),
             detail = "${if (delta >= 0) "+" else ""}${String.format("%.2f", delta)}% (3M)  $dir$note",
         )
     }
 
     private fun scoreTechnicalLight(closes: List<Double>): GoldComponentScore {
         if (closes.size < 60) return GoldComponentScore(
-            name = "Technical Trend (10%)", score = 50f, label = "NEUTRAL",
+            name = "Technical Trend", score = 50f, label = "NEUTRAL",
             detail = "Insufficient data", available = false,
         )
         val roc60 = (closes.last() / closes[maxOf(0, closes.size - 61)] - 1) * 100
@@ -273,7 +273,7 @@ object GoldIndexEngine {
         }
         val dir = if (roc60 > 1.0) "↑ Rising" else if (roc60 < -1.0) "↓ Falling" else "→ Flat"
         return GoldComponentScore(
-            name = "Technical Trend (10%)", score = score, label = toLabel(score),
+            name = "Technical Trend", score = score, label = toLabel(score),
             detail = "ROC(60): ${if (roc60 >= 0) "+" else ""}${String.format("%.1f", roc60)}%  $dir",
         )
     }
@@ -296,7 +296,7 @@ object GoldIndexEngine {
             val subClose = candles.subList(maxOf(0, i - 251), i + 1).map { it.close }
 
             // Historical chart uses 4 components (CB excluded — no historical Gemini scores)
-            // Weights normalized from: RY 35%, USD 25%, Inf 15%, Tech 5% (sum=80%)
+            // Weights normalized from the live component profile (CB excluded historically)
             data class W(val score: Float, val weight: Float)
             val scored = mutableListOf<W>()
 
@@ -371,8 +371,8 @@ object GoldIndexEngine {
         val lastDate  = fmt.format(Date(rows.last().dateMs))
         val sb = StringBuilder()
         sb.appendLine("# Gold Index History | GLD · DXY · FRED DFII10 · FRED T10YIE | $firstDate to $lastDate")
-        sb.appendLine("# Weights: Real Yield 35%, USD 25%, Inflation 15%, Technical 5% (CB Demand excluded — Gemini real-time only)")
-        sb.appendLine("Date,Gold Index,Real Yield Score (35%),USD Score (25%),Inflation Score (15%),Technical Score (5%)")
+        sb.appendLine("# Composite Gold Index (0-100) with its component scores. CB Demand excluded historically (Gemini real-time only).")
+        sb.appendLine("Date,Gold Index,Real Yield Score,USD Score,Inflation Score,Technical Score")
         for (r in rows) {
             sb.append(fmt.format(Date(r.dateMs))).append(',')
             sb.append(String.format("%.1f", r.composite)).append(',')
