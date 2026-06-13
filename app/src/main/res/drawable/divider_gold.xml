@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Horizontal gold "sheen" line: dark gold edges, bright highlight through the centre. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <gradient
+        android:type="linear"
+        android:angle="0"
+        android:startColor="#00A9791A"
+        android:centerColor="@color/gold_light"
+        android:endColor="#00A9791A" />
+    <size android:height="2dp" />
+</shape>

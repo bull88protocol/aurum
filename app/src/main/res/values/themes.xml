@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.Aurum" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/accent</item>
+        <item name="colorPrimaryVariant">@color/surface</item>
+        <item name="colorOnPrimary">@color/background</item>
+        <item name="colorSecondary">@color/gold</item>
+        <item name="colorSurface">@color/surface</item>
+        <item name="android:windowBackground">@drawable/bg_window_gradient</item>
+        <item name="android:statusBarColor">@color/background</item>
+        <item name="android:navigationBarColor">@color/background</item>
+    </style>
+
+    <!-- Royal serif wordmark for the toolbar title. -->
+    <style name="TextAppearance.Aurum.Brand" parent="TextAppearance.MaterialComponents.Headline6">
+        <item name="android:fontFamily">serif</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textSize">22sp</item>
+        <item name="android:letterSpacing">0.22</item>
+        <item name="android:textColor">@color/accent</item>
+    </style>
+</resources>

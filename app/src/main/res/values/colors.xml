@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Light mode — warm ivory & gold. Dark (royal) overrides are in values-night/colors.xml -->
+<resources>
+    <color name="background">#FAF6EC</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="accent">#9A6E10</color>
+    <!-- Gold sheen ramp (used by gradient drawables; defined in both modes) -->
+    <color name="gold_deep">#7A5608</color>
+    <color name="gold">#B8860B</color>
+    <color name="gold_light">#D9B45A</color>
+    <color name="text_primary">#241B0B</color>
+    <color name="text_secondary">#6B5B3A</color>
+    <color name="up_green">#1B7A5A</color>
+    <color name="down_red">#C0392B</color>
+    <color name="warning">#B7791F</color>
+    <!-- Programmatic view colors -->
+    <color name="pillar_label">#6B5B3A</color>
+    <color name="pillar_sublabel">#9C8A66</color>
+    <color name="news_bg">#0D000000</color>
+    <color name="news_divider">#1A000000</color>
+    <color name="news_headline">#241B0B</color>
+    <color name="news_summary">#6B5B3A</color>
+    <color name="news_source">#9C8A66</color>
+    <color name="chart_grid">#20000000</color>
+    <!-- Adaptive launcher icon background (dark, matches brand art) -->
+    <color name="ic_launcher_background">#14171C</color>
+</resources>

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/action_refresh"
+        android:title="Refresh"
+        app:actionLayout="@layout/toolbar_refresh_btn"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/action_clear_cache"
+        android:title="Clear Cache"
+        android:icon="@drawable/ic_clear_cache"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/action_settings"
+        android:title="Settings"
+        android:icon="@android:drawable/ic_menu_preferences"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/action_help"
+        android:title="Getting Started"
+        android:icon="@android:drawable/ic_menu_help"
+        app:showAsAction="never" />
+
+</menu>

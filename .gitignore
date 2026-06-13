@@ -1,0 +1,28 @@
+# Build / IDE
+.gradle/
+.idea/
+*.iml
+local.properties
+build/
+app/build/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Never commit signing material
+*.jks
+*.keystore
+keystore.properties
+google-services.json
+
+# Ship the single published beta APK, ignore other binaries
+*.apk
+!aurum-beta.apk
+*.aab
+
+# OS noise
+.DS_Store
+Thumbs.db
+
+# app guide 
+APP_GUIDE.md

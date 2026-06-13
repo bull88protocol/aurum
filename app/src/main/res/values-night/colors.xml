@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Dark mode — "royal": deep charcoal with luminous gold. -->
+<resources>
+    <color name="background">#0A0D14</color>
+    <color name="surface">#141A28</color>
+    <color name="accent">#E6C36B</color>
+    <!-- Gold sheen ramp (used by gradient drawables) -->
+    <color name="gold_deep">#A9791A</color>
+    <color name="gold">#D4AF37</color>
+    <color name="gold_light">#F6E7AE</color>
+    <color name="text_primary">#ECE6D6</color>
+    <color name="text_secondary">#9A937F</color>
+    <color name="up_green">#3DD9A0</color>
+    <color name="down_red">#EF5350</color>
+    <color name="warning">#FFC04D</color>
+    <!-- Programmatic view colors -->
+    <color name="pillar_label">#C9C0A8</color>
+    <color name="pillar_sublabel">#8C846E</color>
+    <color name="news_bg">#0DD4AF37</color>
+    <color name="news_divider">#1AD4AF37</color>
+    <color name="news_headline">#ECE6D6</color>
+    <color name="news_summary">#B0A88E</color>
+    <color name="news_source">#8C846E</color>
+    <color name="chart_grid">#1AD4AF37</color>
+</resources>
