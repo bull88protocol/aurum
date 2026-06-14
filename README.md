@@ -58,7 +58,8 @@ each morning; adding a key in Settings refreshes the relevant tabs automatically
 - *(Optional, for the full macro index + AI)* your own **free** keys, added in
   **Settings**:
   - **FRED** key — unlocks the Real Yield and Inflation components (St. Louis Fed).
-  - **Gemini** key — unlocks the AI Brief, News, and the Central-Bank Demand component.
+  - **Gemini** key — unlocks the AI Brief and News. (Central-Bank Demand now ships built-in
+    from a WGC net-purchase series — no key needed.)
   The app degrades gracefully without them.
 - *(Optional)* a Google account for real-time Google Finance quotes + Sheets sync.
 
