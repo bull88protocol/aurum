@@ -31,7 +31,7 @@ the way a commodity macro desk weights them:
 • A forward signal (bullish / neutral / bearish) with its reasoning
 • A full-history index chart with regime bands — see where today sits vs the year
 • One-tap CSV export of the complete index history, to chart or backtest yourself
-• A Search tab for the instruments you watch alongside gold (DXY, miners, etc.)
+• A daily AI market brief and the latest gold news in their own tabs
 • Daily background refresh and a market-open notification
 • Biometric lock to keep it private
 
@@ -47,8 +47,8 @@ Trading and investing involve substantial risk of loss.
 ## Required Play assets
 - [x] **App icon** 512×512 — `store/ic_play_512.png`
 - [x] **Feature graphic** 1024×500 — `store/feature_graphic_1024x500.png`
-- [ ] **Phone screenshots** ×2–8 (min 320px; 16:9 or 9:16) — capture from the app:
-      index hero, five-pillar breakdown, history chart, CSV export.
+- [x] **Phone screenshots** ×4 (1080×2160, ≤2:1) — `store/screenshots/`:
+      01 Gold hero, 02 five-component + forward signal, 04 AI brief, 05 news.
 - [x] **Privacy Policy** — live at https://www.cointranscend.com/privacy-policy-aurum88-protocol/
 
 ## Data safety form (answers)
