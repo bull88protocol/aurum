@@ -23,5 +23,5 @@
     <color name="news_source">#9C8A66</color>
     <color name="chart_grid">#20000000</color>
     <!-- Adaptive launcher icon background (dark, matches brand art) -->
-    <color name="ic_launcher_background">#14171C</color>
+    <color name="ic_launcher_background">#060A0F</color>
 </resources>
