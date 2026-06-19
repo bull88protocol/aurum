@@ -57,7 +57,9 @@ Your use of these services is governed by **their** privacy policies and terms.
 ## 4. Optional Google Sheets sync (your own sheet)
 If you sign in with Google and enable sync, the App creates/updates a Google Sheet
 in **your own** Google Drive and writes the market data it displays there. This lives in your Google account; we have no access to it. Sign-in
-is optional and the email is used only as a label and sync target.
+is optional and the email is used only as a label and sync target. The App requests
+only the per-file **`drive.file`** scope, so it can access **only the one sheet it
+creates** — never your other Drive files.
 
 ## 5. No advertising, no tracking
 The App contains no advertising SDKs, no third-party analytics, and no tracking

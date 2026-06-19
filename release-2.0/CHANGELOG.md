@@ -142,9 +142,20 @@ dropped.
   choice is respected. If denied, the daily refresh still runs — only the notification is skipped.
 - assembleDebug + 13/13 tests green.
 
+### P2-3 — Least-privilege Google scope (`drive.file`) ✅ COMPLETE (scope swap)
+Sign-in is sync-only now, so the broad `auth/spreadsheets` scope (read/write to ALL of a user's
+spreadsheets — which triggers Google's OAuth verification for production) was overkill.
+- `GoogleAuthManager` now requests `https://www.googleapis.com/auth/drive.file` (constant renamed
+  `SYNC_SCOPE`): the app can touch only the one sheet it creates; `drive.file` is non-sensitive,
+  removing the verification burden for shipping sign-in to all users.
+- Safe migration: a sheet that becomes inaccessible under the narrower scope is transparently
+  re-created by `GoogleSheetsClient` (it already handles 403/404 → create); testers re-sign-in once.
+- `PRIVACY.md` §4 updated to state the per-file scope (can't see your other Drive files).
+- compile + tests green.
+
 Remaining — see `NEXT_RELEASE_PLAN.md` §5: surface a 2nd instrument via HMAI (P2-5), more engine
-tests (P2-1), Credential Manager + `drive.file` scope migration (P2-3), Jetpack-Security migration
-(P2-4), and the small cleanups (P2-5).
+tests (P2-1), the optional Credential Manager migration + `GET_ACCOUNTS` drop (P2-3 follow-up),
+Jetpack-Security migration (P2-4), and small cleanups (P2-5).
 
 ---
 
