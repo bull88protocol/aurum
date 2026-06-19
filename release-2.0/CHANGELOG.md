@@ -8,7 +8,7 @@ See `NEXT_RELEASE_PLAN.md` (this folder) for the full plan and rationale.
 
 ---
 
-## Milestone A — De-stock & de-stale
+## Milestone A — De-stock & de-stale ✅ COMPLETE
 
 ### P0-1 — Purge multi-stock leftovers ✅ (code complete, pending on-device check)
 The app was forked from a GOOG/SMH/NVDA stock tracker; that identity leaked into
@@ -39,13 +39,23 @@ Technicals."
 the debug build and confirm the notification text, the Getting Started dialog, and (if signed
 in) the Google Sheet contents.
 
-### P0-3 — CSV "full history" resolution ⏳ NEXT
-Not started. Yahoo silently downsamples `range=max` to **monthly GLD / quarterly DXY**, so the
-exported "full index history" runs technical indicators over month/year windows and DXY over a
-40-yr quarterly percentile — not the daily basis the code claims. Fix = fetch true daily via
-`period1`/`period2` chunks (or scope/relabel the export to its real resolution) + guard
-`scoreTechnical` against sub-daily spacing + a unit test pinning the assumption. Tackled as its
-own verified change.
+### P0-3 — CSV "full history" resolution ✅ (code complete + tested)
+`range=max` silently downsampled to **monthly GLD / quarterly DXY**, so the exported "full
+index history" ran technical indicators over month/year windows and DXY over a 40-yr quarterly
+percentile — not the daily basis the code claimed. Fixed:
+
+- `YahooFinanceClient.fetchMaxDailyCandles` now requests an explicit `period1..period2` window
+  with `interval=1d`, which returns TRUE daily bars for the whole history in one response
+  (verified live: GLD 5,429 bars back to 2004, DX-Y.NYB 7,172 back to 2003). No chunking needed.
+- The regression guard lives in tests, not a fragile runtime resolution check: the new
+  `computeHistoricalFull_is_daily_and_well_formed` asserts one row per day after the 50-bar
+  warmup (monthly data would collapse the row count), all five component columns present,
+  composites in range, and CSV shape.
+- Bootstrapped the JVM test source set (`testImplementation junit:junit:4.13.2`) — also the
+  P2-1 seed. 5 tests, all green. Perf canary: `computeHistoricalFull(5500)` → 5,450 rows in
+  ~0.5s on JVM (a few seconds on-device, off the main thread → fine; no optimization needed).
+
+**Milestone A complete.** `compileDebugKotlin` and `testDebugUnitTest` both green.
 
 ---
 

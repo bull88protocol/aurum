@@ -10,6 +10,11 @@ import java.util.concurrent.TimeUnit
 
 class YahooFinanceClient {
 
+    private companion object {
+        // 2000-01-01 UTC — safely before GLD (2004) and DX-Y.NYB (2003) daily history begins.
+        const val EARLY_HISTORY_EPOCH = 946684800L
+    }
+
     private val client = OkHttpClient.Builder()
         .connectTimeout(20, TimeUnit.SECONDS)
         .readTimeout(30, TimeUnit.SECONDS)
@@ -30,10 +35,19 @@ class YahooFinanceClient {
         return parseCandles(json)
     }
 
-    /** Fetch up to [years] years of daily OHLCV (Yahoo clips at available history). */
+    /**
+     * Fetch the full daily OHLCV history as TRUE daily bars.
+     *
+     * NB: `range=max` is a trap — Yahoo silently downsamples it (GLD → monthly, DX-Y.NYB →
+     * quarterly), which makes the CSV's technical/USD columns meaningless (a "200-day" SMA over
+     * monthly bars is really 200 months). Requesting an explicit period1..period2 window with
+     * interval=1d returns genuine daily bars for the whole history in one response
+     * (~5.4k bars for GLD back to 2004, ~7.2k for DX-Y.NYB back to 2003).
+     */
     fun fetchMaxDailyCandles(symbol: String): List<Candle> {
+        val period2 = System.currentTimeMillis() / 1000L
         val url = "https://query1.finance.yahoo.com/v8/finance/chart/$symbol" +
-                "?interval=1d&range=max"
+                "?period1=$EARLY_HISTORY_EPOCH&period2=$period2&interval=1d"
         val json = get(url) ?: return emptyList()
         return parseCandles(json)
     }
