@@ -5,6 +5,7 @@ import com.sun.aurum.domain.gold.GoldIndexEngine
 import com.sun.aurum.domain.hmai.HmaiEngine
 import com.sun.aurum.model.QuoteData
 import com.sun.aurum.model.SymbolState
+import com.sun.aurum.network.CentralBankClient
 import com.sun.aurum.network.FredClient
 import com.sun.aurum.network.GeminiClient
 import com.sun.aurum.network.GoogleSheetsClient
@@ -74,12 +75,13 @@ class DataRepository(private val context: Context) {
                     }
                     val realYield = if (fredKey.isNotBlank()) fred.fetchSeries("DFII10", fredKey, startDate = threeYearsAgo) else emptyList()
                     val inflation = if (fredKey.isNotBlank()) fred.fetchSeries("T10YIE", fredKey, startDate = threeYearsAgo) else emptyList()
+                    val cbQuarterly = CentralBankClient.loadCached(context)
                     val inputs = GoldIndexEngine.Inputs(
                         gldCandles        = candles,
                         dxyCandles        = dxyCandles,
                         realYield         = realYield,
                         inflation         = inflation,
-                        centralBankScore  = geminiResult?.goldCentralBankScore,
+                        cbQuarterly       = cbQuarterly,
                     )
                     GoldIndexEngine.compute(inputs)
                 } else null
@@ -135,12 +137,13 @@ class DataRepository(private val context: Context) {
             }
             val realYield = if (fredKey.isNotBlank()) fred.fetchSeries("DFII10", fredKey, startDate = threeYearsAgo) else emptyList()
             val inflation = if (fredKey.isNotBlank()) fred.fetchSeries("T10YIE", fredKey, startDate = threeYearsAgo) else emptyList()
+            val cbQuarterly = CentralBankClient.loadCached(context)
             val inputs = GoldIndexEngine.Inputs(
                 gldCandles        = candles,
                 dxyCandles        = dxyCandles,
                 realYield         = realYield,
                 inflation         = inflation,
-                centralBankScore  = geminiResult?.goldCentralBankScore,
+                cbQuarterly       = cbQuarterly,
             )
             GoldIndexEngine.compute(inputs)
         } else null

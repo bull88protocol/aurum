@@ -41,6 +41,10 @@ device to these services. We are not a party to these connections:
 
 - **Yahoo Finance** — public price/quote and historical candle data for gold (GLD),
   the dollar index, and any symbol you search. No key required.
+- **Aurum data file** (GitHub) — the App downloads a small **public** file of World
+  Gold Council central-bank net-purchase figures to keep the Gold Index current. This
+  is an anonymous one-way download of public data: **no key and nothing about you is
+  sent** — only an HTTPS request for the file. No key required.
 - **FRED API** (St. Louis Fed) — macroeconomic series (real yields `DFII10`,
   inflation expectations `T10YIE`), under **your own** FRED key.
 - **Google Gemini API** — the symbol/topic analyzed (e.g., central-bank and gold

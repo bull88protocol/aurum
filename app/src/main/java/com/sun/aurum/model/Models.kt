@@ -115,6 +115,13 @@ data class SymbolState(
 
 // ── Gold Index ────────────────────────────────────────────────────────────
 
+/** One quarter of WGC central-bank net gold purchases (tonnes), from the hosted feed. */
+data class CbQuarter(
+    val year: Int,
+    val quarter: Int,   // 1..4
+    val tonnes: Double,
+)
+
 data class GoldComponentScore(
     val name: String,
     val score: Float,           // 0-100

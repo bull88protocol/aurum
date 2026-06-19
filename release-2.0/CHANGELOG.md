@@ -61,7 +61,7 @@ percentile — not the daily basis the code claimed. Fixed:
 
 ## Milestone B — An index you can trust (in progress)
 
-### P1-1 — Central Bank: look-ahead-free, transparent, live-ready ◑ (part 1 done; live source pending a decision)
+### P1-1 — Central Bank: live hosted feed, look-ahead-free, transparent ✅ COMPLETE
 Probe finding: there is **no** free, on-device, official central-bank *net-purchase* JSON feed.
 IMF's DataMapper API exposes only reserve *ratios* (no absolute gold series); the full IMF IFS
 gold series is per-country (would need ~100-country aggregation on-device); WGC/Goldhub has no
@@ -82,12 +82,24 @@ Shipped this turn (all source-agnostic, so unwasted whatever live source we pick
 - **Live-feed seam + tests.** `cbTonnesEffective` is the single override point for a future feed;
   internal helpers exposed for testing. Engine tests now **9/9 green**.
 
-**OPEN DECISION** — how to source a genuinely *live* CB series (the part that makes CB move
-intra-year), given no free WGC API + the no-backend promise:
-  1. Hosted quarterly JSON (dev-curated WGC numbers on e.g. GitHub raw) — real movement, simple,
-     reliable; a minor deviation from strict no-backend (static file, no user data).
-  2. Bundled quarterly in-app, updated via releases — fully no-backend; currency depends on updates.
-  3. IMF IFS aggregation on-device — keeps no-backend but heavy/fragile (per-country sum).
+**Decision: hosted quarterly JSON (option 1).** Part 2 shipped this turn:
+- `CentralBankClient` downloads a public quarterly file (`data/cb_quarterly.json`, hosted at
+  `raw.githubusercontent.com/bull88protocol/aurum/master/data/cb_quarterly.json`); `CentralBankCache`
+  caches it weekly with offline fallback to the last-good copy.
+- Engine consumes it via `Inputs.cbQuarterly`: a **trailing-12-month** sum of the last 4
+  **published** quarters (≥6-week publication lag → look-ahead-free), falling back to the bundled
+  annual series whenever <4 quarters are available. Live snapshot + history chart + CSV all use it.
+- The CB row now shows the live quarter ("… · as of 2025-Q1"). The dead `goldCentralBankScore`
+  Gemini→engine flow was removed while wiring this.
+- **Tooling for the owner:** `release-2.0/cb-data/cb_update.py` (one command to add a quarter and
+  push) + `release-2.0/cb-data/README.md`. The seed is an even split of WGC annual totals (matches
+  today's basis exactly; replace recent quarters with WGC actuals for real intra-year movement).
+- Privacy unchanged — read-only download of a public file, no user data, no key; `PRIVACY.md` §3
+  updated to list it.
+- Engine tests now **12/12 green** (added TTM, publication-lag, and feed-integration cases).
+
+To go live: publish `data/cb_quarterly.json` to `master` (happens on the v2.0 merge, or push sooner),
+then replace the recent placeholder quarters with real WGC numbers via the script.
 
 ## Milestone C
 Not started — see `NEXT_RELEASE_PLAN.md` §5: retry + fallback data source (P1-2), surface a 2nd

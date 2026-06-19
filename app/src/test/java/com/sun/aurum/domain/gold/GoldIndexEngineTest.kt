@@ -1,8 +1,10 @@
 package com.sun.aurum.domain.gold
 
 import com.sun.aurum.model.Candle
+import com.sun.aurum.model.CbQuarter
 import com.sun.aurum.network.FredClient
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.text.SimpleDateFormat
@@ -162,5 +164,43 @@ class GoldIndexEngineTest {
         val uncapped = (cb * 0.22f + tech * 0.12f) / 0.34f
         assertEquals(capped, report.compositeScore, 0.1f)
         assertTrue("guardrail should pull the headline off the CB-dominated value", capped <= uncapped + 1e-3f)
+    }
+
+    // ── P1-1: live quarterly feed — trailing-12-month sum + publication lag (no look-ahead) ──
+    private val cbQ = listOf(
+        CbQuarter(2024, 1, 290.0), CbQuarter(2024, 2, 184.0), CbQuarter(2024, 3, 186.0),
+        CbQuarter(2024, 4, 333.0), CbQuarter(2025, 1, 244.0), CbQuarter(2025, 2, 166.0),
+    )
+
+    @Test fun cb_quarterly_ttm_respects_publication_lag() {
+        // Quarter q publishes ~6 weeks after it ends: Q1->May, Q2->Aug, Q3->Nov, Q4->Feb(next yr).
+        // As of Apr 2025, 2025-Q1 (pub May) is NOT out yet -> trailing 4 = all of 2024.
+        assertEquals(290.0 + 184 + 186 + 333, GoldIndexEngine.cbTonnesFromQuarterly(cbQ, 2025, 4)!!, 1e-6)
+        // As of Jun 2025, 2025-Q1 is out -> trailing 4 = 2024 Q2..Q4 + 2025 Q1.
+        assertEquals(184.0 + 186 + 333 + 244, GoldIndexEngine.cbTonnesFromQuarterly(cbQ, 2025, 6)!!, 1e-6)
+        // As of Aug 2025, 2025-Q2 (pub Aug) is out -> trailing 4 = 2024 Q3..Q4 + 2025 Q1..Q2.
+        assertEquals(186.0 + 333 + 244 + 166, GoldIndexEngine.cbTonnesFromQuarterly(cbQ, 2025, 8)!!, 1e-6)
+    }
+
+    @Test fun cb_quarterly_falls_back_when_sparse() {
+        assertNull(GoldIndexEngine.cbTonnesFromQuarterly(emptyList(), 2025, 6))           // no feed
+        assertNull(GoldIndexEngine.cbTonnesFromQuarterly(cbQ.take(3), 2025, 6))           // < 4 published
+        // Before any quarter has published, also fall back (Jan 2024: nothing out yet).
+        assertNull(GoldIndexEngine.cbTonnesFromQuarterly(cbQ, 2024, 1))
+    }
+
+    @Test fun compute_uses_quarterly_feed_when_present() {
+        val dates = dailyDates(80)
+        val gld = candles(dates) { 100.0 + it }
+        // Feed through 2026-Q1 (published by May 2026) so >=4 quarters are live as of the test run.
+        val feed = cbQ + listOf(
+            CbQuarter(2025, 3, 220.0), CbQuarter(2025, 4, 310.0), CbQuarter(2026, 1, 250.0),
+        )
+        val report = GoldIndexEngine.compute(
+            GoldIndexEngine.Inputs(gldCandles = gld, dxyCandles = emptyList(),
+                realYield = emptyList(), inflation = emptyList(), cbQuarterly = feed)
+        )
+        val cb = report.components.first { it.name == "Central Bank Demand" }
+        assertTrue("CB detail should show a live quarter (…-Qn), was '${cb.detail}'", cb.detail.contains("-Q"))
     }
 }

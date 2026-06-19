@@ -1,6 +1,7 @@
 package com.sun.aurum.domain.gold
 
 import com.sun.aurum.model.Candle
+import com.sun.aurum.model.CbQuarter
 import com.sun.aurum.model.DailyIndexPoint
 import com.sun.aurum.model.GoldComponentScore
 import com.sun.aurum.model.GoldIndexReport
@@ -30,6 +31,7 @@ object GoldIndexEngine {
         val realYield: List<FredClient.Obs>,    // FRED DFII10
         val inflation: List<FredClient.Obs>,    // FRED T10YIE
         val centralBankScore: Int? = null,      // deprecated: ignored; CB now from the WGC series below
+        val cbQuarterly: List<CbQuarter> = emptyList(),  // hosted WGC quarterly feed; empty → bundled annual
     )
 
     data class HistoricalRow(
@@ -50,7 +52,7 @@ object GoldIndexEngine {
         // Five components — macro-weighted (commodity trader / economist perspective)
         val comp1 = scoreRealYield(inputs.realYield)         // dominant driver
         val comp2 = scoreUSD(inputs.dxyCandles)              // inverse gold-dollar
-        val comp3 = scoreCentralBank()                       // structural demand (WGC net purchases)
+        val comp3 = scoreCentralBank(inputs.cbQuarterly)     // structural demand (WGC net purchases)
         val comp4 = scoreInflation(inputs.inflation)         // inflation hedge
         val comp5 = scoreTechnical(closes)                   // timing only
 
@@ -229,6 +231,30 @@ object GoldIndexEngine {
         return cbNetPurchasesByYear[cbNetPurchasesByYear.firstKey()]!!
     }
 
+    // ── Live quarterly feed (preferred over the bundled annual series when it covers the date) ──
+
+    // A quarter publishes ~6 weeks after it ends (WGC Gold Demand Trends): Q1(Mar)→May, Q2(Jun)→Aug,
+    // Q3(Sep)→Nov, Q4(Dec)→Feb next year. Look-ahead-free: a date never sees a quarter published later.
+    private fun cbQuarterPublishedAsOf(q: CbQuarter, year: Int, month: Int): Boolean {
+        var pubYear = q.year
+        var pubMonth = q.quarter * 3 + 2
+        if (pubMonth > 12) { pubMonth -= 12; pubYear += 1 }
+        return pubYear < year || (pubYear == year && pubMonth <= month)
+    }
+
+    // Trailing-12-month net purchases from the live feed (sum of the last 4 *published* quarters as
+    // of the date), or null if fewer than 4 are available → caller uses the bundled annual series.
+    internal fun cbTonnesFromQuarterly(quarterly: List<CbQuarter>, year: Int, month: Int): Double? {
+        if (quarterly.isEmpty()) return null
+        val published = quarterly.filter { cbQuarterPublishedAsOf(it, year, month) }
+            .sortedWith(compareBy({ it.year }, { it.quarter }))
+        if (published.size < 4) return null
+        return published.takeLast(4).sumOf { it.tonnes }
+    }
+
+    private fun cbTonnes(year: Int, month: Int, quarterly: List<CbQuarter>): Double =
+        cbTonnesFromQuarterly(quarterly, year, month) ?: cbTonnesEffective(year, month)
+
     // Fixed domain-anchored map: net purchases (tonnes/yr) -> 0..100 score. Anchored to absolute
     // tonnage bands (net-selling → record-buying), so it is look-ahead-free and stable across
     // regimes — unlike sample min-max scaling, which either leaks the future peak (full-sample) or
@@ -248,24 +274,28 @@ object GoldIndexEngine {
         return 50f
     }
 
-    private fun centralBankScoreAt(dateStr: String): Float =
-        cbScoreFromTonnes(cbTonnesEffective(dateStr.substring(0, 4).toInt(), dateStr.substring(5, 7).toInt()))
+    private fun centralBankScoreAt(dateStr: String, quarterly: List<CbQuarter>): Float =
+        cbScoreFromTonnes(cbTonnes(dateStr.substring(0, 4).toInt(), dateStr.substring(5, 7).toInt(), quarterly))
 
-    // "2024" for a published actual, "2025 est." while the figure is still a forward estimate —
-    // surfaced in the component row so users always see how current the CB input is.
-    private fun cbAsOfLabel(year: Int, month: Int): String {
+    // Latest published quarter ("2025-Q1") when the live feed drives the score, else the bundled
+    // annual label ("2024" actual / "2025 est.") — surfaced so users see how current the CB input is.
+    private fun cbAsOfLabel(year: Int, month: Int, quarterly: List<CbQuarter>): String {
+        val latestQ = quarterly.filter { cbQuarterPublishedAsOf(it, year, month) }
+            .takeIf { it.size >= 4 }
+            ?.maxWithOrNull(compareBy({ it.year }, { it.quarter }))
+        if (latestQ != null) return "${latestQ.year}-Q${latestQ.quarter}"
         val effYear = cbEffectiveYear(year, month).coerceAtLeast(cbNetPurchasesByYear.firstKey())
         return if (effYear >= CB_ESTIMATE_FROM_YEAR) "$effYear est." else "$effYear"
     }
 
-    private fun scoreCentralBank(): GoldComponentScore {
+    private fun scoreCentralBank(quarterly: List<CbQuarter>): GoldComponentScore {
         val today  = dateFmt.format(Date())
         val y = today.substring(0, 4).toInt(); val m = today.substring(5, 7).toInt()
-        val tonnes = cbTonnesEffective(y, m)
+        val tonnes = cbTonnes(y, m, quarterly)
         val score  = cbScoreFromTonnes(tonnes)
         return GoldComponentScore(
             name = "Central Bank Demand", score = score, label = toLabel(score),
-            detail = "WGC net buying ≈ ${tonnes.roundToInt()} t/yr · as of ${cbAsOfLabel(y, m)}",
+            detail = "WGC net buying ≈ ${tonnes.roundToInt()} t/yr · as of ${cbAsOfLabel(y, m, quarterly)}",
         )
     }
 
@@ -400,7 +430,7 @@ object GoldIndexEngine {
             val dxyWindow = dxyMap.headMap(dateStr, true).values.toList().takeLast(504)
             if (dxyWindow.size >= 5) scored.add(W(usdScore(dxyWindow.last(), dxyWindow), W_USD))
 
-            scored.add(W(centralBankScoreAt(dateStr), W_CENTRAL))
+            scored.add(W(centralBankScoreAt(dateStr, inputs.cbQuarterly), W_CENTRAL))
 
             val infWindow = infMap.headMap(dateStr, true).values.toList().takeLast(252)
             if (infWindow.size >= 5) scored.add(W(directPct(infWindow.last(), infWindow) * 100f, W_INFLATION))
@@ -441,7 +471,7 @@ object GoldIndexEngine {
             val infWindow = infMap.headMap(dateStr, true).values.toList().takeLast(252)
             val infScore  = if (infWindow.size >= 5) directPct(infWindow.last(), infWindow) * 100f else null
 
-            val cbScore   = centralBankScoreAt(dateStr)
+            val cbScore   = centralBankScoreAt(dateStr, inputs.cbQuarterly)
             val techScore = if (subClose.size >= 20) scoreTechnical(subClose).score else null
 
             // Weighted composite — same 5-component profile as the live index.

@@ -8,6 +8,7 @@ import com.sun.aurum.data.GoogleAuthManager
 import com.sun.aurum.data.SecurePrefs
 import com.sun.aurum.domain.gold.GoldIndexEngine
 import com.sun.aurum.model.SymbolState
+import com.sun.aurum.network.CentralBankClient
 import com.sun.aurum.network.FredClient
 import com.sun.aurum.network.YahooFinanceClient
 import kotlinx.coroutines.Dispatchers
@@ -119,6 +120,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         // the default limit=1000 truncates to ~2003-2007 and freezes the rolling-window scores.
         val realYield  = if (fredKey.isNotBlank()) fred.fetchSeries("DFII10", fredKey, startDate = "2003-01-01", limit = 20000) else emptyList()
         val inflation  = if (fredKey.isNotBlank()) fred.fetchSeries("T10YIE", fredKey, startDate = "2003-01-01", limit = 20000) else emptyList()
+        val cbQuarterly = CentralBankClient.loadCached(getApplication<Application>())
 
         if (gldLong.size < 60) return@withContext null
 
@@ -127,6 +129,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             dxyCandles   = dxyCandles,
             realYield    = realYield,
             inflation    = inflation,
+            cbQuarterly  = cbQuarterly,
         )
         val rows = GoldIndexEngine.computeHistoricalFull(inputs)
         if (rows.isEmpty()) null else GoldIndexEngine.toCsv(rows)
