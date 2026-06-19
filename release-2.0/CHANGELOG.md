@@ -131,10 +131,20 @@ worse and dropped the pre/after-hours badge. Per the decision (Yahoo for quotes,
 **Milestone B complete** except the optional **P1-3** (move price/technicals from the GLD ETF to
 spot XAU for 24-h coverage) — deferred unless you want it.
 
-## Milestone C
-Not started — see `NEXT_RELEASE_PLAN.md` §5: surface a 2nd instrument via HMAI (P2-5), more
-engine tests (P2-1), runtime notification permission (P2-2), Credential Manager + `drive.file`
-scope migration (P2-3).
+## Milestone C — Production-grade plumbing (in progress)
+
+### P2-2 — Runtime notification permission ✅ COMPLETE
+`POST_NOTIFICATIONS` was declared in the manifest but never requested, so on Android 13+ (the
+connected test device is Android 16 / API 36) the daily "market open" notification was silently
+dropped.
+- `MainActivity` requests it once via the Activity Result API, **after** the biometric gate (so it
+  doesn't collide with the fingerprint prompt), guarded by an `asked_notif_perm` flag so a prior
+  choice is respected. If denied, the daily refresh still runs — only the notification is skipped.
+- assembleDebug + 13/13 tests green.
+
+Remaining — see `NEXT_RELEASE_PLAN.md` §5: surface a 2nd instrument via HMAI (P2-5), more engine
+tests (P2-1), Credential Manager + `drive.file` scope migration (P2-3), Jetpack-Security migration
+(P2-4), and the small cleanups (P2-5).
 
 ---
 

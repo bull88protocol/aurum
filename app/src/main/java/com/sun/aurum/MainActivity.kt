@@ -1,13 +1,18 @@
 package com.sun.aurum
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.biometric.BiometricPrompt
+import androidx.core.content.ContextCompat
 import com.google.android.material.tabs.TabLayoutMediator
 import com.sun.aurum.data.BiometricAuth
 import com.sun.aurum.databinding.ActivityMainBinding
@@ -24,6 +29,11 @@ class MainActivity : AppCompatActivity() {
     // Track API-key presence so returning from Settings with a new key auto-refreshes.
     private var lastGeminiPresent = false
     private var lastFredPresent = false
+
+    // Android 13+ notification consent. If denied, the daily refresh still runs; only the
+    // "market open" notification is skipped.
+    private val notificationPermission =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { /* no-op: best-effort */ }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -69,10 +79,30 @@ class MainActivity : AppCompatActivity() {
     // ── Biometric auth ────────────────────────────────────────────────────────
 
     private fun checkBiometricSession() {
-        if (!biometricAuth.isAvailable()) { maybeShowGettingStarted(); return }   // no biometric enrolled — skip the gate
-        if (biometricAuth.isSessionValid()) { maybeShowGettingStarted(); return } // within 4-hour window — no prompt needed
+        if (!biometricAuth.isAvailable()) { onUnlocked(); return }   // no biometric enrolled — skip the gate
+        if (biometricAuth.isSessionValid()) { onUnlocked(); return } // within 4-hour window — no prompt needed
         showLockOverlay("Touch fingerprint sensor to unlock")
         triggerBiometricPrompt()
+    }
+
+    /** Reached once the user is past the lock gate (or there is none). */
+    private fun onUnlocked() {
+        maybeShowGettingStarted()
+        ensureNotificationPermission()
+    }
+
+    /**
+     * Android 13+ requires runtime consent to post notifications; without it the daily
+     * "market open" notification is silently dropped. Ask once and respect a prior choice.
+     */
+    private fun ensureNotificationPermission() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+            == PackageManager.PERMISSION_GRANTED) return
+        val prefs = getSharedPreferences("app_settings", MODE_PRIVATE)
+        if (prefs.getBoolean("asked_notif_perm", false)) return
+        prefs.edit().putBoolean("asked_notif_perm", true).apply()
+        notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
     }
 
     private fun triggerBiometricPrompt() {
@@ -82,7 +112,7 @@ class MainActivity : AppCompatActivity() {
                 hideLockOverlay()
                 // Force-flush Gemini cache and fetch all fresh data on authentication
                 vm.refresh(forceGemini = true)
-                maybeShowGettingStarted()
+                onUnlocked()
             },
             onError = { errorCode ->
                 val msg = when (errorCode) {
