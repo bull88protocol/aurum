@@ -176,9 +176,27 @@ padded down by the nav-bar inset (its surface fills the strip, text above). Veri
 title at y=155 (below the status bar) and footer spanning y=2256–2400 with the nav-bar strip
 absorbed as padding.
 
+### P2-4 — Migrate off alpha/deprecated `EncryptedSharedPreferences` ✅ COMPLETE
+The user's API keys were stored via Jetpack Security `EncryptedSharedPreferences`
+(`androidx.security:security-crypto:1.1.0-alpha06`) — an **alpha** that Google has since
+**deprecated** (and which has a history of keystore-invalidation crashes). The at-rest store now
+uses the **Android Keystore directly**:
+- New `Crypto` helper: AES-256-GCM via a non-auth-bound Keystore key (framework only, no
+  third-party crypto), storing `base64(iv ‖ ciphertext)`. `SecurePrefs` keeps the same public API
+  but writes to a plain `SharedPreferences` ("aurum_secure_v2") with encrypted values.
+- **One-time, fail-safe migration** copies any keys a previous build saved (legacy
+  `EncryptedSharedPreferences`) into the new store, wrapped in `runCatching` so an alpha-lib hiccup
+  degrades to "re-enter your keys" rather than crashing. The deprecated lib is now used *only* for
+  that read; it can be dropped entirely in a later release.
+- **Verified on-device:** after the in-place upgrade, `aurum_secure_v2` holds the migrated
+  `gemini_api_key` / `fred_api_key` / `google_sheet_id` with `migrated_from_legacy_v1=true`, and a
+  refresh confirmed FRED still works (Real Yield 5/100, not "key required"). assembleDebug + 13/13
+  tests green.
+
 Remaining — see `NEXT_RELEASE_PLAN.md` §5: more engine tests (P2-1), the optional Credential
-Manager migration + `GET_ACCOUNTS` drop (P2-3 follow-up), Jetpack-Security migration (P2-4), and
-the small code cleanups (dedup the GLD fetch block, branded notification icon, chart timezone).
+Manager migration + `GET_ACCOUNTS` drop (P2-3 follow-up), and the small code cleanups (dedup the
+GLD fetch block, branded notification icon, chart timezone). Plus a later release can drop the
+`security-crypto` dependency once testers have upgraded past this build.
 
 ---
 

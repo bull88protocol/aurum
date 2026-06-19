@@ -52,12 +52,12 @@ its HMAI card, and the Gold tab shows the new CB freshness label). Per-item deta
 | **P2-2** request `POST_NOTIFICATIONS` at runtime (Android 13+) | ✅ done | `880c9bc` |
 | **P2-3** least-privilege `drive.file` scope swap | ✅ done | `d46b371` |
 | **P2-3+** Credential Manager migration + drop `GET_ACCOUNTS` | ⬜ deferred (needs on-device auth test) | — |
-| **P2-4** migrate off alpha/deprecated `EncryptedSharedPreferences` | ⬜ remaining | — |
+| **P2-4** migrate off alpha/deprecated `EncryptedSharedPreferences` → Android Keystore + migration | ✅ done + verified on phone | `<this turn>` |
 | **P2-5** surface a 2nd instrument (DXY via HMAI) | ✅ done + verified on phone | `8c6da81` |
 | **P2-5 cleanups** dedup GLD fetch block · branded notif icon · chart timezone | ⬜ remaining | — |
 
-**Milestones: A ✅ · B ✅** (P1-3 optional) **· C in progress** — P2-2/P2-3/P2-5 done, P2-1
-partial; P2-4, the cleanups, and the Credential Manager follow-up remain.
+**Milestones: A ✅ · B ✅** (P1-3 optional) **· C nearly done** — P2-2/P2-3/P2-4/P2-5 done, P2-1
+partial; the cleanups and the optional Credential Manager follow-up remain.
 
 **Open operational items (not code):** publish `data/cb_quarterly.json` to `master` (happens on
 the v2.0 merge) and replace the placeholder quarters with real WGC numbers via
