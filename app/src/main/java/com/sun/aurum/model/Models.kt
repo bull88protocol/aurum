@@ -128,6 +128,7 @@ data class GoldComponentScore(
     val label: String,          // BULLISH / NEUTRAL / BEARISH
     val detail: String,
     val available: Boolean = true,
+    val keyRequired: Boolean = false,  // unavailable specifically for lack of a FRED key (vs a data/network failure)
 )
 
 data class DailyIndexPoint(

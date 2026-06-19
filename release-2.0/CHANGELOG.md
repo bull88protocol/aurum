@@ -101,7 +101,29 @@ Shipped this turn (all source-agnostic, so unwasted whatever live source we pick
 To go live: publish `data/cb_quarterly.json` to `master` (happens on the v2.0 merge, or push sooner),
 then replace the recent placeholder quarters with real WGC numbers via the script.
 
+### P1-2 — Data-source resilience ✅ COMPLETE
+A single flaky Yahoo request used to silently drop a core series — on-device we caught DXY blank
+out, which dragged the 23%-weight USD driver to "Not configured" and leaned the index on the
+near-static CB constant. Fixed:
+- **Retry + mirror failover.** `YahooFinanceClient.get()` now tries the **query1** host then its
+  **query2** mirror on each of up to 3 attempts, with linear backoff (300/600 ms). Every Yahoo
+  call (quote, intraday, daily, max, VIX, DXY) gets this for free. (Stooq was scoped as a 2nd
+  provider but is now behind a JS bot-wall — dropped; query1/query2 covers the transient case we
+  actually saw. A keyed provider like Twelve Data remains a future opt-in for full-outage cover.)
+- **Honest UI signal.** New `GoldComponentScore.keyRequired` separates "needs a FRED key"
+  (Real Yield / Inflation) from "couldn't load" (a dropped DXY/Technical fetch). The Gold tab
+  banner now reads "Add a FRED key for: …" vs "Couldn't load (pull to refresh): …" instead of
+  lumping a transient network failure under "Not configured".
+- Engine tests now **13/13 green** (added the key-required-vs-data-failure case).
+
 ## Milestone C
-Not started — see `NEXT_RELEASE_PLAN.md` §5: retry + fallback data source (P1-2), surface a 2nd
-instrument via HMAI (P2-5), more engine tests (P2-1), runtime notification permission (P2-2),
-Credential Manager + `drive.file` scope migration (P2-3).
+Not started — see `NEXT_RELEASE_PLAN.md` §5: surface a 2nd instrument via HMAI (P2-5), more
+engine tests (P2-1), runtime notification permission (P2-2), Credential Manager + `drive.file`
+scope migration (P2-3).
+
+---
+
+## Tooling note
+`release-2.0/cb-data/cb_update.py` now degrades gracefully: re-entering the same value prints
+"Nothing to commit" instead of erroring, the commit is scoped to the data file only, and a push
+with no upstream explains that the feed goes live when the branch reaches `master`.

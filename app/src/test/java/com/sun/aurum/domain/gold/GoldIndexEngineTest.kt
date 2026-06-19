@@ -4,6 +4,7 @@ import com.sun.aurum.model.Candle
 import com.sun.aurum.model.CbQuarter
 import com.sun.aurum.network.FredClient
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -202,5 +203,24 @@ class GoldIndexEngineTest {
         )
         val cb = report.components.first { it.name == "Central Bank Demand" }
         assertTrue("CB detail should show a live quarter (…-Qn), was '${cb.detail}'", cb.detail.contains("-Q"))
+    }
+
+    // ── P1-2: "needs a key" is flagged distinctly from a data/network failure ──
+    @Test fun missing_fred_is_keyRequired_but_dxy_is_not() {
+        val dates = dailyDates(80)
+        val gld = candles(dates) { 100.0 + it }
+        val dxy = candles(dates) { 100.0 + 3.0 * Math.sin(it / 10.0) }
+        val report = GoldIndexEngine.compute(
+            GoldIndexEngine.Inputs(gldCandles = gld, dxyCandles = dxy, realYield = emptyList(), inflation = emptyList())
+        )
+        fun comp(n: String) = report.components.first { it.name == n }
+        // No FRED data -> unavailable *because a key is required*.
+        assertFalse(comp("Real Yield Pressure").available)
+        assertTrue(comp("Real Yield Pressure").keyRequired)
+        assertFalse(comp("Inflation Expectations").available)
+        assertTrue(comp("Inflation Expectations").keyRequired)
+        // DXY is present and needs no key -> available, and never key-flagged.
+        assertTrue(comp("USD Strength").available)
+        assertFalse(comp("USD Strength").keyRequired)
     }
 }

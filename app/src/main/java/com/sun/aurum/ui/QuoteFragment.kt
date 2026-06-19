@@ -142,12 +142,19 @@ class QuoteFragment : Fragment() {
         }
         binding.cardGoldIndex.visibility = View.VISIBLE
 
-        // Missing-keys banner
-        val notConfigured = report.components.filter { !it.available }
-            .joinToString(" · ") { it.name.substringBefore(" (") }
-        if (notConfigured.isNotEmpty()) {
+        // Status banner — keep "needs a key" distinct from "couldn't load" so a transient data
+        // failure (e.g. a dropped DXY fetch) no longer masquerades as a missing-key/config problem.
+        val unavailable = report.components.filter { !it.available }
+        fun names(list: List<GoldComponentScore>) = list.joinToString(" · ") { it.name.substringBefore(" (") }
+        val needKey = names(unavailable.filter { it.keyRequired })
+        val noData  = names(unavailable.filterNot { it.keyRequired })
+        val banner = buildList {
+            if (needKey.isNotEmpty()) add("Add a FRED key for: $needKey")
+            if (noData.isNotEmpty())  add("Couldn't load (pull to refresh): $noData")
+        }.joinToString("\n")
+        if (banner.isNotEmpty()) {
             binding.tvGoldMissing.visibility = View.VISIBLE
-            binding.tvGoldMissing.text = "Not configured: $notConfigured"
+            binding.tvGoldMissing.text = banner
         } else {
             binding.tvGoldMissing.visibility = View.GONE
         }

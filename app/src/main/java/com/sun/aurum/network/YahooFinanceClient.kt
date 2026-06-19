@@ -13,6 +13,8 @@ class YahooFinanceClient {
     private companion object {
         // 2000-01-01 UTC — safely before GLD (2004) and DX-Y.NYB (2003) daily history begins.
         const val EARLY_HISTORY_EPOCH = 946684800L
+        const val MAX_ATTEMPTS = 3
+        const val BACKOFF_MS = 300L
     }
 
     private val client = OkHttpClient.Builder()
@@ -75,15 +77,34 @@ class YahooFinanceClient {
         } catch (e: Exception) { null }
     }
 
+    /**
+     * GETs a Yahoo chart URL with resilience: each attempt tries the query1 host and then its
+     * query2 mirror, with bounded linear backoff between attempts. This is what stops a single
+     * flaky request from silently dropping a core series (e.g. DXY → the USD component) — the
+     * failure we saw blank out USD on-device even though Yahoo was otherwise healthy.
+     */
     private fun get(url: String): JSONObject? {
-        return try {
-            val req = Request.Builder().url(url).build()
-            client.newCall(req).execute().use { resp ->
-                if (!resp.isSuccessful) return null
-                val body = resp.body?.string() ?: return null
-                JSONObject(body)
+        val hosts = if (url.contains("query1.finance.yahoo.com"))
+            listOf(url, url.replace("query1.finance.yahoo.com", "query2.finance.yahoo.com"))
+        else listOf(url)
+
+        repeat(MAX_ATTEMPTS) { attempt ->
+            for (u in hosts) {
+                try {
+                    val req = Request.Builder().url(u).build()
+                    client.newCall(req).execute().use { resp ->
+                        if (resp.isSuccessful) {
+                            val body = resp.body?.string()
+                            if (!body.isNullOrEmpty()) return JSONObject(body)
+                        }
+                    }
+                } catch (e: Exception) { /* fall through to the mirror / next attempt */ }
             }
-        } catch (e: Exception) { null }
+            if (attempt < MAX_ATTEMPTS - 1) {
+                try { Thread.sleep(BACKOFF_MS * (attempt + 1)) } catch (_: InterruptedException) {}
+            }
+        }
+        return null
     }
 
     private fun parseCandles(json: JSONObject): List<Candle> {

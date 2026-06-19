@@ -94,7 +94,7 @@ object GoldIndexEngine {
     private fun scoreRealYield(obs: List<FredClient.Obs>): GoldComponentScore {
         if (obs.size < 5) return GoldComponentScore(
             name = "Real Yield Pressure", score = 50f, label = "N/A",
-            detail = "FRED API key required → Settings", available = false,
+            detail = "FRED API key required → Settings", available = false, keyRequired = true,
         )
         val vals = obs.map { it.value }
         val current = vals.last()
@@ -142,7 +142,7 @@ object GoldIndexEngine {
     private fun scoreInflation(obs: List<FredClient.Obs>): GoldComponentScore {
         if (obs.size < 5) return GoldComponentScore(
             name = "Inflation Expectations", score = 50f, label = "N/A",
-            detail = "FRED API key required → Settings", available = false,
+            detail = "FRED API key required → Settings", available = false, keyRequired = true,
         )
         val vals = obs.map { it.value }
         val current = vals.last()
