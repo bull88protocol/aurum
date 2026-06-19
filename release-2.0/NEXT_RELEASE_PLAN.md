@@ -25,6 +25,45 @@ speak the language of the old GOOG/SMH/NVDA stock app, and ~22% of the "live mac
 currently a frozen constant. For a product sold as *"the macro pulse of gold, read the way a
 desk reads it,"* those are the things a pro user will notice first.
 
+> **Update (2026-06-19):** most of this plan is now built — see the status table below. The two
+> headline risks called out above (the stock-app leftovers and the frozen-constant CB) are both
+> resolved.
+
+---
+
+## 0.5 Implementation status — branch `release-2.0` (updated 2026-06-19)
+
+`master` stays frozen on the Play-submitted 1.3.0-beta; all work below is committed on
+`release-2.0` and was verified on-device (debug build, in-place upgrade — the Dollar tab renders
+its HMAI card, and the Gold tab shows the new CB freshness label). Per-item detail in
+[CHANGELOG.md](CHANGELOG.md).
+
+| Item | Status | Commit |
+|---|---|---|
+| **P0-1** purge multi-stock leftovers (notification, Sheet, Gemini prompt) | ✅ done | `57b6ecf` |
+| **P0-2** fix "Getting Started" copy (3 of 5 components, CB is key-less) | ✅ done | `57b6ecf` |
+| **P0-3** CSV export uses true-daily history (not monthly/quarterly) | ✅ done | `c7a4e92` |
+| **P1-1** Central Bank: hosted live feed + look-ahead lag fix + freshness + no-dominance guardrail | ✅ done | `9f9bfec`, `dbbcc78` |
+| **P1-2** data-source resilience: Yahoo retry + query1/query2 failover + honest UI | ✅ done | `12e4f94` |
+| **P1-3** move price/technicals from the GLD ETF to spot XAU (24-h) | ⬜ deferred (optional) | — |
+| **P1-4** honest quote source — Yahoo for display, Google for sync (relabel) | ✅ done | `5db1ef5` |
+| **P1-5** trader micro-notes (RSI philosophy, RY/USD window asymmetry, DXY anchors) | ⬜ remaining | — |
+| **P2-1** broaden engine tests | ◑ partial — JVM test infra seeded; **13** engine tests added | (across the above) |
+| **P2-2** request `POST_NOTIFICATIONS` at runtime (Android 13+) | ✅ done | `880c9bc` |
+| **P2-3** least-privilege `drive.file` scope swap | ✅ done | `d46b371` |
+| **P2-3+** Credential Manager migration + drop `GET_ACCOUNTS` | ⬜ deferred (needs on-device auth test) | — |
+| **P2-4** migrate off alpha/deprecated `EncryptedSharedPreferences` | ⬜ remaining | — |
+| **P2-5** surface a 2nd instrument (DXY via HMAI) | ✅ done + verified on phone | `8c6da81` |
+| **P2-5 cleanups** dedup GLD fetch block · branded notif icon · chart timezone | ⬜ remaining | — |
+
+**Milestones: A ✅ · B ✅** (P1-3 optional) **· C in progress** — P2-2/P2-3/P2-5 done, P2-1
+partial; P2-4, the cleanups, and the Credential Manager follow-up remain.
+
+**Open operational items (not code):** publish `data/cb_quarterly.json` to `master` (happens on
+the v2.0 merge) and replace the placeholder quarters with real WGC numbers via
+`cb-data/cb_update.py`; add a store screenshot of the Dollar tab; smoke-test Google sign-in once
+under the new `drive.file` scope.
+
 ---
 
 ## 1. What is already strong — do not touch
