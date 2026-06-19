@@ -114,4 +114,53 @@ class GoldIndexEngineTest {
         assertEquals(n - 50, rows.size)
         assertTrue("CSV history generation too slow at full scale: ${ms}ms", ms < 15_000)
     }
+
+    // ── P1-1: Central Bank publication lag is look-ahead-free ───────────────
+    @Test fun cb_effectiveYear_has_no_lookahead() {
+        // WGC publishes year Y in ~Q1 of Y+1: from April Y+1 the latest KNOWN full year is Y.
+        assertEquals(2024, GoldIndexEngine.cbEffectiveYear(2025, 6))   // Jun 2025 -> 2024 actual
+        assertEquals(2024, GoldIndexEngine.cbEffectiveYear(2025, 4))   // Apr: 2024 just published
+        assertEquals(2023, GoldIndexEngine.cbEffectiveYear(2025, 3))   // Mar: 2024 not out yet
+        assertEquals(2023, GoldIndexEngine.cbEffectiveYear(2024, 12))
+        // A point in time never consumes a figure published later: eff year always precedes as-of.
+        for (y in 2012..2030) for (m in 1..12)
+            assertTrue("eff year must precede as-of year", GoldIndexEngine.cbEffectiveYear(y, m) < y)
+    }
+
+    @Test fun cb_tonnes_track_published_year() {
+        assertEquals(1045.0, GoldIndexEngine.cbTonnesEffective(2025, 6), 0.0)   // 2024 actual
+        assertEquals(1037.0, GoldIndexEngine.cbTonnesEffective(2025, 2), 0.0)   // 2023 actual
+        assertEquals(1000.0, GoldIndexEngine.cbTonnesEffective(2026, 6), 0.0)   // 2025 estimate
+    }
+
+    @Test fun cb_score_anchors_are_monotonic_and_clamped() {
+        assertEquals(10f, GoldIndexEngine.cbScoreFromTonnes(-500.0))   // net-selling clamp
+        assertEquals(95f, GoldIndexEngine.cbScoreFromTonnes(2000.0))   // record-buying clamp
+        var prev = GoldIndexEngine.cbScoreFromTonnes(-200.0)
+        var t = -100.0
+        while (t <= 1400.0) {
+            val s = GoldIndexEngine.cbScoreFromTonnes(t)
+            assertTrue("score must be non-decreasing in tonnes at $t ($prev -> $s)", s >= prev - 1e-4f)
+            prev = s; t += 50.0
+        }
+    }
+
+    // ── P1-1c: no-dominance guardrail halves CB weight when it is the only macro voice ──
+    @Test fun guardrail_caps_cb_when_no_fred_or_dxy() {
+        val dates = dailyDates(80)
+        val gld = candles(dates) { 100.0 + it }            // rising -> Technical available
+        val report = GoldIndexEngine.compute(
+            GoldIndexEngine.Inputs(gldCandles = gld, dxyCandles = emptyList(), realYield = emptyList(), inflation = emptyList())
+        )
+        // Only CB + Technical available; CB weight halved (0.22 -> 0.11).
+        val cal = Calendar.getInstance(ny)
+        val cb = GoldIndexEngine.cbScoreFromTonnes(
+            GoldIndexEngine.cbTonnesEffective(cal.get(Calendar.YEAR), cal.get(Calendar.MONTH) + 1)
+        )
+        val tech = GoldIndexEngine.scoreTechnical(gld.map { it.close }).score
+        val capped   = (cb * 0.11f + tech * 0.12f) / 0.23f
+        val uncapped = (cb * 0.22f + tech * 0.12f) / 0.34f
+        assertEquals(capped, report.compositeScore, 0.1f)
+        assertTrue("guardrail should pull the headline off the CB-dominated value", capped <= uncapped + 1e-3f)
+    }
 }

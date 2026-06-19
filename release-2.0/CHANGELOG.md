@@ -59,8 +59,37 @@ percentile — not the daily basis the code claimed. Fixed:
 
 ---
 
-## Milestones B & C
-Not started — see `NEXT_RELEASE_PLAN.md` §5. Headlines: live WGC central-bank feed (P1-1),
-retry + fallback data source (P1-2), surface a 2nd instrument via HMAI (P2-5), JVM tests for
-the engine (P2-1), runtime notification permission (P2-2), Credential Manager + `drive.file`
-scope migration (P2-3).
+## Milestone B — An index you can trust (in progress)
+
+### P1-1 — Central Bank: look-ahead-free, transparent, live-ready ◑ (part 1 done; live source pending a decision)
+Probe finding: there is **no** free, on-device, official central-bank *net-purchase* JSON feed.
+IMF's DataMapper API exposes only reserve *ratios* (no absolute gold series); the full IMF IFS
+gold series is per-country (would need ~100-country aggregation on-device); WGC/Goldhub has no
+open API. A true "live WGC feed" therefore runs into the app's no-backend promise — see the open
+decision below.
+
+Shipped this turn (all source-agnostic, so unwasted whatever live source we pick):
+- **Fixed a look-ahead bug.** `cbTonnesEffective` made year Y's full-year figure effective in
+  April **of year Y**, but WGC doesn't publish it until ~Q1 of **Y+1**, so the historical chart/CSV
+  (and the reweight validation) were using up to ~12 months of future data. New `cbEffectiveYear`
+  uses Y−1 from April, Y−2 in Jan–Mar — look-ahead-free, with a test asserting eff-year < as-of-year
+  for every month 2012–2030. Live snapshot today is unchanged (2025 est. = 1000 t → score 84).
+- **Freshness/estimate transparency.** The CB row now reads "… · as of 2024" (actual) or
+  "… · as of 2025 est." so users always see how current the input is.
+- **No-dominance guardrail (P1-1c).** When neither FRED nor DXY is available, CB's weight is
+  halved (0.22 → 0.11) so a slow, near-static series can't dominate a no-key headline — exactly
+  the degraded state seen live (67 → ~59, leaning more on the live Technical read).
+- **Live-feed seam + tests.** `cbTonnesEffective` is the single override point for a future feed;
+  internal helpers exposed for testing. Engine tests now **9/9 green**.
+
+**OPEN DECISION** — how to source a genuinely *live* CB series (the part that makes CB move
+intra-year), given no free WGC API + the no-backend promise:
+  1. Hosted quarterly JSON (dev-curated WGC numbers on e.g. GitHub raw) — real movement, simple,
+     reliable; a minor deviation from strict no-backend (static file, no user data).
+  2. Bundled quarterly in-app, updated via releases — fully no-backend; currency depends on updates.
+  3. IMF IFS aggregation on-device — keeps no-backend but heavy/fragile (per-country sum).
+
+## Milestone C
+Not started — see `NEXT_RELEASE_PLAN.md` §5: retry + fallback data source (P1-2), surface a 2nd
+instrument via HMAI (P2-5), more engine tests (P2-1), runtime notification permission (P2-2),
+Credential Manager + `drive.file` scope migration (P2-3).

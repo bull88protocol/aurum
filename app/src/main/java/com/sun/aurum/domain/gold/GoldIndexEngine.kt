@@ -55,8 +55,15 @@ object GoldIndexEngine {
         val comp5 = scoreTechnical(closes)                   // timing only
 
         val components = listOf(comp1, comp2, comp3, comp4, comp5)
+        // No-dominance guardrail (P1-1c): when none of the FRED/DXY macro drivers are available
+        // (no FRED key AND DXY missing), Central Bank — a slow, mostly-static series — would
+        // otherwise dominate the headline (~39% of a re-normalized 2-component composite). Halve
+        // its effective weight in that degraded case so the live Technical read isn't drowned out
+        // and a no-key view isn't dressed up as a confident macro call.
+        val macroAvailable = comp1.available || comp2.available || comp4.available
+        val cbWeight = if (!macroAvailable && comp3.available) W_CENTRAL * 0.5f else W_CENTRAL
         val weightPairs = listOf(
-            comp1 to W_REAL_YIELD, comp2 to W_USD, comp3 to W_CENTRAL,
+            comp1 to W_REAL_YIELD, comp2 to W_USD, comp3 to cbWeight,
             comp4 to W_INFLATION, comp5 to W_TECHNICAL,
         )
         var wSum = 0f; var wTotal = 0f
@@ -188,11 +195,14 @@ object GoldIndexEngine {
         )
     }
 
-    // WGC net central-bank gold purchases (tonnes/yr). Full-year figures publish in Q1 of the
-    // following year, so each year's number is made effective from April (≈3-month lag) — the same
-    // look-ahead-free series the index reweight was validated on. This replaces the prior pinned
-    // Gemini estimate, which we proved was a constant bias (it can't carry information).
-    // TODO(production): swap in the live WGC quarterly/monthly net-purchase feed for finer timing.
+    // WGC net central-bank gold purchases (tonnes/yr), keyed by the CALENDAR YEAR of the flow.
+    // Full-year figures publish in ~Q1 of the FOLLOWING year, so year Y's number only becomes
+    // public ~April of Y+1 — cbEffectiveYear() encodes exactly that lag (no look-ahead). Values
+    // from WGC Gold Demand Trends; years >= CB_ESTIMATE_FROM_YEAR are round placeholders until the
+    // actuals publish. Replaces the prior pinned Gemini estimate (a proven constant bias).
+    //
+    // LIVE-FEED SEAM (P1-1): cbTonnesEffective() is the single override point for a live quarterly
+    // WGC (or hosted-JSON / IMF-reserves-derived) series. See release-2.0/NEXT_RELEASE_PLAN.md.
     private val cbNetPurchasesByYear: TreeMap<Int, Double> = TreeMap(
         mapOf(
             2009 to -34.0, 2010 to 79.0, 2011 to 481.0, 2012 to 544.0, 2013 to 409.0,
@@ -201,9 +211,18 @@ object GoldIndexEngine {
             2024 to 1045.0, 2025 to 1000.0, 2026 to 1000.0,
         )
     )
+    // First year whose figure is a forward estimate (not yet a published WGC actual).
+    private const val CB_ESTIMATE_FROM_YEAR = 2025
 
-    private fun cbTonnesEffective(year: Int, month: Int): Double {
-        val effYear = if (month >= 4) year else year - 1
+    /**
+     * Calendar year whose net-purchase figure is publicly known as of (year, month). WGC publishes
+     * year Y in ~Q1 of Y+1, so from April Y the latest *known* full year is Y-1; in Jan–Mar Y only
+     * Y-2 is out yet. Look-ahead-free: a point in time never consumes a figure published later.
+     */
+    internal fun cbEffectiveYear(year: Int, month: Int): Int = if (month >= 4) year - 1 else year - 2
+
+    internal fun cbTonnesEffective(year: Int, month: Int): Double {
+        val effYear = cbEffectiveYear(year, month)
         cbNetPurchasesByYear[effYear]?.let { return it }
         val head = cbNetPurchasesByYear.headMap(effYear + 1)
         if (head.isNotEmpty()) return head[head.lastKey()]!!
@@ -214,7 +233,7 @@ object GoldIndexEngine {
     // tonnage bands (net-selling → record-buying), so it is look-ahead-free and stable across
     // regimes — unlike sample min-max scaling, which either leaks the future peak (full-sample) or
     // inflates the calm era (expanding-window).
-    private fun cbScoreFromTonnes(tonnes: Double): Float {
+    internal fun cbScoreFromTonnes(tonnes: Double): Float {
         val anchors = listOf(
             -100.0 to 10f, 0.0 to 28f, 300.0 to 45f, 500.0 to 55f,
             800.0 to 72f, 1100.0 to 90f, 1300.0 to 95f,
@@ -232,13 +251,21 @@ object GoldIndexEngine {
     private fun centralBankScoreAt(dateStr: String): Float =
         cbScoreFromTonnes(cbTonnesEffective(dateStr.substring(0, 4).toInt(), dateStr.substring(5, 7).toInt()))
 
+    // "2024" for a published actual, "2025 est." while the figure is still a forward estimate —
+    // surfaced in the component row so users always see how current the CB input is.
+    private fun cbAsOfLabel(year: Int, month: Int): String {
+        val effYear = cbEffectiveYear(year, month).coerceAtLeast(cbNetPurchasesByYear.firstKey())
+        return if (effYear >= CB_ESTIMATE_FROM_YEAR) "$effYear est." else "$effYear"
+    }
+
     private fun scoreCentralBank(): GoldComponentScore {
         val today  = dateFmt.format(Date())
-        val tonnes = cbTonnesEffective(today.substring(0, 4).toInt(), today.substring(5, 7).toInt())
+        val y = today.substring(0, 4).toInt(); val m = today.substring(5, 7).toInt()
+        val tonnes = cbTonnesEffective(y, m)
         val score  = cbScoreFromTonnes(tonnes)
         return GoldComponentScore(
             name = "Central Bank Demand", score = score, label = toLabel(score),
-            detail = "WGC net buying ≈ ${tonnes.roundToInt()} t/yr",
+            detail = "WGC net buying ≈ ${tonnes.roundToInt()} t/yr · as of ${cbAsOfLabel(y, m)}",
         )
     }
 
