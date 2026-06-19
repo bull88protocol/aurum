@@ -161,7 +161,7 @@ class MainActivity : AppCompatActivity() {
             Adds AI market analysis and daily news.
 
             🔓  Optional — Sign in with Google
-            Switches quotes to real-time Google Finance (otherwise Yahoo Finance is used).
+            Syncs your market data to your own Google Sheet. Quotes always use live Yahoo Finance.
 
             Without the keys:
             The app still runs: the Gold Index uses 3 of its 5 components — USD, Central Bank Demand (built in), and Technicals — and the AI analysis and news sections stay hidden.

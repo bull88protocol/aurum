@@ -58,12 +58,12 @@
 
         </androidx.cardview.widget.CardView>
 
-        <!-- ── Google Finance (via Sign-In) ─────────────────────────────── -->
+        <!-- ── Google Sheets sync (via Sign-In) ─────────────────────────────── -->
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="QUOTE DATA SOURCE"
+            android:text="GOOGLE SHEETS SYNC (OPTIONAL)"
             android:textSize="11sp"
             android:textColor="@color/text_secondary"
             android:letterSpacing="0.1"
@@ -86,7 +86,7 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Google Finance (Real-time)"
+                    android:text="Sync to your own Google Sheet"
                     android:textSize="14sp"
                     android:textStyle="bold"
                     android:textColor="@color/text_primary"
@@ -95,7 +95,7 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Sign in once. The app creates a private Google Sheet with GOOGLEFINANCE() formulas and reads live prices from it — no extra API key needed."
+                    android:text="Sign in to sync your market data to a private Google Sheet in your own Drive. Quotes always use Yahoo Finance (live, incl. pre/after-hours) — no extra key needed."
                     android:textSize="12sp"
                     android:textColor="@color/text_secondary"
                     android:lineSpacingExtra="2dp"

@@ -161,9 +161,9 @@ class SettingsActivity : AppCompatActivity() {
     private fun updateGoogleUI() {
         val signedIn = googleAuth.isSignedIn()
         binding.tvGoogleStatus.text = if (signedIn)
-            "Signed in as ${googleAuth.getEmail()}\nQuotes will use Google Finance (real-time)"
+            "Signed in as ${googleAuth.getEmail()}\nSyncing your market data to your own Google Sheet. Quotes use Yahoo Finance (live)."
         else
-            "Not signed in — quotes will use Yahoo Finance"
+            "Optional — sign in to sync your data to your own Google Sheet. Quotes use Yahoo Finance either way."
         binding.btnGoogleSignIn.visibility  = if (signedIn) View.GONE  else View.VISIBLE
         binding.btnGoogleSignOut.visibility = if (signedIn) View.VISIBLE else View.GONE
     }

@@ -35,23 +35,20 @@ class DataRepository(private val context: Context) {
         onState: (SymbolState) -> Unit,
     ): String? = withContext(Dispatchers.IO) {
         var updatedSheetId: String? = sheetId
-        val googleQuotes: Map<String, QuoteData>
-        var vix: Double?
-
+        // The displayed quote always comes from Yahoo (near-real-time + pre/after-hours). When the
+        // user is signed in we still maintain their own "sync" Sheet, but no longer read its
+        // delayed GOOGLEFINANCE values back for display (GOOGLEFINANCE lags ~20m and has no
+        // extended hours, so it was making the quote worse, not better).
         if (accessToken != null) {
             val result = sheets.fetchLiveQuotes(accessToken, sheetId)
             if (result.sheetId != sheetId) updatedSheetId = result.sheetId
-            googleQuotes = result.quotes
-            vix          = result.vix
-        } else {
-            googleQuotes = emptyMap()
-            vix          = yahoo.fetchVix()
         }
+        val vix: Double? = yahoo.fetchVix()
 
         for (symbol in symbols) {
             try {
                 val (yahooQuote, intraday) = yahoo.fetchIntraday(symbol)
-                val quote   = googleQuotes[symbol] ?: yahooQuote
+                val quote   = yahooQuote
                 val candles = yahoo.fetchDailyCandles(symbol)
 
                 // Use cached Gemini result if fresh; otherwise fetch and cache
@@ -95,7 +92,7 @@ class DataRepository(private val context: Context) {
                     hmaiReport           = hmai,
                     news                 = geminiResult?.news ?: emptyList(),
                     lastUpdated          = System.currentTimeMillis(),
-                    usingGoogleData      = accessToken != null && googleQuotes.containsKey(symbol),
+                    usingGoogleData      = false,   // quote is always Yahoo now; sign-in is sync-only
                     goldIndexReport      = goldIndexReport,
                     geminiSignal         = geminiResult?.signal,
                     geminiScore          = geminiResult?.score,

@@ -61,7 +61,8 @@ each morning; adding a key in Settings refreshes the relevant tabs automatically
   - **Gemini** key — unlocks the AI Brief and News. (Central-Bank Demand now ships built-in
     from a WGC net-purchase series — no key needed.)
   The app degrades gracefully without them.
-- *(Optional)* a Google account for real-time Google Finance quotes + Sheets sync.
+- *(Optional)* a Google account to sync your market data to your own Google Sheet. (Quotes always
+  use live Yahoo Finance, including pre/after-hours.)
 
 ## How to download / install (sideloading the beta)
 

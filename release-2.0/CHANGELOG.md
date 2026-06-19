@@ -116,6 +116,21 @@ near-static CB constant. Fixed:
   lumping a transient network failure under "Not configured".
 - Engine tests now **13/13 green** (added the key-required-vs-data-failure case).
 
+### P1-4 — Honest quote source: Yahoo for display, Google for sync ✅ COMPLETE
+Sign-in was sold as "real-time Google Finance," but `GOOGLEFINANCE` lags ~20 min and has no
+extended hours — and it was *overriding* the better Yahoo quote, so signing in made the quote
+worse and dropped the pre/after-hours badge. Per the decision (Yahoo for quotes, Google for sync):
+- **Behavior:** `DataRepository.fetchAll` now always displays the **Yahoo** quote (near-real-time,
+  keeps pre/after-hours). When signed in it still maintains the user's own Sheet, but no longer
+  reads its delayed GOOGLEFINANCE values back; `usingGoogleData` is always false (badge = YF).
+- **Relabel:** removed every "real-time Google Finance" claim and reframed sign-in as optional
+  **Sheets sync** — Settings (section header, label, description, status line), the Getting Started
+  dialog, README, and APP_GUIDE. (Store listing had no such claim.)
+- No engine changes; 13/13 tests still green.
+
+**Milestone B complete** except the optional **P1-3** (move price/technicals from the GLD ETF to
+spot XAU for 24-h coverage) — deferred unless you want it.
+
 ## Milestone C
 Not started — see `NEXT_RELEASE_PLAN.md` §5: surface a 2nd instrument via HMAI (P2-5), more
 engine tests (P2-1), runtime notification permission (P2-2), Credential Manager + `drive.file`
