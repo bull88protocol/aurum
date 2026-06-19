@@ -13,6 +13,9 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.biometric.BiometricPrompt
 import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updatePadding
 import com.google.android.material.tabs.TabLayoutMediator
 import com.sun.aurum.data.BiometricAuth
 import com.sun.aurum.databinding.ActivityMainBinding
@@ -40,6 +43,23 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         setSupportActionBar(binding.toolbar)
+
+        // Edge-to-edge (targetSdk 35 / Android 15): without this the toolbar draws *under* the
+        // status bar, so its title + overflow/settings menu overlap the system pull-down zone and
+        // aren't tappable. Pad the app bar down by the status-bar inset, and pad the content up off
+        // the navigation bar.
+        ViewCompat.setOnApplyWindowInsetsListener(binding.appBarLayout) { v, insets ->
+            v.updatePadding(top = insets.getInsets(WindowInsetsCompat.Type.systemBars()).top)
+            insets
+        }
+        // Bottom: the tagline footer is the bottom-most view, so the nav bar overlaps it. Pad it
+        // down by the nav-bar inset (added to its base padding) — its surface background fills the
+        // gesture/nav-bar strip while the tagline text stays above it.
+        val taglineBasePadBottom = binding.tvTagline.paddingBottom
+        ViewCompat.setOnApplyWindowInsetsListener(binding.tvTagline) { v, insets ->
+            v.updatePadding(bottom = taglineBasePadBottom + insets.getInsets(WindowInsetsCompat.Type.systemBars()).bottom)
+            insets
+        }
 
         biometricAuth = BiometricAuth(this)
 

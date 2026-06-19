@@ -166,6 +166,16 @@ Gold Index — gets its own tab and earns the engine its keep.
 - Follow-ups: add a Dollar-tab store screenshot; minor — DXY daily candles are now fetched twice
   per refresh (once for its HMAI, once for the Gold Index) and could be shared.
 
+### Fix — edge-to-edge insets, top & bottom (found during on-device testing) ✅
+The targetSdk-35 (Android 15) edge-to-edge change drew the toolbar *under* the status bar **and**
+the tagline footer *under* the nav bar — so the title + settings/overflow menu overlapped the
+system pull-down zone (swiping there opened the notification shade) and the footer sat under the
+gesture bar. `MainActivity` now applies `WindowInsets`: the app bar is padded down by the
+status-bar inset (with a `surface` background so the strip matches) and the `tvTagline` footer is
+padded down by the nav-bar inset (its surface fills the strip, text above). Verified on-device:
+title at y=155 (below the status bar) and footer spanning y=2256–2400 with the nav-bar strip
+absorbed as padding.
+
 Remaining — see `NEXT_RELEASE_PLAN.md` §5: more engine tests (P2-1), the optional Credential
 Manager migration + `GET_ACCOUNTS` drop (P2-3 follow-up), Jetpack-Security migration (P2-4), and
 the small code cleanups (dedup the GLD fetch block, branded notification icon, chart timezone).
