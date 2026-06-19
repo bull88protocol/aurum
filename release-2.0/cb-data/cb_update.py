@@ -118,14 +118,26 @@ def show(quarterly):
 
 def git_push():
     rel = os.path.relpath(DATA, ROOT)
-    try:
-        subprocess.run(["git", "-C", ROOT, "add", rel], check=True)
-        subprocess.run(["git", "-C", ROOT, "commit", "-m", f"Update CB feed ({rel})"], check=True)
-        subprocess.run(["git", "-C", ROOT, "push"], check=True)
+
+    def git(*a, **k):
+        return subprocess.run(["git", "-C", ROOT, *a], **k)
+
+    git("add", rel)
+    # Re-entered the same value? Nothing is staged — don't error out.
+    if git("diff", "--cached", "--quiet", "--", rel).returncode == 0:
+        print("Nothing to commit — the file already has these values.")
+        return
+    if git("commit", "-m", f"Update CB feed ({rel})", "--", rel).returncode != 0:
+        print(f"commit failed; run it manually:  git commit -- {rel}")
+        return
+    branch = git("rev-parse", "--abbrev-ref", "HEAD", capture_output=True, text=True).stdout.strip()
+    if git("push").returncode == 0:
         print("✓ committed + pushed.")
-    except subprocess.CalledProcessError as e:
-        print(f"git step failed ({e}); commit/push manually:\n"
-              f"  git add {rel} && git commit -m 'Update CB feed' && git push")
+    else:
+        print(f"✓ committed locally on '{branch}', but push didn't run (no upstream yet).")
+        print(f"  The app reads the data file from the 'master' branch, so it goes live when")
+        print(f"  '{branch}' reaches master (e.g. the v2.0 merge). To push this branch now:")
+        print(f"    git push -u origin {branch}")
 
 
 def main():
