@@ -97,8 +97,41 @@ class GeminiClient {
 
     private data class SessionDate(val shortLabel: String, val longLabel: String)
 
-    private fun buildPrompt(symbol: String, lastSession: String, nextSession: String) = """
-        You are a financial analyst. Search for real-time information about $symbol stock.
+    private fun buildPrompt(symbol: String, lastSession: String, nextSession: String): String =
+        if (symbol == "GLD") goldPrompt(lastSession, nextSession)
+        else genericPrompt(symbol, lastSession, nextSession)
+
+    // Gold-as-macro-asset brief. Gold is not a stock, so steer the model toward the real drivers
+    // (real yields, the dollar, Fed policy, inflation, central-bank/ETF flows) instead of company
+    // news or generic equity-index recaps. Same JSON schema as genericPrompt for shared parsing.
+    private fun goldPrompt(lastSession: String, nextSession: String) = """
+        You are a senior precious-metals analyst. Research the current state of GOLD
+        (spot gold / XAU-USD; the GLD ETF tracks it) using real-time sources.
+        Last closed trading session: $lastSession.
+        Next trading session: $nextSession.
+
+        Provide a daily gold market brief covering exactly these two sessions. Return ONLY a valid JSON object — no markdown, no code fences:
+        {
+          "signal": "BULLISH" or "NEUTRAL" or "BEARISH",
+          "score": integer 0-100 (100=extremely bullish for gold, 50=neutral, 0=extremely bearish),
+          "description": "2-3 sentence summary of gold's current macro setup",
+          "key_factors": ["brief factor 1", "brief factor 2", "brief factor 3"],
+          "yesterday_recap": "3-4 sentences on how gold traded on $lastSession — the actual closing price/level and % change, plus the main drivers (real yields, the US dollar/DXY, Fed commentary, inflation data, geopolitics, ETF or central-bank flows). One sentence on broader risk sentiment if relevant.",
+          "today_outlook": "3-4 sentences on what could move gold on $nextSession — scheduled macro releases (CPI, jobs, FOMC), Fed speakers, the likely direction of the dollar and real yields, and key technical support/resistance levels to watch.",
+          "news": [
+            {"headline": "...", "summary": "1-2 sentence summary", "source": "publisher name", "url": "https://actual-article-url.com/...", "date": "YYYY-MM-DD"},
+            {"headline": "...", "summary": "...", "source": "...", "url": "https://...", "date": "YYYY-MM-DD"},
+            {"headline": "...", "summary": "...", "source": "...", "url": "https://...", "date": "YYYY-MM-DD"},
+            {"headline": "...", "summary": "...", "source": "...", "url": "https://...", "date": "YYYY-MM-DD"},
+            {"headline": "...", "summary": "...", "source": "...", "url": "https://...", "date": "YYYY-MM-DD"}
+          ]
+        }
+        Rules: Include the 5 most impactful GOLD / macro news items from the past 7 days (real article URLs). Be specific — cite actual gold prices/levels, percentages, yields, and events. Focus on gold and its macro drivers, not unrelated single stocks.
+    """.trimIndent()
+
+    // Generic instrument brief — used only if a non-gold symbol is surfaced (HMAI engine, v2.0).
+    private fun genericPrompt(symbol: String, lastSession: String, nextSession: String) = """
+        You are a financial analyst. Search for real-time information about $symbol.
         Last closed trading session: $lastSession.
         Next trading session: $nextSession.
 
@@ -106,20 +139,19 @@ class GeminiClient {
         {
           "signal": "BULLISH" or "NEUTRAL" or "BEARISH",
           "score": integer 0-100 (100=extremely bullish, 50=neutral, 0=extremely bearish),
-          "description": "2-3 sentence overall market sentiment summary for $symbol",
+          "description": "2-3 sentence overall sentiment summary for $symbol",
           "key_factors": ["brief factor 1", "brief factor 2", "brief factor 3"],
-          "yesterday_recap": "3-4 sentences about $symbol on $lastSession — actual closing price and % change for that session, the key reason(s) it moved, any company-specific news. Also briefly mention what the broader market (S&P 500, Nasdaq) did and why.",
-          "today_outlook": "3-4 sentences about what could affect $symbol on $nextSession — upcoming catalysts (earnings, analyst events, product launches), relevant macro data releases (Fed, CPI, jobs), sector trends, key technical support/resistance levels to watch.",
+          "yesterday_recap": "3-4 sentences about $symbol on $lastSession — actual closing price and % change for that session, the key reason(s) it moved, and any directly relevant news. Briefly mention broader market direction if relevant.",
+          "today_outlook": "3-4 sentences about what could affect $symbol on $nextSession — upcoming catalysts, relevant macro data releases (Fed, CPI, jobs), sector trends, and key technical support/resistance levels to watch.",
           "news": [
             {"headline": "...", "summary": "1-2 sentence summary", "source": "publisher name", "url": "https://actual-article-url.com/...", "date": "YYYY-MM-DD"},
             {"headline": "...", "summary": "...", "source": "...", "url": "https://...", "date": "YYYY-MM-DD"},
             {"headline": "...", "summary": "...", "source": "...", "url": "https://...", "date": "YYYY-MM-DD"},
             {"headline": "...", "summary": "...", "source": "...", "url": "https://...", "date": "YYYY-MM-DD"},
             {"headline": "...", "summary": "...", "source": "...", "url": "https://...", "date": "YYYY-MM-DD"}
-          ]${if (symbol == "GLD") """,
-          "central_bank_score": 0""" else ""}
+          ]
         }
-        Rules: Include the 5 most impactful news items from the past 7 days. Provide real article URLs. Be specific — name actual prices, percentages, events.${if (symbol == "GLD") "\n        For central_bank_score: integer 0-100 (100=peak central bank gold buying, 50=neutral, 0=net selling; based on latest WGC data and central bank news)." else ""}
+        Rules: Include the 5 most impactful news items from the past 7 days. Provide real article URLs. Be specific — name actual prices, percentages, events.
     """.trimIndent()
 
     private fun buildRequestBody(prompt: String): JSONObject {

@@ -158,13 +158,13 @@ class MainActivity : AppCompatActivity() {
             Adds the Real Yield and Inflation drivers — two of the biggest inputs to the Gold Index.
 
             🔑  Gemini key  (free tier, no card)
-            Adds AI market analysis, daily news, and the Central Bank Demand pillar.
+            Adds AI market analysis and daily news.
 
             🔓  Optional — Sign in with Google
             Switches quotes to real-time Google Finance (otherwise Yahoo Finance is used).
 
             Without the keys:
-            The app still runs, but the Gold Index uses only 2 of its 5 pillars (USD + Technicals), and the AI analysis and news sections stay hidden.
+            The app still runs: the Gold Index uses 3 of its 5 components — USD, Central Bank Demand (built in), and Technicals — and the AI analysis and news sections stay hidden.
 
             Tip: pull down on any tab to refresh. Step-by-step links to grab both keys are in Settings.
         """.trimIndent()

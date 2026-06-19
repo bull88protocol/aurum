@@ -57,7 +57,7 @@ data class GeminiResult(
     val description: String,      // overall sentiment summary
     val keyFactors: List<String>,
     val news: List<NewsItem>,     // top 3, < 7 days old, with URLs
-    val yesterdayRecap: String = "",   // what moved the stock + market last session
+    val yesterdayRecap: String = "",   // what moved the asset + market last session
     val todayOutlook: String = "",     // what could affect next session
     val lastSessionLabel: String = "", // e.g. "March 17" — the last closed trading session
     val nextSessionLabel: String = "", // e.g. "March 18" — the next/upcoming trading session

@@ -24,8 +24,8 @@ import kotlinx.coroutines.withContext
 class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     companion object {
-        // Aurum is gold-first: the hero tab is GLD (the Gold Index). The Search
-        // tab lets pro traders pull related instruments (DXY, GDX, miners, etc.).
+        // Aurum surfaces one instrument today: GLD (the Gold Index). v2.0 adds a second
+        // instrument via the HMAI engine — see release-2.0/NEXT_RELEASE_PLAN.md.
         val SYMBOLS = listOf("GLD")
 
         fun displayName(symbol: String): String = when (symbol) {

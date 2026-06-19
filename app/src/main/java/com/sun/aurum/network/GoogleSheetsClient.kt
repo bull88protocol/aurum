@@ -13,16 +13,16 @@ import java.util.concurrent.TimeUnit
  * Reads live GOOGLEFINANCE() data from a Google Sheet owned by the signed-in user.
  *
  * On first call the app creates a sheet titled "Aurum Market Data" and
- * writes GOOGLEFINANCE formulas for GOOG, SMH, NVDA, GLD and VIX (INDEXCBOE:VIX).
+ * writes GOOGLEFINANCE formulas for GLD and VIX (INDEXCBOE:VIX).
  * On subsequent calls it just reads the already-populated values.
  *
- * Sheet layout (Quotes tab, rows 1-6):
+ * Sheet layout (Quotes tab, rows 1-3):
  *   Row 1 : headers
- *   Row 2 : GOOG  | price | change | (unused) | high | low | open | volume | prevClose
- *   Row 3 : SMH   | ...
- *   Row 4 : NVDA  | ...
- *   Row 5 : GLD   | ...
- *   Row 6 : VIX   | price
+ *   Row 2 : GLD   | price | change | (unused) | high | low | open | volume | prevClose
+ *   Row 3 : VIX   | price
+ *
+ * VIX is kept for the HMAI engine (a v2.0 second instrument); the Gold Index itself
+ * doesn't consume it.
  */
 class GoogleSheetsClient {
 
@@ -39,12 +39,9 @@ class GoogleSheetsClient {
 
     // GOOGLEFINANCE exchange-qualified tickers
     private val GF_TICKER = mapOf(
-        "GOOG" to "NASDAQ:GOOG",
-        "SMH"  to "NASDAQ:SMH",
-        "NVDA" to "NASDAQ:NVDA",
-        "GLD"  to "NYSE:GLD",
+        "GLD" to "NYSE:GLD",
     )
-    private val SYMBOLS = listOf("GOOG", "SMH", "NVDA", "GLD")
+    private val SYMBOLS = listOf("GLD")
 
     /**
      * Fetches live quotes using the provided OAuth [token].
@@ -68,7 +65,7 @@ class GoogleSheetsClient {
 
     private fun tryRead(token: String, sheetId: String): Pair<Map<String, QuoteData>, Double?>? {
         val url = "https://sheets.googleapis.com/v4/spreadsheets/$sheetId" +
-                "/values/Quotes!A2:I6?valueRenderOption=UNFORMATTED_VALUE"
+                "/values/Quotes!A2:I3?valueRenderOption=UNFORMATTED_VALUE"
         return try {
             val req = Request.Builder()
                 .url(url)
@@ -172,11 +169,11 @@ class GoogleSheetsClient {
 
         val body = JSONObject()
             .put("values", values)
-            .put("range", "Quotes!A1:I6")
+            .put("range", "Quotes!A1:I3")
             .put("majorDimension", "ROWS")
 
         val req = Request.Builder()
-            .url("https://sheets.googleapis.com/v4/spreadsheets/$sheetId/values/Quotes!A1:I6?valueInputOption=USER_ENTERED")
+            .url("https://sheets.googleapis.com/v4/spreadsheets/$sheetId/values/Quotes!A1:I3?valueInputOption=USER_ENTERED")
             .put(body.toString().toRequestBody("application/json".toMediaType()))
             .header("Authorization", "Bearer $token")
             .build()
