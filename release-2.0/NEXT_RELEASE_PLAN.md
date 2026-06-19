@@ -52,9 +52,10 @@ its HMAI card, and the Gold tab shows the new CB freshness label). Per-item deta
 | **P2-2** request `POST_NOTIFICATIONS` at runtime (Android 13+) | ✅ done | `880c9bc` |
 | **P2-3** least-privilege `drive.file` scope swap | ✅ done | `d46b371` |
 | **P2-3+** Credential Manager migration + drop `GET_ACCOUNTS` | ⬜ deferred (needs on-device auth test) | — |
-| **P2-4** migrate off alpha/deprecated `EncryptedSharedPreferences` → Android Keystore + migration | ✅ done + verified on phone | `<this turn>` |
+| **P2-4** migrate off alpha/deprecated `EncryptedSharedPreferences` → Android Keystore + migration | ✅ done + verified on phone | `dc8e540` |
 | **P2-5** surface a 2nd instrument (DXY via HMAI) | ✅ done + verified on phone | `8c6da81` |
 | **P2-5 cleanups** dedup GLD fetch block · branded notif icon · chart timezone | ⬜ remaining | — |
+| **Fix** edge-to-edge insets (Android 15): toolbar + footer were under the system bars | ✅ done + verified on phone | `57b0fe2` |
 
 **Milestones: A ✅ · B ✅** (P1-3 optional) **· C nearly done** — P2-2/P2-3/P2-4/P2-5 done, P2-1
 partial; the cleanups and the optional Credential Manager follow-up remain.
