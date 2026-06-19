@@ -44,7 +44,7 @@ class MainActivity : AppCompatActivity() {
         biometricAuth = BiometricAuth(this)
 
         binding.viewPager.adapter = QuotePagerAdapter(this)
-        binding.viewPager.offscreenPageLimit = 2   // keep all three section tabs alive
+        binding.viewPager.offscreenPageLimit = 3   // keep all four tabs alive
         TabLayoutMediator(binding.tabLayout, binding.viewPager) { tab, pos ->
             tab.text = QuotePagerAdapter.TAB_TITLES[pos]
         }.attach()

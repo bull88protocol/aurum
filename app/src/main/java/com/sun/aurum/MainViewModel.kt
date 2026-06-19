@@ -25,13 +25,14 @@ import kotlinx.coroutines.withContext
 class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     companion object {
-        // Aurum surfaces one instrument today: GLD (the Gold Index). v2.0 adds a second
-        // instrument via the HMAI engine — see release-2.0/NEXT_RELEASE_PLAN.md.
-        val SYMBOLS = listOf("GLD")
+        // Gold is the hero (GLD → the Gold Index). DX-Y.NYB (the US Dollar Index) is surfaced as a
+        // second instrument through the HMAI engine — the dollar is gold's key inverse driver.
+        val SYMBOLS = listOf("GLD", "DX-Y.NYB")
 
         fun displayName(symbol: String): String = when (symbol) {
-            "GLD" -> "Gold"
-            else  -> symbol
+            "GLD"      -> "Gold"
+            "DX-Y.NYB" -> "Dollar (DXY)"
+            else       -> symbol
         }
     }
 

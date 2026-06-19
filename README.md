@@ -27,7 +27,7 @@ what is stored where.
 
 ## What it does
 
-It distills the gold macro picture into one number and a clear read, across three tabs:
+It distills the gold macro picture into one number and a clear read, across four tabs:
 
 - **Gold** — a composite **0–100 Gold Index** from five components, weighted the way
   a commodity macro desk weights them:
@@ -43,6 +43,9 @@ It distills the gold macro picture into one number and a clear read, across thre
   next-session outlook, and the key factors moving gold *(needs a free Gemini key)*.
 - **News** — the day's most relevant gold headlines, with source links
   *(needs a free Gemini key)*.
+- **Dollar** — the US Dollar Index (DXY), gold's key inverse driver, read through a
+  6-pillar technical engine (trend, momentum, probability, sentiment, valuation,
+  coherence) with a market-stress circuit breaker. No key needed.
 
 **Pull down on any tab to refresh.** Data is cached for instant open and auto-refreshes
 each morning; adding a key in Settings refreshes the relevant tabs automatically.

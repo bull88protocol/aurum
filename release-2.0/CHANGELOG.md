@@ -153,9 +153,22 @@ spreadsheets — which triggers Google's OAuth verification for production) was 
 - `PRIVACY.md` §4 updated to state the per-file scope (can't see your other Drive files).
 - compile + tests green.
 
-Remaining — see `NEXT_RELEASE_PLAN.md` §5: surface a 2nd instrument via HMAI (P2-5), more engine
-tests (P2-1), the optional Credential Manager migration + `GET_ACCOUNTS` drop (P2-3 follow-up),
-Jetpack-Security migration (P2-4), and small cleanups (P2-5).
+### P2-5 — Surface a 2nd instrument (HMAI engine) ✅ COMPLETE
+The 6-pillar HMAI engine + circuit breaker were fully built but unreachable (only GLD was
+surfaced). Now the **US Dollar Index (DXY)** — gold's key inverse driver, already fetched for the
+Gold Index — gets its own tab and earns the engine its keep.
+- `MainViewModel.SYMBOLS` adds `DX-Y.NYB` ("Dollar (DXY)"); a 4th pager tab ("Dollar") hosts a
+  `QuoteFragment` rendering its quote + intraday chart + the HMAI card (trend/momentum/probability/
+  sentiment/valuation/coherence + a market-stress circuit breaker). All reused existing rendering.
+- Gemini brief/news stays **gold-only** (gated to GLD in `DataRepository`) — the Dollar tab runs
+  HMAI on candles + VIX with no AI call, so no added cost and no "DX-Y.NYB" ticker sent to Gemini.
+- assembleDebug + 13/13 tests green; verified DXY has live intraday + daily data.
+- Follow-ups: add a Dollar-tab store screenshot; minor — DXY daily candles are now fetched twice
+  per refresh (once for its HMAI, once for the Gold Index) and could be shared.
+
+Remaining — see `NEXT_RELEASE_PLAN.md` §5: more engine tests (P2-1), the optional Credential
+Manager migration + `GET_ACCOUNTS` drop (P2-3 follow-up), Jetpack-Security migration (P2-4), and
+the small code cleanups (dedup the GLD fetch block, branded notification icon, chart timezone).
 
 ---
 

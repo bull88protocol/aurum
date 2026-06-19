@@ -51,8 +51,10 @@ class DataRepository(private val context: Context) {
                 val quote   = yahooQuote
                 val candles = yahoo.fetchDailyCandles(symbol)
 
-                // Use cached Gemini result if fresh; otherwise fetch and cache
-                val geminiResult = if (geminiKey.isNotBlank()) {
+                // Gemini brief/news is gold-only (the AI Brief & News tabs are about gold). The
+                // second instrument (DXY) runs HMAI without it — no wasted AI call, no ticker
+                // like "DX-Y.NYB" sent to the model.
+                val geminiResult = if (symbol == "GLD" && geminiKey.isNotBlank()) {
                     val cached = if (!forceGemini) GeminiCache.load(context, symbol) else null
                     cached ?: gemini.fetchAnalysisAndNews(symbol, geminiKey)?.also { fresh ->
                         GeminiCache.save(context, symbol, fresh)
@@ -115,7 +117,7 @@ class DataRepository(private val context: Context) {
         val (yahooQuote, intraday) = yahoo.fetchIntraday(symbol)
         val candles      = yahoo.fetchDailyCandles(symbol)
         val vix          = yahoo.fetchVix()
-        val geminiResult = if (geminiKey.isNotBlank()) {
+        val geminiResult = if (symbol == "GLD" && geminiKey.isNotBlank()) {
             val cached = GeminiCache.load(context, symbol)
             cached ?: gemini.fetchAnalysisAndNews(symbol, geminiKey)?.also { fresh ->
                 GeminiCache.save(context, symbol, fresh)
