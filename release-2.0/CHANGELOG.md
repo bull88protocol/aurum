@@ -193,10 +193,31 @@ uses the **Android Keystore directly**:
   refresh confirmed FRED still works (Real Yield 5/100, not "key required"). assembleDebug + 13/13
   tests green.
 
-Remaining — see `NEXT_RELEASE_PLAN.md` §5: more engine tests (P2-1), the optional Credential
-Manager migration + `GET_ACCOUNTS` drop (P2-3 follow-up), and the small code cleanups (dedup the
-GLD fetch block, branded notification icon, chart timezone). Plus a later release can drop the
-`security-crypto` dependency once testers have upgraded past this build.
+Remaining — see `NEXT_RELEASE_PLAN.md` §5: more engine tests (P2-1) and the optional Credential
+Manager migration + `GET_ACCOUNTS` drop (P2-3 follow-up). Plus a later release can drop the
+`security-crypto` dependency once testers have upgraded past the P2-4 build. (The small code
+cleanups — the `DataRepository` dedup, branded notification icon, and chart timezone — are now
+done; see the next section.)
+
+### P2-5 cleanups — dedup, branded notification icon, chart timezone ✅ COMPLETE
+The three small code follow-ups flagged after P2-5:
+- **`DataRepository` dedup.** `fetchAll` (batch refresh) and `fetchSymbol` (single-tab refresh)
+  each carried a near-identical copy of the per-symbol pipeline — Yahoo quote/intraday/candles, the
+  gold-only Gemini gate, HMAI, the GLD Gold-Index block, and the 18-field `SymbolState`. Extracted
+  one private `buildSymbolState(symbol, geminiKey, fredKey, vix, forceGemini)` that both call:
+  `fetchAll` reuses a single `vix` fetch across the batch, `fetchSymbol` passes `forceGemini=false`.
+  ~57 lines of duplication gone, behavior unchanged. (The *separate* cross-symbol DXY double-fetch —
+  DX-Y.NYB daily candles pulled once for the Gold Index and once for the Dollar tab's HMAI — is a
+  different redundancy and is still open; minor.)
+- **Branded notification icon.** The daily notification used the stock framework
+  `android.R.drawable.ic_dialog_info`; it now uses a dedicated monochrome `ic_notification` (a
+  gold-ingot silhouette, drawn as a white alpha mask so the status bar renders it correctly).
+- **Chart x-axis timezone.** `GoldIndexChartView` derived its month labels from a device-local
+  `Calendar` + `SimpleDateFormat`, so a daily bar near a month boundary could be labelled in the
+  wrong month for users far from ET. Both are now anchored to `America/New_York`, matching the US
+  trading session the bars actually come from, on any device.
+
+assembleDebug + 13/13 tests green.
 
 ---
 

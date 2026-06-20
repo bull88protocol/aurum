@@ -47,64 +47,7 @@ class DataRepository(private val context: Context) {
 
         for (symbol in symbols) {
             try {
-                val (yahooQuote, intraday) = yahoo.fetchIntraday(symbol)
-                val quote   = yahooQuote
-                val candles = yahoo.fetchDailyCandles(symbol)
-
-                // Gemini brief/news is gold-only (the AI Brief & News tabs are about gold). The
-                // second instrument (DXY) runs HMAI without it — no wasted AI call, no ticker
-                // like "DX-Y.NYB" sent to the model.
-                val geminiResult = if (symbol == "GLD" && geminiKey.isNotBlank()) {
-                    val cached = if (!forceGemini) GeminiCache.load(context, symbol) else null
-                    cached ?: gemini.fetchAnalysisAndNews(symbol, geminiKey)?.also { fresh ->
-                        GeminiCache.save(context, symbol, fresh)
-                    }
-                } else null
-
-                val hmai = if (symbol != "GLD" && candles.size >= 50)
-                    HmaiEngine.compute(symbol, candles, vix, geminiResult)
-                else null
-
-                val goldIndexReport = if (symbol == "GLD") {
-                    val dxyCandles = yahoo.fetchDailyCandles("DX-Y.NYB")
-                    val threeYearsAgo = run {
-                        val cal = java.util.Calendar.getInstance()
-                        cal.add(java.util.Calendar.YEAR, -3)
-                        java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(cal.time)
-                    }
-                    val realYield = if (fredKey.isNotBlank()) fred.fetchSeries("DFII10", fredKey, startDate = threeYearsAgo) else emptyList()
-                    val inflation = if (fredKey.isNotBlank()) fred.fetchSeries("T10YIE", fredKey, startDate = threeYearsAgo) else emptyList()
-                    val cbQuarterly = CentralBankClient.loadCached(context)
-                    val inputs = GoldIndexEngine.Inputs(
-                        gldCandles        = candles,
-                        dxyCandles        = dxyCandles,
-                        realYield         = realYield,
-                        inflation         = inflation,
-                        cbQuarterly       = cbQuarterly,
-                    )
-                    GoldIndexEngine.compute(inputs)
-                } else null
-
-                onState(SymbolState(
-                    symbol               = symbol,
-                    loading              = false,
-                    error                = if (quote == null && candles.isEmpty()) "Failed to fetch data" else null,
-                    quote                = quote,
-                    intradayPoints       = intraday,
-                    hmaiReport           = hmai,
-                    news                 = geminiResult?.news ?: emptyList(),
-                    lastUpdated          = System.currentTimeMillis(),
-                    usingGoogleData      = false,   // quote is always Yahoo now; sign-in is sync-only
-                    goldIndexReport      = goldIndexReport,
-                    geminiSignal         = geminiResult?.signal,
-                    geminiScore          = geminiResult?.score,
-                    geminiDescription    = geminiResult?.description,
-                    geminiKeyFactors     = geminiResult?.keyFactors ?: emptyList(),
-                    geminiYesterdayRecap = geminiResult?.yesterdayRecap,
-                    geminiTodayOutlook   = geminiResult?.todayOutlook,
-                    lastSessionLabel     = geminiResult?.lastSessionLabel,
-                    nextSessionLabel     = geminiResult?.nextSessionLabel,
-                ))
+                onState(buildSymbolState(symbol, geminiKey, fredKey, vix, forceGemini))
             } catch (e: Exception) {
                 onState(SymbolState(symbol = symbol, loading = false, error = e.message ?: "Error"))
             }
@@ -113,16 +56,38 @@ class DataRepository(private val context: Context) {
     }
 
     /** Fetches a single symbol using Yahoo Finance + Gemini brief (cache or fresh). */
-    suspend fun fetchSymbol(symbol: String, geminiKey: String, fredKey: String = ""): SymbolState = withContext(Dispatchers.IO) {
+    suspend fun fetchSymbol(symbol: String, geminiKey: String, fredKey: String = ""): SymbolState =
+        withContext(Dispatchers.IO) {
+            buildSymbolState(symbol, geminiKey, fredKey, vix = yahoo.fetchVix(), forceGemini = false)
+        }
+
+    /**
+     * Fetches one symbol from Yahoo (quote + intraday + daily candles), runs the appropriate engine
+     * (the Gold Index for GLD, HMAI for the other instruments), and assembles its [SymbolState].
+     * Shared by [fetchAll] (batch refresh, reusing one [vix] fetch across symbols) and [fetchSymbol]
+     * (single-tab refresh). [vix] feeds HMAI's market-stress read; [forceGemini] bypasses the Gemini
+     * cache so a new day gets a fresh briefing.
+     */
+    private suspend fun buildSymbolState(
+        symbol: String,
+        geminiKey: String,
+        fredKey: String,
+        vix: Double?,
+        forceGemini: Boolean,
+    ): SymbolState {
         val (yahooQuote, intraday) = yahoo.fetchIntraday(symbol)
-        val candles      = yahoo.fetchDailyCandles(symbol)
-        val vix          = yahoo.fetchVix()
+        val candles = yahoo.fetchDailyCandles(symbol)
+
+        // Gemini brief/news is gold-only (the AI Brief & News tabs are about gold). The second
+        // instrument (DXY) runs HMAI without it — no wasted AI call, no ticker like "DX-Y.NYB"
+        // sent to the model.
         val geminiResult = if (symbol == "GLD" && geminiKey.isNotBlank()) {
-            val cached = GeminiCache.load(context, symbol)
+            val cached = if (!forceGemini) GeminiCache.load(context, symbol) else null
             cached ?: gemini.fetchAnalysisAndNews(symbol, geminiKey)?.also { fresh ->
                 GeminiCache.save(context, symbol, fresh)
             }
         } else null
+
         val hmai = if (symbol != "GLD" && candles.size >= 50)
             HmaiEngine.compute(symbol, candles, vix, geminiResult)
         else null
@@ -147,7 +112,7 @@ class DataRepository(private val context: Context) {
             GoldIndexEngine.compute(inputs)
         } else null
 
-        SymbolState(
+        return SymbolState(
             symbol               = symbol,
             loading              = false,
             error                = if (yahooQuote == null && candles.isEmpty()) "Failed to fetch data" else null,
@@ -156,7 +121,7 @@ class DataRepository(private val context: Context) {
             hmaiReport           = hmai,
             news                 = geminiResult?.news ?: emptyList(),
             lastUpdated          = System.currentTimeMillis(),
-            usingGoogleData      = false,
+            usingGoogleData      = false,   // quote is always Yahoo now; sign-in is sync-only
             goldIndexReport      = goldIndexReport,
             geminiSignal         = geminiResult?.signal,
             geminiScore          = geminiResult?.score,

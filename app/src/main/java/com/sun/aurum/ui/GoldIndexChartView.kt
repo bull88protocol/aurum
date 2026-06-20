@@ -50,7 +50,10 @@ class GoldIndexChartView @JvmOverloads constructor(
         textSize = 13f * dp; textAlign = Paint.Align.CENTER
     }
 
-    private val monthFmt = SimpleDateFormat("MMM", Locale.US)
+    // Yahoo daily bars are US-exchange trading days, so label the x-axis in Eastern Time — the
+    // month a bar falls in then matches its trading session regardless of the device's timezone.
+    private val etZone = TimeZone.getTimeZone("America/New_York")
+    private val monthFmt = SimpleDateFormat("MMM", Locale.US).apply { timeZone = etZone }
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
@@ -109,7 +112,7 @@ class GoldIndexChartView @JvmOverloads constructor(
         val labelY = padT + chartH + 13f * dp
         var lastMonth = -1
         for (i in points.indices) {
-            val cal = Calendar.getInstance()
+            val cal = Calendar.getInstance(etZone)
             cal.timeInMillis = points[i].dateMs
             val month = cal.get(Calendar.MONTH)
             if (month != lastMonth) {

@@ -11,7 +11,8 @@ _Last updated: 2026-06-19._
 
 - **Branch:** `release-2.0` (cut from `master` @ 1.3.0-beta / versionCode 5). **`master` is frozen**
   on the Play-submitted build — do all v2.0 work on `release-2.0`.
-- **Head commit:** `dc8e540` (P2-4). 14 commits on the branch.
+- **Head commit:** P2-5 cleanups (`DataRepository` dedup + branded notification icon + chart TZ).
+  15 commits on the branch.
 - **Build status:** `assembleDebug` clean; **13/13** JVM engine tests green
   (`./gradlew :app:testDebugUnitTest`).
 - **On the test phone (adb `44251JEKB01464`):** the v2.0 **debug** build (versionCode 5) is
@@ -19,13 +20,14 @@ _Last updated: 2026-06-19._
   migrated, edge-to-edge top/bottom fixed.
 
 ## Done (all verified on-device)
-All **P0** (1,2,3), all **P1** (1,2,4; P1-3 optional), **P2-2, P2-3, P2-4, P2-5**, plus an
-edge-to-edge inset fix. See the status table in `NEXT_RELEASE_PLAN.md` §0.5 for per-item commits.
+All **P0** (1,2,3), all **P1** (1,2,4; P1-3 optional), **P2-2, P2-3, P2-4, P2-5**, an edge-to-edge
+inset fix, and the **P2-5 cleanups** (`DataRepository` dedup, branded notification icon, chart
+timezone). See the status table in `NEXT_RELEASE_PLAN.md` §0.5 for per-item commits.
 
 ## Remaining (all minor / optional)
-1. **P2-5 cleanups** — dedup the duplicated GLD fetch block in `DataRepository` (`fetchAll` vs
-   `fetchSymbol`), a branded notification icon (currently `android.R.drawable.ic_dialog_info`), and
-   the `GoldIndexChartView` x-axis timezone (device-local vs ET).
+1. **P2-5 follow-up (minor)** — DX-Y.NYB daily candles are fetched twice per batch refresh (once for
+   the Gold Index, once for the Dollar tab's HMAI) and could be shared. (The `fetchAll`/`fetchSymbol`
+   dedup, notification icon, and chart timezone cleanups are now done — see `CHANGELOG.md`.)
 2. **P2-1** — broaden engine tests (currently 13).
 3. **Optional:** P1-3 (move price/technicals from the GLD ETF to spot XAU), P1-5 (RSI mean-reversion
    philosophy + RY/USD window asymmetry notes), P2-3 follow-up (Credential Manager migration + drop

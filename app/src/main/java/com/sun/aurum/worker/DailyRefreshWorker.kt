@@ -9,6 +9,7 @@ import androidx.core.app.NotificationCompat
 import androidx.work.*
 import com.sun.aurum.MainActivity
 import com.sun.aurum.MainViewModel
+import com.sun.aurum.R
 import com.sun.aurum.data.DataRepository
 import com.sun.aurum.data.GoogleAuthManager
 import com.sun.aurum.data.SecurePrefs
@@ -56,7 +57,7 @@ class DailyRefreshWorker(ctx: Context, params: WorkerParameters) : CoroutineWork
             PendingIntent.FLAG_IMMUTABLE,
         )
         nm.notify(1, NotificationCompat.Builder(applicationContext, CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle("Aurum88 Protocol")
             .setContentText("Today's Gold Index and market brief are ready — tap to view")
             .setContentIntent(pi)
