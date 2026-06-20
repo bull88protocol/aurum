@@ -217,7 +217,10 @@ The three small code follow-ups flagged after P2-5:
   wrong month for users far from ET. Both are now anchored to `America/New_York`, matching the US
   trading session the bars actually come from, on any device.
 
-assembleDebug + 13/13 tests green.
+assembleDebug + 13/13 tests green; **verified on-device** — after the in-place upgrade to this
+build (`c635f82`), the daily notification posts with the branded icon: `dumpsys notification` shows
+`smallIcon=Icon(typ=RESOURCE pkg=com.sun.aurum id=0x7f0800b2)` → `drawable/ic_notification`,
+replacing the framework `ic_dialog_info`.
 
 ---
 

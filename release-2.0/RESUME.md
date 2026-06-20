@@ -3,7 +3,7 @@
 **Start-here doc for picking the v2.0 work back up.** Read this, then `CHANGELOG.md` (what shipped,
 in order) and `NEXT_RELEASE_PLAN.md` §0.5 (the done/remaining status table).
 
-_Last updated: 2026-06-19._
+_Last updated: 2026-06-20._
 
 ---
 
@@ -11,13 +11,14 @@ _Last updated: 2026-06-19._
 
 - **Branch:** `release-2.0` (cut from `master` @ 1.3.0-beta / versionCode 5). **`master` is frozen**
   on the Play-submitted build — do all v2.0 work on `release-2.0`.
-- **Head commit:** P2-5 cleanups (`DataRepository` dedup + branded notification icon + chart TZ).
-  15 commits on the branch.
+- **Head commit:** `c635f82` (P2-5 cleanups — `DataRepository` dedup + branded notification icon +
+  chart TZ). 15 commits on the branch.
 - **Build status:** `assembleDebug` clean; **13/13** JVM engine tests green
   (`./gradlew :app:testDebugUnitTest`).
-- **On the test phone (adb `44251JEKB01464`):** the v2.0 **debug** build (versionCode 5) is
-  installed in-place and verified — Gold + Dollar tabs, CB freshness label, FRED/Gemini keys
-  migrated, edge-to-edge top/bottom fixed.
+- **On the test phone (adb `44251JEKB01464`):** the `c635f82` v2.0 **debug** build (versionCode 5)
+  is installed in-place and verified — Gold + Dollar tabs, CB freshness label, FRED/Gemini keys
+  migrated, edge-to-edge top/bottom fixed, and the daily notification now shows the branded
+  `ic_notification` (confirmed via `dumpsys notification`: `pkg=com.sun.aurum id=0x7f0800b2`).
 
 ## Done (all verified on-device)
 All **P0** (1,2,3), all **P1** (1,2,4; P1-3 optional), **P2-2, P2-3, P2-4, P2-5**, an edge-to-edge
@@ -32,7 +33,7 @@ timezone). See the status table in `NEXT_RELEASE_PLAN.md` §0.5 for per-item com
 3. **Optional:** P1-3 (move price/technicals from the GLD ETF to spot XAU), P1-5 (RSI mean-reversion
    philosophy + RY/USD window asymmetry notes), P2-3 follow-up (Credential Manager migration + drop
    the `GET_ACCOUNTS` permission — needs an on-device auth test).
-3. **Drop the `security-crypto` dependency** once testers have upgraded past the P2-4 build (it's
+4. **Drop the `security-crypto` dependency** once testers have upgraded past the P2-4 build (it's
    now migration-read-only — see `app/build.gradle.kts`).
 
 ## Operational items (owner — not code)
