@@ -11,10 +11,9 @@ _Last updated: 2026-06-24._
 
 - **Branch:** `release-2.0` (cut from `master` @ 1.3.0-beta / versionCode 5). **`master` is frozen**
   on the Play-submitted build — do all v2.0 work on `release-2.0`.
-- **Head commit:** `bcb25c8` (P2-5 follow-up — share DX-Y.NYB candles across a batch refresh).
-  17 commits on the branch.
-- **Build status:** `assembleDebug` clean; **13/13** JVM engine tests green
-  (`./gradlew :app:testDebugUnitTest`).
+- **Head commit:** `812b6dd` (P2-1 — HMAI engine tests, 13 → 23). 18 commits on the branch.
+- **Build status:** `assembleDebug` clean; **23/23** JVM engine tests green — Gold Index 13 +
+  HMAI 10 (`./gradlew :app:testDebugUnitTest`).
 - **On the test phone (adb `44251JEKB01464`):** the `c635f82` v2.0 **debug** build (versionCode 5)
   is installed in-place and verified — Gold + Dollar tabs, CB freshness label, FRED/Gemini keys
   migrated, edge-to-edge top/bottom fixed, and the daily notification now shows the branded
@@ -26,15 +25,18 @@ inset fix, and the **P2-5 cleanups** (`DataRepository` dedup, branded notificati
 timezone). See the status table in `NEXT_RELEASE_PLAN.md` §0.5 for per-item commits.
 
 ## Remaining (all minor / optional)
-1. **P2-1** — broaden engine tests (currently 13).
+1. **P2-1** — broaden engine tests further (now **23**: Gold Index 13 + HMAI 10). HMAI's
+   `CircuitBreaker`, `Pillar1Technical`, and the `compute` contract are covered; still uncovered are
+   HMAI Pillars 2–6 and the `TechnicalIndicators` math.
 2. **Optional:** P1-3 (move price/technicals from the GLD ETF to spot XAU), P1-5 (RSI mean-reversion
    philosophy + RY/USD window asymmetry notes), P2-3 follow-up (Credential Manager migration + drop
    the `GET_ACCOUNTS` permission — needs an on-device auth test).
 3. **Drop the `security-crypto` dependency** once testers have upgraded past the P2-4 build (it's
    now migration-read-only — see `app/build.gradle.kts`).
 
-_Done since last note:_ the P2-5 follow-up — DX-Y.NYB daily candles are now fetched once per batch
-refresh and shared between the Gold Index and the Dollar tab's HMAI (see `CHANGELOG.md`).
+_Done since last note:_ the P2-5 follow-up (DX-Y.NYB daily candles now fetched once per batch
+refresh and shared between the Gold Index and the Dollar tab's HMAI), plus a new `HmaiEngineTest`
+suite taking the engine tests from 13 → 23 (see `CHANGELOG.md`).
 
 ## Operational items (owner — not code)
 - **Publish `data/cb_quarterly.json` to `master`** so the live CB feed resolves (happens

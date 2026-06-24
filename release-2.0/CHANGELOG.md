@@ -231,6 +231,22 @@ tab's candles and GLD's `Inputs.dxyCandles`. The single-tab `fetchSymbol` path p
 still fetches on demand, so behavior is unchanged there. One fewer Yahoo round-trip per batch.
 assembleDebug + 13/13 tests green.
 
+### P2-1 — broaden engine tests: HMAI now covered ✅ (still partial)
+The JVM suite previously covered only `GoldIndexEngine` (13 tests); the HMAI engine behind the
+v2.0 Dollar tab had **none**. Added `HmaiEngineTest` (10 tests) over the pure scoring logic:
+- **`CircuitBreaker`** — `applyOverride` maps each `CbAction` (pass-through / cap-50 / force-20-30 /
+  force-0-10) correctly; `evaluate` is calm on a steady series, passes through on insufficient data,
+  and trips on a VIX crisis and on a 5+ day down streak (with escalation off `PASS_THROUGH`).
+- **`Pillar1Technical`** — an uptrend scores high/bullish, a downtrend low/bearish.
+- **`HmaiEngine.compute`** — the 6-pillar contract (numbered 1..6, max scores sum to 100, every
+  score within `[0, maxScore]`), composite bounded `[0,100]` with a label matching its threshold,
+  symbol upper-cased, AI fields null when no Gemini result, uptrend composite > downtrend, and a
+  tripped breaker caps the headline at ≤50 and never above the raw composite.
+
+Assertions target direction and invariants, not magic numbers, so behavior-preserving refactors
+don't churn the suite. Engine tests now **23/23 green** (Gold Index 13 + HMAI 10). P2-1 stays
+*partial* — the per-pillar internals (Pillars 2–6, the technical-indicator math) are still uncovered.
+
 ---
 
 ## Tooling note

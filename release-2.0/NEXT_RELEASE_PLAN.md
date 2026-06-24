@@ -48,14 +48,14 @@ its HMAI card, and the Gold tab shows the new CB freshness label). Per-item deta
 | **P1-3** move price/technicals from the GLD ETF to spot XAU (24-h) | ⬜ deferred (optional) | — |
 | **P1-4** honest quote source — Yahoo for display, Google for sync (relabel) | ✅ done | `5db1ef5` |
 | **P1-5** trader micro-notes (RSI philosophy, RY/USD window asymmetry, DXY anchors) | ⬜ remaining | — |
-| **P2-1** broaden engine tests | ◑ partial — JVM test infra seeded; **13** engine tests added | (across the above) |
+| **P2-1** broaden engine tests | ◑ partial — **23** engine tests (Gold Index 13 + HMAI 10); HMAI engine now covered | (across the above) |
 | **P2-2** request `POST_NOTIFICATIONS` at runtime (Android 13+) | ✅ done | `880c9bc` |
 | **P2-3** least-privilege `drive.file` scope swap | ✅ done | `d46b371` |
 | **P2-3+** Credential Manager migration + drop `GET_ACCOUNTS` | ⬜ deferred (needs on-device auth test) | — |
 | **P2-4** migrate off alpha/deprecated `EncryptedSharedPreferences` → Android Keystore + migration | ✅ done + verified on phone | `dc8e540` |
 | **P2-5** surface a 2nd instrument (DXY via HMAI) | ✅ done + verified on phone | `8c6da81` |
 | **P2-5 cleanups** dedup GLD fetch block · branded notif icon · chart timezone | ✅ done + verified on phone | `c635f82` |
-| **P2-5 follow-up** share DX-Y.NYB candles across a batch refresh (was fetched twice) | ✅ done | (this commit) |
+| **P2-5 follow-up** share DX-Y.NYB candles across a batch refresh (was fetched twice) | ✅ done | `2e9a76c` |
 | **Fix** edge-to-edge insets (Android 15): toolbar + footer were under the system bars | ✅ done + verified on phone | `57b0fe2` |
 
 **Milestones: A ✅ · B ✅** (P1-3 optional) **· C nearly done** — P2-2/P2-3/P2-4/P2-5 + the P2-5
