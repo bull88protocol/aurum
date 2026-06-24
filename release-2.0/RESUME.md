@@ -25,27 +25,32 @@ All **P0** (1,2,3), all **P1** (1,2,4; P1-3 optional), **P2-2, P2-3, P2-4, P2-5*
 inset fix, and the **P2-5 cleanups** (`DataRepository` dedup, branded notification icon, chart
 timezone). See the status table in `NEXT_RELEASE_PLAN.md` §0.5 for per-item commits.
 
-## Remaining (all minor / optional)
-1. **P2-1** — broaden engine tests further (now **23**: Gold Index 13 + HMAI 10). HMAI's
-   `CircuitBreaker`, `Pillar1Technical`, and the `compute` contract are covered; still uncovered are
-   HMAI Pillars 2–6 and the `TechnicalIndicators` math.
-2. **Optional:** P1-3 (move price/technicals from the GLD ETF to spot XAU), P1-5 (RSI mean-reversion
-   philosophy + RY/USD window asymmetry notes), P2-3 follow-up (Credential Manager migration + drop
-   the `GET_ACCOUNTS` permission — needs an on-device auth test).
-3. **Drop the `security-crypto` dependency** once testers have upgraded past the P2-4 build (it's
-   now migration-read-only — see `app/build.gradle.kts`).
+## Ship triage (2026-06-24) — all gating code is done
 
-_Done since last note:_ the P2-5 follow-up (DX-Y.NYB daily candles now fetched once per batch
-refresh and shared between the Gold Index and the Dollar tab's HMAI), plus a new `HmaiEngineTest`
-suite taking the engine tests from 13 → 23 (see `CHANGELOG.md`).
+**Essential before v2.0 ships** (both need the owner, not more coding):
+1. **Smoke-test Google sign-in under the new `drive.file` scope (P2-3)** — the one real regression
+   risk; the sync-Sheet flow must still read/write under the narrowed scope. On-device. Do before merge.
+2. **Merge `release-2.0` → `master` + bump to 2.0.0 / versionCode 6** — gated on 1.3.0-beta clearing
+   Play. This also lands `data/cb_quarterly.json` on `master`, so the CB feed URL (which targets
+   `master`) stops 404-ing and the app leaves its bundled fallback.
 
-## Operational items (owner — not code)
-- **Publish `data/cb_quarterly.json` to `master`** so the live CB feed resolves (happens
-  automatically on the v2.0 merge, or push sooner). Then replace the placeholder quarters with real
-  WGC numbers via `release-2.0/cb-data/cb_update.py` (see `cb-data/README.md`).
-- Add a **Dollar-tab store screenshot** to the Play listing.
-- Smoke-test **Google sign-in** once under the new `drive.file` scope (P2-3).
-- When 1.3.0-beta clears Play: **merge `release-2.0` → `master`**, bump to **2.0.0** (versionCode 6).
+**Deferred to v2.1 / safe to ignore (none block the ship):**
+- **P2-3+b Credential Manager migration** — deprecated `GoogleSignIn` still works; risky API swap.
+- **Drop `security-crypto`** — gated on testers upgrading past the P2-4 build (migration-read-only;
+  alpha dep ships fine — see `app/build.gradle.kts`).
+- **P2-1 more tests** — now **23** (Gold Index 13 + HMAI 10); HMAI `CircuitBreaker`,
+  `Pillar1Technical`, and the `compute` contract are covered. Still open: HMAI Pillars 2–6 and the
+  `TechnicalIndicators` math.
+- **P1-5 trader micro-notes** — copy polish.
+- **Real WGC quarter granularity** — placeholder is annual÷4, so the trailing-12-month sum the engine
+  uses is already right; push real quarters anytime via `cb-data/cb_update.py … --push` (no app
+  release — see `cb-data/README.md`).
+- **Dollar-tab store screenshot** — Play-listing nicety, addable post-publish.
+
+**Dropped:** **P1-3** (spot XAU) — decided 2026-06-24; GLD is fine.
+
+_Done since last note:_ P2-5 follow-up (DX-Y.NYB candles fetched once per batch + shared),
+`HmaiEngineTest` (engine tests 13 → 23), and dropped the vestigial `GET_ACCOUNTS` permission.
 
 ---
 

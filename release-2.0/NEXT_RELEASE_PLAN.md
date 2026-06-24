@@ -45,22 +45,42 @@ its HMAI card, and the Gold tab shows the new CB freshness label). Per-item deta
 | **P0-3** CSV export uses true-daily history (not monthly/quarterly) | ✅ done | `c7a4e92` |
 | **P1-1** Central Bank: hosted live feed + look-ahead lag fix + freshness + no-dominance guardrail | ✅ done | `9f9bfec`, `dbbcc78` |
 | **P1-2** data-source resilience: Yahoo retry + query1/query2 failover + honest UI | ✅ done | `12e4f94` |
-| **P1-3** move price/technicals from the GLD ETF to spot XAU (24-h) | ⬜ deferred (optional) | — |
+| **P1-3** move price/technicals from the GLD ETF to spot XAU (24-h) | 🚫 dropped (decided 2026-06-24 — GLD is fine) | — |
 | **P1-4** honest quote source — Yahoo for display, Google for sync (relabel) | ✅ done | `5db1ef5` |
 | **P1-5** trader micro-notes (RSI philosophy, RY/USD window asymmetry, DXY anchors) | ⬜ remaining | — |
 | **P2-1** broaden engine tests | ◑ partial — **23** engine tests (Gold Index 13 + HMAI 10); HMAI engine now covered | (across the above) |
 | **P2-2** request `POST_NOTIFICATIONS` at runtime (Android 13+) | ✅ done | `880c9bc` |
 | **P2-3** least-privilege `drive.file` scope swap | ✅ done | `d46b371` |
-| **P2-3+** Credential Manager migration + drop `GET_ACCOUNTS` | ⬜ deferred (needs on-device auth test) | — |
+| **P2-3+a** drop the unused `GET_ACCOUNTS` permission (vestigial; no code refs, modern GoogleSignIn doesn't need it) | ✅ done | (this commit) |
+| **P2-3+b** Credential Manager migration (off deprecated `GoogleSignIn`) | ⬜ deferred to v2.1 (risky API swap; not a ship blocker) | — |
 | **P2-4** migrate off alpha/deprecated `EncryptedSharedPreferences` → Android Keystore + migration | ✅ done + verified on phone | `dc8e540` |
 | **P2-5** surface a 2nd instrument (DXY via HMAI) | ✅ done + verified on phone | `8c6da81` |
 | **P2-5 cleanups** dedup GLD fetch block · branded notif icon · chart timezone | ✅ done + verified on phone | `c635f82` |
 | **P2-5 follow-up** share DX-Y.NYB candles across a batch refresh (was fetched twice) | ✅ done | `2e9a76c` |
 | **Fix** edge-to-edge insets (Android 15): toolbar + footer were under the system bars | ✅ done + verified on phone | `57b0fe2` |
 
-**Milestones: A ✅ · B ✅** (P1-3 optional) **· C nearly done** — P2-2/P2-3/P2-4/P2-5 + the P2-5
-cleanups and DXY-dedup follow-up done, P2-1 partial; only the optional Credential Manager follow-up
-(P2-3+) remains.
+**Milestones: A ✅ · B ✅** (P1-3 dropped) **· C done** — P2-2/P2-3/P2-4/P2-5 + the P2-5 cleanups,
+the DXY-dedup follow-up, and the `GET_ACCOUNTS` drop are all in; P2-1 partial (23 tests). All code
+work that gates the ship is complete.
+
+### Ship triage (2026-06-24) — what's left to release v2.0
+
+**Essential (blocks a correct ship):**
+1. **Smoke-test Google sign-in under the new `drive.file` scope (P2-3)** — the one real regression
+   risk; the sync-Sheet flow must still read/write under the narrowed scope. On-device, needs the
+   phone. Do this before the merge.
+2. **Merge `release-2.0` → `master` + bump to 2.0.0 / versionCode 6** — the release act, gated on
+   1.3.0-beta clearing Play. This also lands `data/cb_quarterly.json` on `master`, so the CB feed URL
+   (which targets `master`) stops 404-ing and the app moves off its bundled fallback. The feed is a
+   git-pushed data file — `cb-data/cb_update.py … --push` updates quarters with **no app release**;
+   it just needs to be on `master`, which the merge handles.
+
+**Deferred to v2.1 / ignore for v2.0 (none block the ship):** P2-3+b Credential Manager migration
+(deprecated `GoogleSignIn` still works); drop `security-crypto` (gated on testers upgrading past
+P2-4; alpha dep ships fine); P1-5 trader micro-notes (copy polish); more P2-1 tests (Pillars 2–6 +
+indicator math); real WGC quarter granularity (placeholder is annual÷4, so the trailing-12-month sum
+the engine uses is already right — pushable anytime via git); Dollar-tab store screenshot (listing
+nicety, addable post-publish).
 
 **Open operational items (not code):** publish `data/cb_quarterly.json` to `master` (happens on
 the v2.0 merge) and replace the placeholder quarters with real WGC numbers via

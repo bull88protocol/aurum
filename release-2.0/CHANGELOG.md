@@ -247,6 +247,16 @@ Assertions target direction and invariants, not magic numbers, so behavior-prese
 don't churn the suite. Engine tests now **23/23 green** (Gold Index 13 + HMAI 10). P2-1 stays
 *partial* — the per-pillar internals (Pillars 2–6, the technical-indicator math) are still uncovered.
 
+### P2-3+a — drop the unused `GET_ACCOUNTS` permission ✅ COMPLETE
+`AndroidManifest.xml` still declared `android.permission.GET_ACCOUNTS`, a leftover from the
+stock-tracker fork. It has **no code references** and the current `GoogleSignIn` flow
+(`GoogleAuthManager`/`SettingsActivity`) doesn't need it — modern Google Sign-In dropped the
+`AccountManager`/account-picker path that required it. Removed; it was dead weight that surfaces in
+Play's pre-launch permission report. Debug **and** release merged manifests confirmed clean (the
+permission wasn't injected by any dependency). assembleDebug green. (The other half of P2-3+ — the
+Credential Manager migration off the deprecated `GoogleSignIn` — is deferred to v2.1; it's a riskier
+API swap and not a ship blocker.)
+
 ---
 
 ## Tooling note
