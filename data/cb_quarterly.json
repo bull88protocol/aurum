@@ -2,7 +2,7 @@
   "source": "World Gold Council — Gold Demand Trends (central-bank net purchases)",
   "unit": "tonnes",
   "method": "Replace quarters with WGC actuals as published; init seeds an even split of WGC annual totals (a placeholder that matches the annual basis).",
-  "updated": "2026-06-19",
+  "updated": "2026-06-24",
   "asOf": "2026-Q1",
   "quarterly": {
     "2009-Q1": -8.5,
