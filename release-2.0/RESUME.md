@@ -10,11 +10,14 @@ _Last updated: 2026-06-24._
 ## Where things stand
 
 - **Branch:** `release-2.0` (cut from `master` @ 1.3.0-beta / versionCode 5). **`master` is frozen**
-  on the Play-submitted build — do all v2.0 work on `release-2.0`.
-- **Head commit:** `a8b0d50` (P2-3+a — drop unused `GET_ACCOUNTS` + ship triage). 20 commits on
-  the branch (plus this trailing docs-pointer commit).
-- **Build status:** `assembleDebug` clean; **23/23** JVM engine tests green — Gold Index 13 +
-  HMAI 10 (`./gradlew :app:testDebugUnitTest`).
+  on the Play-submitted build — do all v2.0 work on `release-2.0`. **Now pushed to GitHub**
+  (`origin/release-2.0`, tracking set 2026-06-24) — the branch is public on `bull88protocol/aurum`,
+  so the CB feed file resolves at the `release-2.0` raw URL, but the app reads the **`master`** URL,
+  which stays 404 until the v2.0 merge.
+- **Head commit:** the **v2.0.0** version-bump commit (versionName 2.0.0 / versionCode 6).
+  `master` was fast-forwarded to this same tip, so **`master` == `release-2.0`** now. Both pushed.
+- **Build status:** `assembleDebug` clean at versionCode 6; **23/23** JVM engine tests green —
+  Gold Index 13 + HMAI 10 (`./gradlew :app:testDebugUnitTest`).
 - **On the test phone (adb `44251JEKB01464`):** the `c635f82` v2.0 **debug** build (versionCode 5)
   is installed in-place and verified — Gold + Dollar tabs, CB freshness label, FRED/Gemini keys
   migrated, edge-to-edge top/bottom fixed, and the daily notification now shows the branded
@@ -25,14 +28,20 @@ All **P0** (1,2,3), all **P1** (1,2,4; P1-3 optional), **P2-2, P2-3, P2-4, P2-5*
 inset fix, and the **P2-5 cleanups** (`DataRepository` dedup, branded notification icon, chart
 timezone). See the status table in `NEXT_RELEASE_PLAN.md` §0.5 for per-item commits.
 
-## Ship triage (2026-06-24) — all gating code is done
+## Ship status (2026-06-24) — merged to master, v2.0.0 / versionCode 6
 
-**Essential before v2.0 ships** (both need the owner, not more coding):
+**Done:** `release-2.0` is bumped to **versionName 2.0.0 / versionCode 6** and **merged into `master`**
+(fast-forward — master had not diverged). Both branches pushed to `origin`. This landed
+`data/cb_quarterly.json` **and** `CentralBankClient` on `master`, so the CB feed URL now resolves
+(HTTP 200) instead of 404-ing.
+
+**Still required to actually reach users (owner steps — not code):**
 1. **Smoke-test Google sign-in under the new `drive.file` scope (P2-3)** — the one real regression
-   risk; the sync-Sheet flow must still read/write under the narrowed scope. On-device. Do before merge.
-2. **Merge `release-2.0` → `master` + bump to 2.0.0 / versionCode 6** — gated on 1.3.0-beta clearing
-   Play. This also lands `data/cb_quarterly.json` on `master`, so the CB feed URL (which targets
-   `master`) stops 404-ing and the app leaves its bundled fallback.
+   risk; the sync-Sheet flow must still read/write under the narrowed scope. On-device. Do before
+   uploading to Play.
+2. **Build the signed v2.0 release AAB and upload to Play** (the keystore + `keystore.properties`
+   secrets live on the owner's machine). WGC data only reaches users once this build ships — the
+   merge just made the feed *URL* live; the live 1.3.0-beta has no `CentralBankClient` to read it.
 
 **Deferred to v2.1 / safe to ignore (none block the ship):**
 - **P2-3+b Credential Manager migration** — deprecated `GoogleSignIn` still works; risky API swap.
@@ -50,7 +59,9 @@ timezone). See the status table in `NEXT_RELEASE_PLAN.md` §0.5 for per-item com
 **Dropped:** **P1-3** (spot XAU) — decided 2026-06-24; GLD is fine.
 
 _Done since last note:_ P2-5 follow-up (DX-Y.NYB candles fetched once per batch + shared),
-`HmaiEngineTest` (engine tests 13 → 23), and dropped the vestigial `GET_ACCOUNTS` permission.
+`HmaiEngineTest` (engine tests 13 → 23), dropped the vestigial `GET_ACCOUNTS` permission, bumped to
+**2.0.0 / versionCode 6**, and **merged `release-2.0` → `master`** (pushed). Remaining: the on-device
+sign-in smoke test, then build + upload the signed v2.0 AAB to Play.
 
 ---
 

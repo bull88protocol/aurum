@@ -23,8 +23,8 @@ android {
         applicationId = "com.sun.aurum"
         minSdk = 26
         targetSdk = 35
-        versionCode = 5
-        versionName = "1.3.0-beta"
+        versionCode = 6
+        versionName = "2.0.0"
     }
 
     buildFeatures {

@@ -58,22 +58,26 @@ its HMAI card, and the Gold tab shows the new CB freshness label). Per-item deta
 | **P2-5 cleanups** dedup GLD fetch block · branded notif icon · chart timezone | ✅ done + verified on phone | `c635f82` |
 | **P2-5 follow-up** share DX-Y.NYB candles across a batch refresh (was fetched twice) | ✅ done | `2e9a76c` |
 | **Fix** edge-to-edge insets (Android 15): toolbar + footer were under the system bars | ✅ done + verified on phone | `57b0fe2` |
+| **Release** bump to 2.0.0 / versionCode 6 + merge `release-2.0` → `master` (fast-forward, pushed) | ✅ done — CB feed URL now HTTP 200 | (version-bump commit) |
 
 **Milestones: A ✅ · B ✅** (P1-3 dropped) **· C done** — P2-2/P2-3/P2-4/P2-5 + the P2-5 cleanups,
-the DXY-dedup follow-up, and the `GET_ACCOUNTS` drop are all in; P2-1 partial (23 tests). All code
-work that gates the ship is complete.
+the DXY-dedup follow-up, and the `GET_ACCOUNTS` drop are all in; P2-1 partial (23 tests). **Merged to
+`master` at 2.0.0 / versionCode 6.** All code work that gates the ship is complete.
 
-### Ship triage (2026-06-24) — what's left to release v2.0
+### Ship status (2026-06-24) — merged; remaining steps are owner-only
 
-**Essential (blocks a correct ship):**
+**Done:** version bumped to 2.0.0 / versionCode 6, `release-2.0` fast-forward-merged into `master`,
+both pushed. The CB feed URL on `master` now resolves (HTTP 200) — `CentralBankClient` and
+`data/cb_quarterly.json` are both on `master`. Quarter updates from here are pure git pushes via
+`cb-data/cb_update.py … --push` (no app release).
+
+**Still required to reach users (owner, not code):**
 1. **Smoke-test Google sign-in under the new `drive.file` scope (P2-3)** — the one real regression
-   risk; the sync-Sheet flow must still read/write under the narrowed scope. On-device, needs the
-   phone. Do this before the merge.
-2. **Merge `release-2.0` → `master` + bump to 2.0.0 / versionCode 6** — the release act, gated on
-   1.3.0-beta clearing Play. This also lands `data/cb_quarterly.json` on `master`, so the CB feed URL
-   (which targets `master`) stops 404-ing and the app moves off its bundled fallback. The feed is a
-   git-pushed data file — `cb-data/cb_update.py … --push` updates quarters with **no app release**;
-   it just needs to be on `master`, which the merge handles.
+   risk; verify the sync-Sheet flow still reads/writes under the narrowed scope. On-device. Do before
+   the Play upload.
+2. **Build the signed v2.0 AAB and upload to Play** (keystore secrets are on the owner's machine).
+   WGC data reaches users only once this build ships — the merge made the feed *URL* live, but the
+   current 1.3.0-beta has no `CentralBankClient` to read it.
 
 **Deferred to v2.1 / ignore for v2.0 (none block the ship):** P2-3+b Credential Manager migration
 (deprecated `GoogleSignIn` still works); drop `security-crypto` (gated on testers upgrading past

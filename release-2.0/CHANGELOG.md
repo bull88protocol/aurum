@@ -1,8 +1,10 @@
-# Aurum88 Protocol v2.0 — Changelog (work in progress)
+# Aurum88 Protocol v2.0 — Changelog
 
-Branch: `release-2.0` (cut from `master` @ 1.3.0-beta / versionCode 5).
-`master` stays frozen on the Play-submitted build until v1.3 is approved; then
-`release-2.0` merges back and the version bumps to 2.0.0.
+**v2.0.0 (versionCode 6) — merged to `master` 2026-06-24.** `release-2.0` was cut from `master`
+@ 1.3.0-beta / versionCode 5, developed in full, then fast-forward-merged back into `master` once
+1.3.0-beta cleared Play. The merge landed `CentralBankClient` + `data/cb_quarterly.json` on `master`,
+so the CB feed URL now resolves (HTTP 200). **Remaining owner steps:** smoke-test Google sign-in
+under the new `drive.file` scope, then build + upload the signed v2.0 AAB to Play.
 
 See `NEXT_RELEASE_PLAN.md` (this folder) for the full plan and rationale.
 
