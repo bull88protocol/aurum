@@ -8,9 +8,7 @@ echo "▶ bundleRelease (Play AAB)…"
 ./gradlew :app:bundleRelease
 APK=app/build/outputs/apk/release/app-release.apk
 AAB=app/build/outputs/bundle/release/app-release.aab
-cp -f "$APK" ./aurum-beta.apk
-echo "✓ APK : $APK"
+echo "✓ APK : $APK  (local install / QA only — not for distribution)"
 echo "✓ AAB : $AAB  (upload this to Play)"
-echo "✓ Sideload copy: ./aurum-beta.apk"
 APKSIGNER=$(ls "$ANDROID_SDK_ROOT"/build-tools/*/apksigner | sort | tail -1)
 "$APKSIGNER" verify --print-certs "$APK" | grep "certificate DN" || true

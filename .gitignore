@@ -15,9 +15,8 @@ captures/
 keystore.properties
 google-services.json
 
-# Ship the single published beta APK, ignore other binaries
+# Never commit build binaries — the app is distributed via the stores (Play / App Store), not the repo
 *.apk
-!aurum-beta.apk
 *.aab
 
 # OS noise

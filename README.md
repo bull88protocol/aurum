@@ -10,8 +10,9 @@ history chart, AI market brief, news, and exportable data.
 > - This build is a **beta / testing build**, provided **free** and **as-is**.
 > - **Use it entirely at your own risk.** See [TERMS.md](TERMS.md) and
 >   [PRIVACY.md](PRIVACY.md) — by installing, you accept them.
-> - It is **not** the official release, may contain bugs, and may stop working
->   at any time. **Future updates ship on the Google Play Store version.**
+> - It is **not** yet the public store release, may contain bugs, and may change at
+>   any time. It is distributed through **Google Play's testing track** (and, soon,
+>   **Apple TestFlight**) — see [TESTING.md](TESTING.md) to get access.
 > - This is **not financial or investment advice.** Every trading decision and
 >   every API key is yours alone.
 
@@ -67,15 +68,22 @@ each morning; adding a key in Settings refreshes the relevant tabs automatically
 - *(Optional)* a Google account to sync your market data to your own Google Sheet. (Quotes always
   use live Yahoo Finance, including pre/after-hours.)
 
-## How to download / install (sideloading the beta)
+## How to get the app
 
-1. Download [**`aurum-beta.apk`**](aurum-beta.apk) from this repo.
-2. When prompted, allow your browser/file manager to **install unknown apps**
-   (Android warns you — this is normal for any APK installed outside Play).
-3. Open the APK and tap **Install** → **Open**.
-4. On first launch, the **Getting Started** guide explains what each key unlocks.
-   In **Settings**, paste your free FRED / Gemini keys to unlock the full app
-   (optional — it runs without them).
+The app is distributed **only through the official app stores** — there is no APK to
+sideload from this repo.
+
+- **Android (Google Play testing):** email **sunny@bull88protocol.com** to be added as a
+  tester. You'll get a Google Play opt-in link, then install *Aurum88 Protocol* from Play
+  like any other app — and it updates automatically.
+- **iOS (Apple App Store / TestFlight):** in progress — see [`ios/`](ios/). Email the same
+  address to be added to the TestFlight beta when it opens.
+
+Full onboarding steps: [TESTING.md](TESTING.md).
+
+On first launch, the **Getting Started** guide explains what each key unlocks. In
+**Settings**, paste your free FRED / Gemini keys to unlock the full app (optional — it runs
+without them).
 
 ## Build from source
 

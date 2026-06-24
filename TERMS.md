@@ -42,10 +42,12 @@ non-infringement. We do not warrant that the App will be uninterrupted,
 error-free, secure, or that any data it displays is accurate, complete, or
 timely.
 
-## 5. Sideloading risk
-If you install the App from outside the Google Play Store ("sideloading"), you
-acknowledge that doing so carries inherent risks, that your device may warn you,
-and that you assume full responsibility for installing and running the App.
+## 5. Testing builds
+The App is distributed only through official app stores — Google Play (testing track)
+and, when available, the Apple App Store via TestFlight. Pre-release testing builds are
+provided for evaluation, may contain bugs, and may change or stop working at any time.
+You assume full responsibility for running a testing build, and you agree not to
+redistribute it outside the official store testing programs.
 
 ## 6. Limitation of liability
 TO THE MAXIMUM EXTENT PERMITTED BY LAW, IN NO EVENT WILL CoinTranscend BE LIABLE
