@@ -207,8 +207,8 @@ The three small code follow-ups flagged after P2-5:
   one private `buildSymbolState(symbol, geminiKey, fredKey, vix, forceGemini)` that both call:
   `fetchAll` reuses a single `vix` fetch across the batch, `fetchSymbol` passes `forceGemini=false`.
   ~57 lines of duplication gone, behavior unchanged. (The *separate* cross-symbol DXY double-fetch —
-  DX-Y.NYB daily candles pulled once for the Gold Index and once for the Dollar tab's HMAI — is a
-  different redundancy and is still open; minor.)
+  DX-Y.NYB daily candles pulled once for the Gold Index and once for the Dollar tab's HMAI — was a
+  different redundancy, now also fixed; see below.)
 - **Branded notification icon.** The daily notification used the stock framework
   `android.R.drawable.ic_dialog_info`; it now uses a dedicated monochrome `ic_notification` (a
   gold-ingot silhouette, drawn as a white alpha mask so the status bar renders it correctly).
@@ -221,6 +221,15 @@ assembleDebug + 13/13 tests green; **verified on-device** — after the in-place
 build (`c635f82`), the daily notification posts with the branded icon: `dumpsys notification` shows
 `smallIcon=Icon(typ=RESOURCE pkg=com.sun.aurum id=0x7f0800b2)` → `drawable/ic_notification`,
 replacing the framework `ic_dialog_info`.
+
+### P2-5 follow-up — share DX-Y.NYB candles across a batch refresh ✅ COMPLETE
+During a batch refresh over `["GLD", "DX-Y.NYB"]`, `DataRepository.buildSymbolState` fetched the
+DX-Y.NYB daily history **twice** from Yahoo — once as the Dollar tab's own series, and again as the
+GLD Gold-Index USD component. `fetchAll` now fetches DX-Y.NYB once up front (alongside the single
+`vix` fetch) and passes it into `buildSymbolState` as `sharedDxyCandles`, reused for both the Dollar
+tab's candles and GLD's `Inputs.dxyCandles`. The single-tab `fetchSymbol` path passes nothing and
+still fetches on demand, so behavior is unchanged there. One fewer Yahoo round-trip per batch.
+assembleDebug + 13/13 tests green.
 
 ---
 

@@ -31,7 +31,7 @@ desk reads it,"* those are the things a pro user will notice first.
 
 ---
 
-## 0.5 Implementation status — branch `release-2.0` (updated 2026-06-19)
+## 0.5 Implementation status — branch `release-2.0` (updated 2026-06-24)
 
 `master` stays frozen on the Play-submitted 1.3.0-beta; all work below is committed on
 `release-2.0` and was verified on-device (debug build, in-place upgrade — the Dollar tab renders
@@ -54,11 +54,13 @@ its HMAI card, and the Gold tab shows the new CB freshness label). Per-item deta
 | **P2-3+** Credential Manager migration + drop `GET_ACCOUNTS` | ⬜ deferred (needs on-device auth test) | — |
 | **P2-4** migrate off alpha/deprecated `EncryptedSharedPreferences` → Android Keystore + migration | ✅ done + verified on phone | `dc8e540` |
 | **P2-5** surface a 2nd instrument (DXY via HMAI) | ✅ done + verified on phone | `8c6da81` |
-| **P2-5 cleanups** dedup GLD fetch block · branded notif icon · chart timezone | ⬜ remaining | — |
+| **P2-5 cleanups** dedup GLD fetch block · branded notif icon · chart timezone | ✅ done + verified on phone | `c635f82` |
+| **P2-5 follow-up** share DX-Y.NYB candles across a batch refresh (was fetched twice) | ✅ done | (this commit) |
 | **Fix** edge-to-edge insets (Android 15): toolbar + footer were under the system bars | ✅ done + verified on phone | `57b0fe2` |
 
-**Milestones: A ✅ · B ✅** (P1-3 optional) **· C nearly done** — P2-2/P2-3/P2-4/P2-5 done, P2-1
-partial; the cleanups and the optional Credential Manager follow-up remain.
+**Milestones: A ✅ · B ✅** (P1-3 optional) **· C nearly done** — P2-2/P2-3/P2-4/P2-5 + the P2-5
+cleanups and DXY-dedup follow-up done, P2-1 partial; only the optional Credential Manager follow-up
+(P2-3+) remains.
 
 **Open operational items (not code):** publish `data/cb_quarterly.json` to `master` (happens on
 the v2.0 merge) and replace the placeholder quarters with real WGC numbers via

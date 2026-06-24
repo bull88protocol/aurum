@@ -3,6 +3,7 @@ package com.sun.aurum.data
 import android.content.Context
 import com.sun.aurum.domain.gold.GoldIndexEngine
 import com.sun.aurum.domain.hmai.HmaiEngine
+import com.sun.aurum.model.Candle
 import com.sun.aurum.model.QuoteData
 import com.sun.aurum.model.SymbolState
 import com.sun.aurum.network.CentralBankClient
@@ -45,9 +46,15 @@ class DataRepository(private val context: Context) {
         }
         val vix: Double? = yahoo.fetchVix()
 
+        // DX-Y.NYB daily candles feed both the Dollar tab's HMAI (its own series) and GLD's Gold
+        // Index (the USD component) — fetch once here and share across both symbols so a batch
+        // refresh hits Yahoo for the dollar history a single time.
+        val sharedDxyCandles: List<Candle>? =
+            if ("DX-Y.NYB" in symbols || "GLD" in symbols) yahoo.fetchDailyCandles("DX-Y.NYB") else null
+
         for (symbol in symbols) {
             try {
-                onState(buildSymbolState(symbol, geminiKey, fredKey, vix, forceGemini))
+                onState(buildSymbolState(symbol, geminiKey, fredKey, vix, forceGemini, sharedDxyCandles))
             } catch (e: Exception) {
                 onState(SymbolState(symbol = symbol, loading = false, error = e.message ?: "Error"))
             }
@@ -66,7 +73,9 @@ class DataRepository(private val context: Context) {
      * (the Gold Index for GLD, HMAI for the other instruments), and assembles its [SymbolState].
      * Shared by [fetchAll] (batch refresh, reusing one [vix] fetch across symbols) and [fetchSymbol]
      * (single-tab refresh). [vix] feeds HMAI's market-stress read; [forceGemini] bypasses the Gemini
-     * cache so a new day gets a fresh briefing.
+     * cache so a new day gets a fresh briefing. [sharedDxyCandles], when supplied by a batch refresh,
+     * is reused as the Dollar tab's own series and as GLD's Gold-Index USD component so DX-Y.NYB is
+     * only fetched once per batch.
      */
     private suspend fun buildSymbolState(
         symbol: String,
@@ -74,9 +83,11 @@ class DataRepository(private val context: Context) {
         fredKey: String,
         vix: Double?,
         forceGemini: Boolean,
+        sharedDxyCandles: List<Candle>? = null,
     ): SymbolState {
         val (yahooQuote, intraday) = yahoo.fetchIntraday(symbol)
-        val candles = yahoo.fetchDailyCandles(symbol)
+        val candles = if (symbol == "DX-Y.NYB" && sharedDxyCandles != null) sharedDxyCandles
+                      else yahoo.fetchDailyCandles(symbol)
 
         // Gemini brief/news is gold-only (the AI Brief & News tabs are about gold). The second
         // instrument (DXY) runs HMAI without it — no wasted AI call, no ticker like "DX-Y.NYB"
@@ -93,7 +104,7 @@ class DataRepository(private val context: Context) {
         else null
 
         val goldIndexReport = if (symbol == "GLD") {
-            val dxyCandles = yahoo.fetchDailyCandles("DX-Y.NYB")
+            val dxyCandles = sharedDxyCandles ?: yahoo.fetchDailyCandles("DX-Y.NYB")
             val threeYearsAgo = run {
                 val cal = java.util.Calendar.getInstance()
                 cal.add(java.util.Calendar.YEAR, -3)
