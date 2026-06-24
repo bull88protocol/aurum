@@ -11,8 +11,8 @@ _Last updated: 2026-06-24._
 
 - **Branch:** `release-2.0` (cut from `master` @ 1.3.0-beta / versionCode 5). **`master` is frozen**
   on the Play-submitted build — do all v2.0 work on `release-2.0`.
-- **Head commit:** `d8cb403` (P2-1 — HMAI engine tests, 13 → 23). 18 commits on the branch
-  (plus this trailing docs-pointer commit).
+- **Head commit:** `a8b0d50` (P2-3+a — drop unused `GET_ACCOUNTS` + ship triage). 20 commits on
+  the branch (plus this trailing docs-pointer commit).
 - **Build status:** `assembleDebug` clean; **23/23** JVM engine tests green — Gold Index 13 +
   HMAI 10 (`./gradlew :app:testDebugUnitTest`).
 - **On the test phone (adb `44251JEKB01464`):** the `c635f82` v2.0 **debug** build (versionCode 5)

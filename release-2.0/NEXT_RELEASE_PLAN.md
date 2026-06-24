@@ -51,7 +51,7 @@ its HMAI card, and the Gold tab shows the new CB freshness label). Per-item deta
 | **P2-1** broaden engine tests | ◑ partial — **23** engine tests (Gold Index 13 + HMAI 10); HMAI engine now covered | (across the above) |
 | **P2-2** request `POST_NOTIFICATIONS` at runtime (Android 13+) | ✅ done | `880c9bc` |
 | **P2-3** least-privilege `drive.file` scope swap | ✅ done | `d46b371` |
-| **P2-3+a** drop the unused `GET_ACCOUNTS` permission (vestigial; no code refs, modern GoogleSignIn doesn't need it) | ✅ done | (this commit) |
+| **P2-3+a** drop the unused `GET_ACCOUNTS` permission (vestigial; no code refs, modern GoogleSignIn doesn't need it) | ✅ done | `a8b0d50` |
 | **P2-3+b** Credential Manager migration (off deprecated `GoogleSignIn`) | ⬜ deferred to v2.1 (risky API swap; not a ship blocker) | — |
 | **P2-4** migrate off alpha/deprecated `EncryptedSharedPreferences` → Android Keystore + migration | ✅ done + verified on phone | `dc8e540` |
 | **P2-5** surface a 2nd instrument (DXY via HMAI) | ✅ done + verified on phone | `8c6da81` |
