@@ -29,6 +29,26 @@ model once, both platforms get it.
 
 ---
 
+## Phase 1 progress — branch `ios-port` (started 2026-06-25)
+
+Real migration underway on Linux (no Mac needed yet); Android stays green throughout.
+
+- ✅ **`:shared` KMP module stood up** — KMP toolchain proven in this environment (Kotlin 1.9.24 /
+  AGP 8.6). `androidTarget` only for now; iOS targets get enabled on the Mac (Phase 2).
+- ✅ **`model/` migrated** to `commonMain`. Cost: a 5-site "cross-module smart-cast tax" in the app
+  (Kotlin won't smart-cast a nullable property declared in another module) — fixed with safe calls.
+- ✅ **HMAI engine migrated** (`HmaiEngine`, 6 pillars, `CircuitBreaker`, `TechnicalIndicators`) to
+  `commonMain`, behind an `expect/actual formatDecimals` (androidMain → `String.format`, byte-identical).
+- ✅ **23/23 engine tests green** against `:shared` (still run from `:app`).
+- ⏭️ **Next:** migrate `GoldIndexEngine` — the hard one: `java.util` dates → `kotlinx-datetime`,
+  replace `TreeMap.headMap` (perf-sensitive) with a sorted-array + binary-search, lift
+  `FredClient.Obs` into `model`. Then network → Ktor, storage → `expect/actual`, move tests to
+  `commonTest` (kotlin.test), and enable iOS targets on the Mac.
+
+Commits: `baf3bb0` (module + model), `8e8bea4` (HMAI).
+
+---
+
 ## 1. What we're porting
 
 The Android app is small and well-layered — **35 Kotlin files, ~4.5k LOC**. That's a feature: most

@@ -10,14 +10,27 @@ instrument (the Dollar / DXY via the HMAI engine). No backend; runs on-device.
 
 ## Platforms & status
 - **Android** — live: **v2.0.0 / versionCode 6** on `master`, merged 2026-06-24, on Google Play.
-- **iOS** — planned (Apple App Store). Architecture + phased plan in **`ios/APPLE_RELEASE_PLAN.md`**.
+- **iOS** — in progress (Apple App Store). Architecture + phased plan in **`ios/APPLE_RELEASE_PLAN.md`**.
   Decision: **Kotlin Multiplatform shared core + native SwiftUI**. Needs a Mac (Xcode is macOS-only).
+  **Phase 1 underway on branch `ios-port`:** `:shared` KMP module stood up; `model` + the HMAI engine
+  migrated to `commonMain`; 23/23 tests green. Next: migrate `GoldIndexEngine` (→ `kotlinx-datetime`,
+  replace `TreeMap`, lift `FredClient.Obs` into `model`), then network (Ktor) + storage (expect/actual).
 
 ## Repo layout
-- **Now:** `app/` (Android, Kotlin), `data/cb_quarterly.json` (hosted CB feed), `release-2.0/` (v2.0
-  plan/changelog/resume), `ios/` (Apple plan), `cb-data/` (CB feed update tool).
-- **Target monorepo (built during the iOS port):** add `shared/` (KMP: `domain/` engines + `model/`
-  + `network/`, the single source of truth), keep `app/` (Android UI) and `ios/` (SwiftUI UI).
+- `app/` — Android app (Kotlin). Still holds `GoldIndexEngine`, `network/`, `data/`, `ui/`.
+- `shared/` — KMP module (added on `ios-port`). `commonMain` now has `model/`, the HMAI engine
+  (`domain/hmai/`), and a `util/` `formatDecimals` expect/actual. `androidTarget` only for now; iOS
+  targets get enabled on the Mac (Phase 2). The Android app depends on `:shared`.
+- `data/cb_quarterly.json` (hosted CB feed) · `release-2.0/` (v2.0 docs) · `ios/` (Apple plan) ·
+  `cb-data/` (CB feed tool).
+- **Target:** all engines + `model/` + `network/` in `shared/commonMain` (one source of truth);
+  `app/` (Android UI) and `ios/` (SwiftUI UI) on top.
+
+## Build / test the shared module
+```bash
+./gradlew :shared:assembleDebug          # build the KMP android artifact
+./gradlew :app:testDebugUnitTest         # 23 engine tests (still run from :app for now)
+```
 
 ## Branch model
 - `master` — stable mainline for **both** platforms; always shippable.
