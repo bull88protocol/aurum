@@ -43,11 +43,11 @@ object DataCache {
     private fun SymbolState.toJson() = JSONObject().apply {
         put("sym", symbol); put("ts", lastUpdated); put("gd", usingGoogleData)
         if (error != null) put("err", error)
-        if (quote != null) put("q", quote.toJson())
+        quote?.let { put("q", it.toJson()) }
         put("ip", JSONArray().also { a -> intradayPoints.forEach { a.put(it.toJson()) } })
-        if (hmaiReport != null) put("hmai", hmaiReport.toJson())
+        hmaiReport?.let { put("hmai", it.toJson()) }
         put("news", JSONArray().also { a -> news.forEach { a.put(it.toJson()) } })
-        if (goldIndexReport != null) put("gi", goldIndexReport.toJson())
+        goldIndexReport?.let { put("gi", it.toJson()) }
         if (geminiSignal != null) put("gsig", geminiSignal)
         if (geminiScore != null) put("gsc2", geminiScore)
         if (geminiDescription != null) put("gdesc", geminiDescription)

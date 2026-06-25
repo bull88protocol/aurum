@@ -14,3 +14,4 @@ dependencyResolutionManagement {
 }
 rootProject.name = "Aurum"
 include(":app")
+include(":shared")

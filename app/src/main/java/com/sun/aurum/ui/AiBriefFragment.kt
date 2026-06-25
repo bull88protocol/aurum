@@ -80,10 +80,10 @@ class AiBriefFragment : Fragment() {
         binding.tvAiDescription.text = state.geminiDescription ?: ""
         binding.tvAiDescription.visibility = if (state.geminiDescription.isNullOrBlank()) View.GONE else View.VISIBLE
 
-        binding.tvYesterdayLabel.text = if (!state.lastSessionLabel.isNullOrBlank())
-            "${state.lastSessionLabel.uppercase()} SESSION" else "LAST SESSION"
-        binding.tvTodayLabel.text = if (!state.nextSessionLabel.isNullOrBlank())
-            "${state.nextSessionLabel.uppercase()} OUTLOOK" else "NEXT SESSION OUTLOOK"
+        binding.tvYesterdayLabel.text = state.lastSessionLabel?.takeIf { it.isNotBlank() }
+            ?.let { "${it.uppercase()} SESSION" } ?: "LAST SESSION"
+        binding.tvTodayLabel.text = state.nextSessionLabel?.takeIf { it.isNotBlank() }
+            ?.let { "${it.uppercase()} OUTLOOK" } ?: "NEXT SESSION OUTLOOK"
 
         binding.tvYesterdayRecap.text = state.geminiYesterdayRecap ?: ""
         binding.tvYesterdayRecap.visibility = if (state.geminiYesterdayRecap.isNullOrBlank()) View.GONE else View.VISIBLE
