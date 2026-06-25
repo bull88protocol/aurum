@@ -5,7 +5,7 @@ import com.sun.aurum.model.CbQuarter
 import com.sun.aurum.model.DailyIndexPoint
 import com.sun.aurum.model.GoldComponentScore
 import com.sun.aurum.model.GoldIndexReport
-import com.sun.aurum.network.FredClient
+import com.sun.aurum.model.FredObs
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.roundToInt
@@ -28,8 +28,8 @@ object GoldIndexEngine {
     data class Inputs(
         val gldCandles: List<Candle>,
         val dxyCandles: List<Candle>,
-        val realYield: List<FredClient.Obs>,    // FRED DFII10
-        val inflation: List<FredClient.Obs>,    // FRED T10YIE
+        val realYield: List<FredObs>,    // FRED DFII10
+        val inflation: List<FredObs>,    // FRED T10YIE
         val centralBankScore: Int? = null,      // deprecated: ignored; CB now from the WGC series below
         val cbQuarterly: List<CbQuarter> = emptyList(),  // hosted WGC quarterly feed; empty → bundled annual
     )
@@ -91,7 +91,7 @@ object GoldIndexEngine {
 
     // ── Component scorers (current snapshot) ────────────────────────────────
 
-    private fun scoreRealYield(obs: List<FredClient.Obs>): GoldComponentScore {
+    private fun scoreRealYield(obs: List<FredObs>): GoldComponentScore {
         if (obs.size < 5) return GoldComponentScore(
             name = "Real Yield Pressure", score = 50f, label = "N/A",
             detail = "FRED API key required → Settings", available = false, keyRequired = true,
@@ -139,7 +139,7 @@ object GoldIndexEngine {
         )
     }
 
-    private fun scoreInflation(obs: List<FredClient.Obs>): GoldComponentScore {
+    private fun scoreInflation(obs: List<FredObs>): GoldComponentScore {
         if (obs.size < 5) return GoldComponentScore(
             name = "Inflation Expectations", score = 50f, label = "N/A",
             detail = "FRED API key required → Settings", available = false, keyRequired = true,
@@ -321,7 +321,7 @@ object GoldIndexEngine {
         return Triple(score, toLabel(score), components)
     }
 
-    private fun scoreRealYieldDelta(obs: List<FredClient.Obs>): GoldComponentScore {
+    private fun scoreRealYieldDelta(obs: List<FredObs>): GoldComponentScore {
         if (obs.size < 60) return GoldComponentScore(
             name = "Real Yield Delta", score = 50f, label = "N/A",
             detail = "FRED API key required → Settings", available = false,
@@ -360,7 +360,7 @@ object GoldIndexEngine {
         )
     }
 
-    private fun scoreInflationDelta(obs: List<FredClient.Obs>, ryObs: List<FredClient.Obs>): GoldComponentScore {
+    private fun scoreInflationDelta(obs: List<FredObs>, ryObs: List<FredObs>): GoldComponentScore {
         if (obs.size < 60) return GoldComponentScore(
             name = "Inflation Delta", score = 50f, label = "N/A",
             detail = "FRED API key required → Settings", available = false,
@@ -571,7 +571,7 @@ object GoldIndexEngine {
         else -> "BEARISH"
     }
 
-    private fun buildFredMap(obs: List<FredClient.Obs>): TreeMap<String, Double> {
+    private fun buildFredMap(obs: List<FredObs>): TreeMap<String, Double> {
         val map = TreeMap<String, Double>()
         for (o in obs) map[o.dateStr] = o.value
         return map

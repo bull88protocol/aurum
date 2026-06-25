@@ -2,7 +2,7 @@ package com.sun.aurum.domain.gold
 
 import com.sun.aurum.model.Candle
 import com.sun.aurum.model.CbQuarter
-import com.sun.aurum.network.FredClient
+import com.sun.aurum.model.FredObs
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -41,8 +41,8 @@ class GoldIndexEngineTest {
             Candle(open = c, high = c * 1.01, low = c * 0.99, close = c, volume = 1_000_000L, datetimeMs = ms)
         }
 
-    private fun obs(dates: List<Pair<Long, String>>, value: (Int) -> Double): List<FredClient.Obs> =
-        dates.mapIndexed { i, (_, s) -> FredClient.Obs(s, value(i)) }
+    private fun obs(dates: List<Pair<Long, String>>, value: (Int) -> Double): List<FredObs> =
+        dates.mapIndexed { i, (_, s) -> FredObs(s, value(i)) }
 
     // ── toLabel thresholds ──────────────────────────────────────────────────
     @Test fun toLabel_thresholds() {

@@ -122,6 +122,9 @@ data class CbQuarter(
     val tonnes: Double,
 )
 
+/** A single FRED series observation (date "yyyy-MM-dd" + value). Shared input to the Gold Index. */
+data class FredObs(val dateStr: String, val value: Double)
+
 data class GoldComponentScore(
     val name: String,
     val score: Float,           // 0-100
