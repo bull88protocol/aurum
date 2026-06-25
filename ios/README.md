@@ -8,6 +8,8 @@ gold-macro intelligence to iPhone — natively, without forking the model.
 ## Start here
 - **[APPLE_RELEASE_PLAN.md](APPLE_RELEASE_PLAN.md)** — the full engineering + release plan. Read this
   first.
+- **[MAC_SETUP.md](MAC_SETUP.md)** — get a Mac (even a borrowed one) ready to build the iOS app and
+  sync with the Linux box via GitHub.
 - **[APP_STORE_SUBMISSION_CHECKLIST.md](APP_STORE_SUBMISSION_CHECKLIST.md)** — the pre-submission
   checklist for TestFlight + App Store.
 
