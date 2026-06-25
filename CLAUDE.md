@@ -12,15 +12,16 @@ instrument (the Dollar / DXY via the HMAI engine). No backend; runs on-device.
 - **Android** — live: **v2.0.0 / versionCode 6** on `master`, merged 2026-06-24, on Google Play.
 - **iOS** — in progress (Apple App Store). Architecture + phased plan in **`ios/APPLE_RELEASE_PLAN.md`**.
   Decision: **Kotlin Multiplatform shared core + native SwiftUI**. Needs a Mac (Xcode is macOS-only).
-  **Phase 1 underway on branch `ios-port`:** `:shared` KMP module stood up; `model` + the HMAI engine
-  migrated to `commonMain`; 23/23 tests green. Next: migrate `GoldIndexEngine` (→ `kotlinx-datetime`,
-  replace `TreeMap`, lift `FredClient.Obs` into `model`), then network (Ktor) + storage (expect/actual).
+  **Phase 1 underway on branch `ios-port`:** `:shared` KMP module stood up; **the entire domain —
+  `model` + both engines (`GoldIndexEngine` + HMAI) — now lives in `commonMain`**; 23/23 tests green.
+  Next: network clients → Ktor, storage/biometric → expect/actual, tests → commonTest, then iOS
+  targets + SwiftUI on the Mac (Phase 2).
 
 ## Repo layout
-- `app/` — Android app (Kotlin). Still holds `GoldIndexEngine`, `network/`, `data/`, `ui/`.
-- `shared/` — KMP module (added on `ios-port`). `commonMain` now has `model/`, the HMAI engine
-  (`domain/hmai/`), and a `util/` `formatDecimals` expect/actual. `androidTarget` only for now; iOS
-  targets get enabled on the Mac (Phase 2). The Android app depends on `:shared`.
+- `app/` — Android app (Kotlin). Holds `network/`, `data/`, `ui/` (engines now live in `:shared`).
+- `shared/` — KMP module (added on `ios-port`). `commonMain` now has the **full domain** (`model/`,
+  `domain/gold/` + `domain/hmai/`) and `util/formatDecimals` (expect/actual); deps: kotlinx-datetime.
+  `androidTarget` only for now; iOS targets get enabled on the Mac (Phase 2). The app depends on `:shared`.
 - `data/cb_quarterly.json` (hosted CB feed) · `release-2.0/` (v2.0 docs) · `ios/` (Apple plan) ·
   `cb-data/` (CB feed tool).
 - **Target:** all engines + `model/` + `network/` in `shared/commonMain` (one source of truth);

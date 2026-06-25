@@ -39,13 +39,17 @@ Real migration underway on Linux (no Mac needed yet); Android stays green throug
   (Kotlin won't smart-cast a nullable property declared in another module) — fixed with safe calls.
 - ✅ **HMAI engine migrated** (`HmaiEngine`, 6 pillars, `CircuitBreaker`, `TechnicalIndicators`) to
   `commonMain`, behind an `expect/actual formatDecimals` (androidMain → `String.format`, byte-identical).
-- ✅ **23/23 engine tests green** against `:shared` (still run from `:app`).
-- ⏭️ **Next:** migrate `GoldIndexEngine` — the hard one: `java.util` dates → `kotlinx-datetime`,
-  replace `TreeMap.headMap` (perf-sensitive) with a sorted-array + binary-search, lift
-  `FredClient.Obs` into `model`. Then network → Ktor, storage → `expect/actual`, move tests to
-  `commonTest` (kotlin.test), and enable iOS targets on the Mac.
+- ✅ **`GoldIndexEngine` migrated** — the hard one. `FredClient.Obs` lifted into `model.FredObs`;
+  `java.util` dates → `kotlinx-datetime` (`Clock`/`Instant`/America-New_York); `TreeMap.headMap`
+  windows → a `SortedDateSeries` (sort once, binary-search per query — same values, keeps the perf
+  canary green); `String.format` → `formatDecimals`. **The entire scoring brain is now shared.**
+- ✅ **23/23 engine tests green** against `:shared` (still run from `:app`; behavior verified identical,
+  including the exact-value CB assertions and the <15s perf canary).
+- ⏭️ **Next:** network clients → Ktor (`OkHttp`→Ktor, `org.json`→kotlinx.serialization); storage/
+  caching/biometric → `expect/actual`; move the engine tests to `commonTest` (kotlin.test); then on
+  the Mac, enable the iOS targets and stand up the SwiftUI app (Phase 2).
 
-Commits: `baf3bb0` (module + model), `8e8bea4` (HMAI).
+Commits: `baf3bb0` (module + model), `8e8bea4` (HMAI), `d3dbcd6` (FredObs), `83c2f5f` (GoldIndexEngine).
 
 ---
 
