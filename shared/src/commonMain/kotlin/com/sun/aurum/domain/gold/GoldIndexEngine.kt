@@ -3,18 +3,23 @@ package com.sun.aurum.domain.gold
 import com.sun.aurum.model.Candle
 import com.sun.aurum.model.CbQuarter
 import com.sun.aurum.model.DailyIndexPoint
+import com.sun.aurum.model.FredObs
 import com.sun.aurum.model.GoldComponentScore
 import com.sun.aurum.model.GoldIndexReport
-import com.sun.aurum.model.FredObs
-import java.text.SimpleDateFormat
-import java.util.*
+import com.sun.aurum.util.formatDecimals
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import kotlin.math.roundToInt
 
 object GoldIndexEngine {
 
-    private val dateFmt = SimpleDateFormat("yyyy-MM-dd", Locale.US).apply {
-        timeZone = TimeZone.getTimeZone("America/New_York")
-    }
+    private val NY = TimeZone.of("America/New_York")
+    // epoch millis -> "yyyy-MM-dd" in the US trading-session zone (matches the prior SimpleDateFormat).
+    private fun epochMsToDate(ms: Long): String =
+        Instant.fromEpochMilliseconds(ms).toLocalDateTime(NY).date.toString()
+    private fun nowMs(): Long = Clock.System.now().toEpochMilliseconds()
 
     // Component weights for the spot index (Real Yield / USD / Central Bank / Inflation / Technical).
     // Reweighted from 35/25/20/15/5 after validating against monthly LBMA gold (2009-2026): the old
@@ -82,7 +87,7 @@ object GoldIndexEngine {
             compositeLabel    = toLabel(composite),
             components        = components,
             historicalScores  = historical,
-            timestamp         = System.currentTimeMillis(),
+            timestamp         = nowMs(),
             forwardScore      = fwdScore,
             forwardLabel      = fwdLabel,
             forwardComponents = fwdComponents,
@@ -109,7 +114,7 @@ object GoldIndexEngine {
         }
         return GoldComponentScore(
             name = "Real Yield Pressure", score = score, label = toLabel(score),
-            detail = "${String.format("%.2f", current)}%  $trend",
+            detail = "${formatDecimals(current, 2)}%  $trend",
         )
     }
 
@@ -135,7 +140,7 @@ object GoldIndexEngine {
         }
         return GoldComponentScore(
             name = "USD Strength", score = score, label = toLabel(score),
-            detail = "${String.format("%.1f", current)} (DXY)  $trend${freshnessNote(dxy.last().datetimeMs)}",
+            detail = "${formatDecimals(current, 1)} (DXY)  $trend${freshnessNote(dxy.last().datetimeMs)}",
         )
     }
 
@@ -157,7 +162,7 @@ object GoldIndexEngine {
         }
         return GoldComponentScore(
             name = "Inflation Expectations", score = score, label = toLabel(score),
-            detail = "${String.format("%.2f", current)}%  $trend",
+            detail = "${formatDecimals(current, 2)}%  $trend",
         )
     }
 
@@ -193,7 +198,7 @@ object GoldIndexEngine {
         val dir = if (roc > 1.0) "↑ Uptrend" else if (roc < -1.0) "↓ Downtrend" else "→ Ranging"
         return GoldComponentScore(
             name = "Technical Momentum", score = total, label = toLabel(total),
-            detail = "ROC(20): ${String.format("%.1f", roc)}%  $dir",
+            detail = "ROC(20): ${formatDecimals(roc, 1)}%  $dir",
         )
     }
 
@@ -205,13 +210,12 @@ object GoldIndexEngine {
     //
     // LIVE-FEED SEAM (P1-1): cbTonnesEffective() is the single override point for a live quarterly
     // WGC (or hosted-JSON / IMF-reserves-derived) series. See release-2.0/NEXT_RELEASE_PLAN.md.
-    private val cbNetPurchasesByYear: TreeMap<Int, Double> = TreeMap(
-        mapOf(
-            2009 to -34.0, 2010 to 79.0, 2011 to 481.0, 2012 to 544.0, 2013 to 409.0,
-            2014 to 584.0, 2015 to 580.0, 2016 to 395.0, 2017 to 379.0, 2018 to 656.0,
-            2019 to 605.0, 2020 to 255.0, 2021 to 463.0, 2022 to 1082.0, 2023 to 1037.0,
-            2024 to 1045.0, 2025 to 1000.0, 2026 to 1000.0,
-        )
+    // WGC net central-bank purchases (tonnes/yr) by calendar year of the flow, ascending order.
+    private val cbByYear: List<Pair<Int, Double>> = listOf(
+        2009 to -34.0, 2010 to 79.0, 2011 to 481.0, 2012 to 544.0, 2013 to 409.0,
+        2014 to 584.0, 2015 to 580.0, 2016 to 395.0, 2017 to 379.0, 2018 to 656.0,
+        2019 to 605.0, 2020 to 255.0, 2021 to 463.0, 2022 to 1082.0, 2023 to 1037.0,
+        2024 to 1045.0, 2025 to 1000.0, 2026 to 1000.0,
     )
     // First year whose figure is a forward estimate (not yet a published WGC actual).
     private const val CB_ESTIMATE_FROM_YEAR = 2025
@@ -221,14 +225,12 @@ object GoldIndexEngine {
      * year Y in ~Q1 of Y+1, so from April Y the latest *known* full year is Y-1; in Jan–Mar Y only
      * Y-2 is out yet. Look-ahead-free: a point in time never consumes a figure published later.
      */
-    internal fun cbEffectiveYear(year: Int, month: Int): Int = if (month >= 4) year - 1 else year - 2
+    fun cbEffectiveYear(year: Int, month: Int): Int = if (month >= 4) year - 1 else year - 2
 
-    internal fun cbTonnesEffective(year: Int, month: Int): Double {
+    fun cbTonnesEffective(year: Int, month: Int): Double {
         val effYear = cbEffectiveYear(year, month)
-        cbNetPurchasesByYear[effYear]?.let { return it }
-        val head = cbNetPurchasesByYear.headMap(effYear + 1)
-        if (head.isNotEmpty()) return head[head.lastKey()]!!
-        return cbNetPurchasesByYear[cbNetPurchasesByYear.firstKey()]!!
+        // exact year, else the latest known year <= effYear, else the earliest known year
+        return cbByYear.lastOrNull { it.first <= effYear }?.second ?: cbByYear.first().second
     }
 
     // ── Live quarterly feed (preferred over the bundled annual series when it covers the date) ──
@@ -244,7 +246,7 @@ object GoldIndexEngine {
 
     // Trailing-12-month net purchases from the live feed (sum of the last 4 *published* quarters as
     // of the date), or null if fewer than 4 are available → caller uses the bundled annual series.
-    internal fun cbTonnesFromQuarterly(quarterly: List<CbQuarter>, year: Int, month: Int): Double? {
+    fun cbTonnesFromQuarterly(quarterly: List<CbQuarter>, year: Int, month: Int): Double? {
         if (quarterly.isEmpty()) return null
         val published = quarterly.filter { cbQuarterPublishedAsOf(it, year, month) }
             .sortedWith(compareBy({ it.year }, { it.quarter }))
@@ -259,7 +261,7 @@ object GoldIndexEngine {
     // tonnage bands (net-selling → record-buying), so it is look-ahead-free and stable across
     // regimes — unlike sample min-max scaling, which either leaks the future peak (full-sample) or
     // inflates the calm era (expanding-window).
-    internal fun cbScoreFromTonnes(tonnes: Double): Float {
+    fun cbScoreFromTonnes(tonnes: Double): Float {
         val anchors = listOf(
             -100.0 to 10f, 0.0 to 28f, 300.0 to 45f, 500.0 to 55f,
             800.0 to 72f, 1100.0 to 90f, 1300.0 to 95f,
@@ -284,13 +286,13 @@ object GoldIndexEngine {
             .takeIf { it.size >= 4 }
             ?.maxWithOrNull(compareBy({ it.year }, { it.quarter }))
         if (latestQ != null) return "${latestQ.year}-Q${latestQ.quarter}"
-        val effYear = cbEffectiveYear(year, month).coerceAtLeast(cbNetPurchasesByYear.firstKey())
+        val effYear = cbEffectiveYear(year, month).coerceAtLeast(cbByYear.first().first)
         return if (effYear >= CB_ESTIMATE_FROM_YEAR) "$effYear est." else "$effYear"
     }
 
     private fun scoreCentralBank(quarterly: List<CbQuarter>): GoldComponentScore {
-        val today  = dateFmt.format(Date())
-        val y = today.substring(0, 4).toInt(); val m = today.substring(5, 7).toInt()
+        val now = Clock.System.now().toLocalDateTime(NY)
+        val y = now.year; val m = now.monthNumber
         val tonnes = cbTonnes(y, m, quarterly)
         val score  = cbScoreFromTonnes(tonnes)
         return GoldComponentScore(
@@ -336,7 +338,7 @@ object GoldIndexEngine {
         val dir = if (delta < -0.05) "↓ Falling (Bullish)" else if (delta > 0.05) "↑ Rising (Bearish)" else "→ Stable"
         return GoldComponentScore(
             name = "Real Yield Delta", score = score, label = toLabel(score),
-            detail = "${if (delta >= 0) "+" else ""}${String.format("%.2f", delta)}% (3M)  $dir",
+            detail = "${if (delta >= 0) "+" else ""}${formatDecimals(delta, 2)}% (3M)  $dir",
         )
     }
 
@@ -356,7 +358,7 @@ object GoldIndexEngine {
         val dir = if (deltaPct < -0.5) "↓ Weaker (Bullish)" else if (deltaPct > 0.5) "↑ Stronger (Bearish)" else "→ Stable"
         return GoldComponentScore(
             name = "USD Delta", score = score, label = toLabel(score),
-            detail = "${if (deltaPct >= 0) "+" else ""}${String.format("%.1f", deltaPct)}% (3M)  $dir",
+            detail = "${if (deltaPct >= 0) "+" else ""}${formatDecimals(deltaPct, 1)}% (3M)  $dir",
         )
     }
 
@@ -380,7 +382,7 @@ object GoldIndexEngine {
         val note    = if (muted) " ⚠ muted (yields↑)" else ""
         return GoldComponentScore(
             name = "Inflation Delta", score = score, label = toLabel(score),
-            detail = "${if (delta >= 0) "+" else ""}${String.format("%.2f", delta)}% (3M)  $dir$note",
+            detail = "${if (delta >= 0) "+" else ""}${formatDecimals(delta, 2)}% (3M)  $dir$note",
         )
     }
 
@@ -398,7 +400,7 @@ object GoldIndexEngine {
         val dir = if (roc60 > 1.0) "↑ Rising" else if (roc60 < -1.0) "↓ Falling" else "→ Flat"
         return GoldComponentScore(
             name = "Technical Trend", score = score, label = toLabel(score),
-            detail = "ROC(60): ${if (roc60 >= 0) "+" else ""}${String.format("%.1f", roc60)}%  $dir",
+            detail = "ROC(60): ${if (roc60 >= 0) "+" else ""}${formatDecimals(roc60, 1)}%  $dir",
         )
     }
 
@@ -408,15 +410,15 @@ object GoldIndexEngine {
         val candles = inputs.gldCandles
         if (candles.size < 60) return emptyList()
 
-        val ryMap  = buildFredMap(inputs.realYield)
-        val infMap = buildFredMap(inputs.inflation)
-        val dxyMap = buildCandleMap(inputs.dxyCandles)
+        val ryMap  = buildFredSeries(inputs.realYield)
+        val infMap = buildFredSeries(inputs.inflation)
+        val dxyMap = buildCandleSeries(inputs.dxyCandles)
 
         val result   = mutableListOf<DailyIndexPoint>()
         val startIdx = maxOf(50, candles.size - days)
 
         for (i in startIdx until candles.size) {
-            val dateStr  = dateFmt.format(Date(candles[i].datetimeMs))
+            val dateStr  = epochMsToDate(candles[i].datetimeMs)
             val subClose = candles.subList(maxOf(0, i - 251), i + 1).map { it.close }
 
             // Historical chart uses the full 5-component basis — same as the live index. CB comes
@@ -424,15 +426,15 @@ object GoldIndexEngine {
             data class W(val score: Float, val weight: Float)
             val scored = mutableListOf<W>()
 
-            val ryWindow = ryMap.headMap(dateStr, true).values.toList().takeLast(252)
+            val ryWindow = ryMap.window(dateStr, 252)
             if (ryWindow.size >= 5) scored.add(W(invertedPct(ryWindow.last(), ryWindow) * 100f, W_REAL_YIELD))
 
-            val dxyWindow = dxyMap.headMap(dateStr, true).values.toList().takeLast(504)
+            val dxyWindow = dxyMap.window(dateStr, 504)
             if (dxyWindow.size >= 5) scored.add(W(usdScore(dxyWindow.last(), dxyWindow), W_USD))
 
             scored.add(W(centralBankScoreAt(dateStr, inputs.cbQuarterly), W_CENTRAL))
 
-            val infWindow = infMap.headMap(dateStr, true).values.toList().takeLast(252)
+            val infWindow = infMap.window(dateStr, 252)
             if (infWindow.size >= 5) scored.add(W(directPct(infWindow.last(), infWindow) * 100f, W_INFLATION))
 
             if (subClose.size >= 20) scored.add(W(scoreTechnical(subClose).score, W_TECHNICAL))
@@ -451,24 +453,24 @@ object GoldIndexEngine {
         val candles = inputs.gldCandles
         if (candles.size < 60) return emptyList()
 
-        val ryMap  = buildFredMap(inputs.realYield)
-        val infMap = buildFredMap(inputs.inflation)
-        val dxyMap = buildCandleMap(inputs.dxyCandles)
+        val ryMap  = buildFredSeries(inputs.realYield)
+        val infMap = buildFredSeries(inputs.inflation)
+        val dxyMap = buildCandleSeries(inputs.dxyCandles)
 
         val result   = mutableListOf<HistoricalRow>()
         val startIdx = 50
 
         for (i in startIdx until candles.size) {
-            val dateStr  = dateFmt.format(Date(candles[i].datetimeMs))
+            val dateStr  = epochMsToDate(candles[i].datetimeMs)
             val subClose = candles.subList(maxOf(0, i - 251), i + 1).map { it.close }
 
-            val ryWindow  = ryMap.headMap(dateStr, true).values.toList().takeLast(252)
+            val ryWindow  = ryMap.window(dateStr, 252)
             val ryScore   = if (ryWindow.size >= 5) invertedPct(ryWindow.last(), ryWindow) * 100f else null
 
-            val dxyWindow = dxyMap.headMap(dateStr, true).values.toList().takeLast(504)
+            val dxyWindow = dxyMap.window(dateStr, 504)
             val dxyScore  = if (dxyWindow.size >= 5) usdScore(dxyWindow.last(), dxyWindow) else null
 
-            val infWindow = infMap.headMap(dateStr, true).values.toList().takeLast(252)
+            val infWindow = infMap.window(dateStr, 252)
             val infScore  = if (infWindow.size >= 5) directPct(infWindow.last(), infWindow) * 100f else null
 
             val cbScore   = centralBankScoreAt(dateStr, inputs.cbQuarterly)
@@ -494,21 +496,20 @@ object GoldIndexEngine {
 
     fun toCsv(rows: List<HistoricalRow>): String {
         if (rows.isEmpty()) return ""
-        val fmt = SimpleDateFormat("yyyy-MM-dd", Locale.US)
-        val firstDate = fmt.format(Date(rows.first().dateMs))
-        val lastDate  = fmt.format(Date(rows.last().dateMs))
+        val firstDate = epochMsToDate(rows.first().dateMs)
+        val lastDate  = epochMsToDate(rows.last().dateMs)
         val sb = StringBuilder()
         sb.appendLine("# Gold Index History | GLD · DXY · FRED DFII10 · FRED T10YIE · WGC CB net purchases | $firstDate to $lastDate")
         sb.appendLine("# Composite Gold Index (0-100) with its 5 component scores. CB Demand = WGC net central-bank purchases (fixed-anchor).")
         sb.appendLine("Date,Gold Index,Real Yield Score,USD Score,Central Bank Score,Inflation Score,Technical Score")
         for (r in rows) {
-            sb.append(fmt.format(Date(r.dateMs))).append(',')
-            sb.append(String.format("%.1f", r.composite)).append(',')
-            sb.append(r.realYield?.let { String.format("%.1f", it) } ?: "").append(',')
-            sb.append(r.usd?.let { String.format("%.1f", it) } ?: "").append(',')
-            sb.append(r.centralBank?.let { String.format("%.1f", it) } ?: "").append(',')
-            sb.append(r.inflation?.let { String.format("%.1f", it) } ?: "").append(',')
-            sb.appendLine(r.technical?.let { String.format("%.1f", it) } ?: "")
+            sb.append(epochMsToDate(r.dateMs)).append(',')
+            sb.append(formatDecimals(r.composite.toDouble(), 1)).append(',')
+            sb.append(r.realYield?.let { formatDecimals(it.toDouble(), 1) } ?: "").append(',')
+            sb.append(r.usd?.let { formatDecimals(it.toDouble(), 1) } ?: "").append(',')
+            sb.append(r.centralBank?.let { formatDecimals(it.toDouble(), 1) } ?: "").append(',')
+            sb.append(r.inflation?.let { formatDecimals(it.toDouble(), 1) } ?: "").append(',')
+            sb.appendLine(r.technical?.let { formatDecimals(it.toDouble(), 1) } ?: "")
         }
         return sb.toString()
     }
@@ -551,7 +552,7 @@ object GoldIndexEngine {
     // Flags a stale feed: appends an age note when the latest candle is more than 5 days old
     // (covers weekends/holidays without false alarms).
     private fun freshnessNote(latestMs: Long): String {
-        val ageDays = (System.currentTimeMillis() - latestMs) / 86_400_000L
+        val ageDays = (nowMs() - latestMs) / 86_400_000L
         return if (ageDays > 5) "  ⚠ ${ageDays}d delayed" else ""
     }
 
@@ -571,17 +572,37 @@ object GoldIndexEngine {
         else -> "BEARISH"
     }
 
-    private fun buildFredMap(obs: List<FredObs>): TreeMap<String, Double> {
-        val map = TreeMap<String, Double>()
-        for (o in obs) map[o.dateStr] = o.value
-        return map
+    private fun buildFredSeries(obs: List<FredObs>): SortedDateSeries {
+        val m = mutableMapOf<String, Double>()
+        for (o in obs) m[o.dateStr] = o.value   // dedupe by date, last wins (matches the old TreeMap)
+        return SortedDateSeries.from(m)
     }
 
-    private fun buildCandleMap(candles: List<Candle>): TreeMap<String, Double> {
-        val map = TreeMap<String, Double>()
-        for (c in candles) map[dateFmt.format(Date(c.datetimeMs))] = c.close
-        return map
+    private fun buildCandleSeries(candles: List<Candle>): SortedDateSeries {
+        val m = mutableMapOf<String, Double>()
+        for (c in candles) m[epochMsToDate(c.datetimeMs)] = c.close
+        return SortedDateSeries.from(m)
     }
 
-    private fun emptyReport() = GoldIndexReport(50f, "NEUTRAL", emptyList(), emptyList(), System.currentTimeMillis())
+    // Date-keyed series with TreeMap.headMap(key, true) semantics in common code: sort once, then each
+    // window() is a binary search. Keys are "yyyy-MM-dd" so lexicographic order == chronological.
+    private class SortedDateSeries private constructor(
+        private val dates: List<String>,
+        private val values: List<Double>,
+    ) {
+        /** Last [n] values whose date <= [key] (== headMap(key, true).values.toList().takeLast(n)). */
+        fun window(key: String, n: Int): List<Double> {
+            var lo = 0; var hi = dates.size           // find the count of dates <= key
+            while (lo < hi) { val mid = (lo + hi) ushr 1; if (dates[mid] <= key) lo = mid + 1 else hi = mid }
+            return values.subList(maxOf(0, lo - n), lo)
+        }
+        companion object {
+            fun from(byDate: Map<String, Double>): SortedDateSeries {
+                val sorted = byDate.entries.sortedBy { it.key }
+                return SortedDateSeries(sorted.map { it.key }, sorted.map { it.value })
+            }
+        }
+    }
+
+    private fun emptyReport() = GoldIndexReport(50f, "NEUTRAL", emptyList(), emptyList(), nowMs())
 }
