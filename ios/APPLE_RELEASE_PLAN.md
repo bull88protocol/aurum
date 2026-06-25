@@ -1,7 +1,24 @@
 # Aurum88 Protocol — Apple App Store Release Plan
 
 _Written as the plan I'd actually run: an Apple platform lead's engineering judgment, with a
-gold pro-trader's view of what has to be perfect. Last updated 2026-06-24._
+gold pro-trader's view of what has to be perfect. Last updated 2026-06-25._
+
+---
+
+> ## ▶ Resume here (next session)
+>
+> **Phase 1 (the KMP shared core) is in progress on branch `ios-port`** (pushed to `origin`).
+> All work so far is on Linux — no Mac needed yet. `master` is untouched on the shipped Android v2.0.
+>
+> - **Done & green** (Android builds, **23/23** tests): the **entire domain** — `model/` + both engines
+>   (`GoldIndexEngine` + HMAI) + `util/formatDecimals` — is migrated to `shared/commonMain`. See the
+>   **Phase 1 progress** section below for the play-by-play and commits (`baf3bb0`→`83c2f5f`).
+> - **Next task:** migrate the **`network/` clients** (`YahooFinanceClient`, `FredClient`,
+>   `GeminiClient`, `GoogleSheetsClient`, `CentralBankClient`) into `shared/commonMain` on **Ktor**
+>   (replace OkHttp; Darwin engine for iOS) + **kotlinx.serialization** (replace `org.json`). Then
+>   storage/biometric → `expect/actual`, engine tests → `commonTest`, then Phase 2 (SwiftUI) on the Mac.
+> - **Keep it green at every step:** `source /home/sun/option_android/android_env.sh` then
+>   `./gradlew :app:assembleDebug :app:testDebugUnitTest` (must stay 23/23).
 
 ---
 
