@@ -1,5 +1,7 @@
 package com.sun.aurum.domain.hmai
 
+import com.sun.aurum.util.formatDecimals
+
 import com.sun.aurum.model.Candle
 import com.sun.aurum.model.PillarResult
 
@@ -32,7 +34,7 @@ object Pillar5Valuation {
         val total = (rangeScore + hvScore + momentumScore).toDouble().coerceIn(0.0, 10.0)
         val label = when { total >= 7 -> "FAVORABLE"; total >= 4 -> "FAIR_VALUE"; else -> "STRETCHED" }
         val components = mapOf("range_pos" to rangeScore.toDouble(), "hv_pctile" to hvScore.toDouble(), "momentum" to momentumScore.toDouble())
-        val details = "Range52w=${String.format("%.0f", rangePos)}% HVpctile=${String.format("%.0f", hvPctile)}%"
+        val details = "Range52w=${formatDecimals(rangePos, 0)}% HVpctile=${formatDecimals(hvPctile, 0)}%"
         return PillarResult(5, "Valuation Context", total, 10.0, label, components, details)
     }
 }

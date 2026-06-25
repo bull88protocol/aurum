@@ -1,5 +1,7 @@
 package com.sun.aurum.domain.hmai
 
+import com.sun.aurum.util.formatDecimals
+
 import com.sun.aurum.model.Candle
 import com.sun.aurum.model.PillarResult
 
@@ -62,7 +64,7 @@ object Pillar2Momentum {
         val total = (rsiScore + macdSlopeScore + rocScore + divergenceScore).toDouble().coerceIn(0.0, 15.0)
         val label = when { total >= 12 -> "HEALTHY_ALIGNED"; total >= 8 -> "FADING"; total >= 4 -> "DIVERGING"; else -> "EXHAUSTED" }
         val components = mapOf("rsi" to rsiScore.toDouble(), "macd_slope" to macdSlopeScore.toDouble(), "roc10" to rocScore.toDouble(), "divergence" to divergenceScore.toDouble())
-        val details = "RSI=${String.format("%.1f", latestRsi)} MACD_hist=${latestMacd?.let { String.format("%.3f", it.hist) } ?: "n/a"} ROC10=${String.format("%.1f", latestRoc)}%"
+        val details = "RSI=${formatDecimals(latestRsi, 1)} MACD_hist=${latestMacd?.let { formatDecimals(it.hist, 3) } ?: "n/a"} ROC10=${formatDecimals(latestRoc, 1)}%"
         return PillarResult(2, "Momentum & Timing", total, 15.0, label, components, details)
     }
 }

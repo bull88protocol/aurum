@@ -1,5 +1,7 @@
 package com.sun.aurum.domain.hmai
 
+import com.sun.aurum.util.formatDecimals
+
 import com.sun.aurum.model.CbAction
 import com.sun.aurum.model.Candle
 import com.sun.aurum.model.CircuitBreakerResult
@@ -19,7 +21,7 @@ object CircuitBreaker {
             val latestAtr = atrSeries.last()
             val baseAtr = atrSeries.dropLast(1).takeLast(14).average()
             if (baseAtr > 0 && latestAtr / baseAtr > 2.0)
-                triggers.add("Volatility spike (ATR ×${String.format("%.1f", latestAtr / baseAtr)})")
+                triggers.add("Volatility spike (ATR ×${formatDecimals(latestAtr / baseAtr, 1)})")
         }
 
         val volSma = TechnicalIndicators.volSma(volumes, 20).filterNotNull()
@@ -27,11 +29,11 @@ object CircuitBreaker {
             val curVol = volumes.last().toDouble()
             val avgVol = volSma.last()
             if (avgVol > 0 && curVol / avgVol < 0.30)
-                triggers.add("Volume collapse (${String.format("%.0f", curVol / avgVol * 100)}% of avg)")
+                triggers.add("Volume collapse (${formatDecimals(curVol / avgVol * 100, 0)}% of avg)")
         }
 
         val gapPct = TechnicalIndicators.lastGapPct(candles)
-        if (abs(gapPct) > 3.0) triggers.add("Large gap (${String.format("%.1f", gapPct)}%)")
+        if (abs(gapPct) > 3.0) triggers.add("Large gap (${formatDecimals(gapPct, 1)}%)")
 
         val recent = candles.takeLast(10)
         var downStreak = 0; var maxStreak = 0
@@ -42,12 +44,12 @@ object CircuitBreaker {
         if (maxStreak >= 5) triggers.add("$maxStreak consecutive down days")
 
         val hvPctile = TechnicalIndicators.hvPercentile(closes, period = 10, lookback = 252)
-        if (hvPctile > 90.0) triggers.add("Realized vol spike (${String.format("%.0f", hvPctile)}th pctile)")
+        if (hvPctile > 90.0) triggers.add("Realized vol spike (${formatDecimals(hvPctile, 0)}th pctile)")
 
         if (vixValue != null) {
             when {
-                vixValue > 40 -> triggers.add("VIX crisis (${String.format("%.1f", vixValue)})")
-                vixValue > 30 -> triggers.add("VIX elevated (${String.format("%.1f", vixValue)})")
+                vixValue > 40 -> triggers.add("VIX crisis (${formatDecimals(vixValue, 1)})")
+                vixValue > 30 -> triggers.add("VIX elevated (${formatDecimals(vixValue, 1)})")
             }
         }
 

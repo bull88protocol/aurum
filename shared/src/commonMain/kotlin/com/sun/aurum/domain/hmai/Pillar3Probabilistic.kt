@@ -1,5 +1,7 @@
 package com.sun.aurum.domain.hmai
 
+import com.sun.aurum.util.formatDecimals
+
 import com.sun.aurum.model.Candle
 import com.sun.aurum.model.PillarResult
 import kotlin.math.sqrt
@@ -68,7 +70,7 @@ object Pillar3Probabilistic {
         val total = (directionalScore + tailRiskScore + regimeScore).toDouble().coerceIn(0.0, 20.0)
         val label = when { total >= 16 -> "STRONG_FAVORABLE"; total >= 12 -> "MILD_FAVORABLE"; total >= 8 -> "INCONCLUSIVE"; total >= 4 -> "MILD_UNFAVORABLE"; else -> "STRONG_UNFAVORABLE" }
         val components = mapOf("directional" to directionalScore.toDouble(), "tail_risk" to tailRiskScore.toDouble(), "regime_sim" to regimeScore.toDouble())
-        val details = "FwdProb=${String.format("%.0f", avgProb * 100)}% VaR95=${String.format("%.1f", var95 * 100)}% MaxDD=${String.format("%.1f", maxDd * 100)}% KNN=${String.format("%.0f", hitRate * 100)}%"
+        val details = "FwdProb=${formatDecimals(avgProb * 100, 0)}% VaR95=${formatDecimals(var95 * 100, 1)}% MaxDD=${formatDecimals(maxDd * 100, 1)}% KNN=${formatDecimals(hitRate * 100, 0)}%"
         return PillarResult(3, "Probabilistic Engine", total, 20.0, label, components, details)
     }
 }

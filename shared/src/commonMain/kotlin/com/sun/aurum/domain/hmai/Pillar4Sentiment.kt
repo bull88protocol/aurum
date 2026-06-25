@@ -1,5 +1,7 @@
 package com.sun.aurum.domain.hmai
 
+import com.sun.aurum.util.formatDecimals
+
 import com.sun.aurum.model.Candle
 import com.sun.aurum.model.GeminiResult
 import com.sun.aurum.model.PillarResult
@@ -54,8 +56,8 @@ object Pillar4Sentiment {
             vixScore?.let { put("vix", it.toDouble()) }; geminiScore?.let { put("gemini", it.toDouble()) }
         }
         val details = buildString {
-            append("OBV=${obvTrend} UpDay=${String.format("%.0f", upDayRatio * 100)}%")
-            vixValue?.let { append(" VIX=${String.format("%.1f", it)}") }
+            append("OBV=${obvTrend} UpDay=${formatDecimals(upDayRatio * 100, 0)}%")
+            vixValue?.let { append(" VIX=${formatDecimals(it, 1)}") }
             gemini?.let { append(" Gemini=${it.signal}(${it.score})") }
         }
         return PillarResult(4, "Sentiment & Narrative", total, 15.0, label, components, details)

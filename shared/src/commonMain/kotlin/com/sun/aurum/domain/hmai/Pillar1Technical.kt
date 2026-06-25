@@ -1,5 +1,7 @@
 package com.sun.aurum.domain.hmai
 
+import com.sun.aurum.util.formatDecimals
+
 import com.sun.aurum.model.Candle
 import com.sun.aurum.model.PillarResult
 
@@ -98,7 +100,7 @@ object Pillar1Technical {
             s200?.let { append("SMA200=${it.toInt()} ") }
             s50?.let  { append("SMA50=${it.toInt()} ")  }
             s20?.let  { append("SMA20=${it.toInt()} ")  }
-            append("ATRpct=${String.format("%.0f", atrPctile)}")
+            append("ATRpct=${formatDecimals(atrPctile, 0)}")
         }
         return PillarResult(1, "Technical Structure", finalScore, 30.0, label, components, details)
     }
