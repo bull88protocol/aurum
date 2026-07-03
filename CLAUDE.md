@@ -4,7 +4,7 @@ A bring-your-own-keys **gold-macro app**: a single 0–100 Gold Index (real yiel
 demand, inflation, technicals) + a forward signal, history chart, AI brief, news, and a second
 instrument (the Dollar / DXY via the HMAI engine). No backend; runs on-device.
 
-> **Forward Signal v2 (2026-07, on `ios-port`):** the 3-6M outlook was rebuilt after a full
+> **Forward Signal v2 (2026-07, ships in v2.1.0):** the 3-6M outlook was rebuilt after a full
 > backtest vs real 2005-2026 history — now 0.55 Real-Rate Regime (DFII10 level, HIGH = bullish)
 > + 0.25 12M Trend + 0.20 Fed Cycle (DGS2 Δ); needs FRED DGS2 + a 6y DFII10 fetch (wired in
 > DataRepository). The old delta-based signal measured IC ≈ −0.05 (its BEARISH months out-returned
@@ -17,13 +17,15 @@ instrument (the Dollar / DXY via the HMAI engine). No backend; runs on-device.
 > file — plus the docs it points to — is the context. Keep it current.
 
 ## Platforms & status
-- **Android** — live: **v2.0.0 / versionCode 6** on `master`, merged 2026-06-24, on Google Play.
-- **iOS** — in progress (Apple App Store). Architecture + phased plan in **`ios/APPLE_RELEASE_PLAN.md`**.
+- **Android** — live on Google Play: v2.0.0 / versionCode 6. **v2.1.0 / versionCode 7** (Forward
+  Signal v2 + conditions labels; carries the KMP `:shared` core) merged to `master` 2026-07-03 —
+  signed AAB built, awaiting Play Console upload (internal track → promote).
+- **iOS** — parked for now (Apple App Store). Architecture + phased plan in **`ios/APPLE_RELEASE_PLAN.md`**.
   Decision: **Kotlin Multiplatform shared core + native SwiftUI**. Needs a Mac (Xcode is macOS-only).
-  **Phase 1 underway on branch `ios-port`:** `:shared` KMP module stood up; **the entire domain —
-  `model` + both engines (`GoldIndexEngine` + HMAI) — now lives in `commonMain`**; 29/29 tests green (Forward Signal v2 + conditions labels added 6).
-  Next: network clients → Ktor, storage/biometric → expect/actual, tests → commonTest, then iOS
-  targets + SwiftUI on the Mac (Phase 2).
+  **Phase 1 code is on `master`** (rode the v2.1.0 merge): `:shared` KMP module with **the entire
+  domain — `model` + both engines (`GoldIndexEngine` + HMAI) — in `commonMain`**; 29/29 tests green.
+  When iOS resumes: network clients → Ktor, storage/biometric → expect/actual, tests → commonTest,
+  then iOS targets + SwiftUI on the Mac (Phase 2).
 
 ## Repo layout
 - `app/` — Android app (Kotlin). Holds `network/`, `data/`, `ui/` (engines now live in `:shared`).
