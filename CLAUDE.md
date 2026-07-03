@@ -18,8 +18,9 @@ instrument (the Dollar / DXY via the HMAI engine). No backend; runs on-device.
 
 ## Platforms & status
 - **Android** — live on Google Play: v2.0.0 / versionCode 6. **v2.1.0 / versionCode 7** (Forward
-  Signal v2 + conditions labels; carries the KMP `:shared` core) merged to `master` 2026-07-03 —
-  signed AAB built, awaiting Play Console upload (internal track → promote).
+  Signal v2 + conditions labels; carries the KMP `:shared` core) is on Play **internal testing**.
+  **v2.1.1 / versionCode 8** (Clear Cache also busts the 7-day CB feed cache) merged to `master`
+  2026-07-03 — signed AAB built, awaiting Play upload. See `release-2.1/RELEASE_NOTES.md`.
 - **iOS** — parked for now (Apple App Store). Architecture + phased plan in **`ios/APPLE_RELEASE_PLAN.md`**.
   Decision: **Kotlin Multiplatform shared core + native SwiftUI**. Needs a Mac (Xcode is macOS-only).
   **Phase 1 code is on `master`** (rode the v2.1.0 merge): `:shared` KMP module with **the entire

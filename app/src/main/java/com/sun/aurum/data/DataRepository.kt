@@ -157,5 +157,9 @@ class DataRepository(private val context: Context) {
     fun clearCache() {
         DataCache.clear(context)
         GeminiCache.clear(context)
+        // Also drop the weekly CB-feed cache so "Clear Cache" genuinely fetches everything fresh
+        // (its dialog promises as much) — e.g. to pull a corrected WGC quarterly feed immediately
+        // instead of after the 7-day TTL. Invalidate (not delete) keeps the last-good copy offline.
+        CentralBankCache.invalidate(context)
     }
 }

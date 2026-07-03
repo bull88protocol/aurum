@@ -1,8 +1,25 @@
-# Aurum88 Protocol v2.1.0 — Release Notes
+# Aurum88 Protocol v2.1 — Release Notes
 
-**versionName 2.1.0 · versionCode 7** · merged to `master` 2026-07-03 (`b03afe6`).
-Signed AAB: `app/build/outputs/bundle/release/app-release.aab` (CN=Bull88 Protocol, O=CoinTranscend).
-Remaining owner step: upload to Play Console (Internal testing → verify → promote to Production).
+## v2.1.1 (versionCode 8) — patch
+
+One fix on top of 2.1.0: the **Clear Cache** action (⋮ menu) now also drops the weekly
+central-bank feed cache, so it genuinely "fetches everything fresh" as its dialog promises.
+Before this, `clearCache()` wiped only the data + Gemini caches, leaving the CB feed on its 7-day
+TTL — so a corrected WGC feed (or any feed change) couldn't be pulled on demand and users waited up
+to a week. `CentralBankCache.invalidate()` marks the file stale (keeps the last-good copy for
+offline) rather than deleting it. AAB: `app/build/outputs/bundle/release/app-release.aab`.
+
+> Note: the CB *data* correction reaches existing 2.1.0 installs automatically within 7 days via the
+> normal weekly refresh — no app update needed. 2.1.1 only adds the *on-demand* refresh capability.
+
+Play "What's new" (2.1.1): *"Clear Cache now also refreshes the central-bank data feed on demand."*
+
+---
+
+## v2.1.0 (versionCode 7)
+
+**Status:** on Play **Internal testing** (the test device runs a Play-App-Signing-signed build).
+Merged to `master` 2026-07-03 (`b03afe6`).
 
 ## What's new (Play "What's new" copy)
 

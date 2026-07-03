@@ -19,6 +19,19 @@ object CentralBankCache {
         return f.exists() && System.currentTimeMillis() - f.lastModified() < TTL_MS
     }
 
+    /**
+     * Force the next [CentralBankClient.loadCached] to re-fetch instead of serving the ≤7-day copy
+     * — this is what lets the "Clear Cache" action pull a corrected WGC feed on demand rather than
+     * waiting out the weekly TTL. Marks the file stale (rather than deleting it) so the current
+     * numbers survive as an offline fallback if that forced fetch fails; hard-deletes only on the
+     * rare filesystem that ignores setLastModified.
+     */
+    fun invalidate(ctx: Context) {
+        val f = file(ctx)
+        if (!f.exists()) return
+        if (!f.setLastModified(System.currentTimeMillis() - TTL_MS - 1_000)) f.delete()
+    }
+
     fun load(ctx: Context): String? = file(ctx).takeIf { it.exists() }?.let {
         runCatching { it.readText() }.getOrNull()
     }
