@@ -1,8 +1,8 @@
 {
   "source": "World Gold Council — Gold Demand Trends (central-bank net purchases)",
   "unit": "tonnes",
-  "method": "Replace quarters with WGC actuals as published; init seeds an even split of WGC annual totals (a placeholder that matches the annual basis).",
-  "updated": "2026-06-24",
+  "method": "2024-Q4 onward are WGC per-quarter net-purchase actuals (Gold Demand Trends): 2024-Q4 333, 2025 Q1-Q4 249/166/218/230 (FY 863t), 2026-Q1 244. 2024 Q1-Q3 split evenly from the 1045t annual (WGC published only a 712t nine-month combined). Pre-2024 quarters remain even splits of WGC annual totals. Replace with actuals as WGC publishes; no app release needed.",
+  "updated": "2026-07-03",
   "asOf": "2026-Q1",
   "quarterly": {
     "2009-Q1": -8.5,
@@ -65,14 +65,14 @@
     "2023-Q2": 259.2,
     "2023-Q3": 259.2,
     "2023-Q4": 259.2,
-    "2024-Q1": 261.2,
-    "2024-Q2": 261.2,
-    "2024-Q3": 261.2,
-    "2024-Q4": 261.2,
-    "2025-Q1": 250.0,
-    "2025-Q2": 250.0,
-    "2025-Q3": 250.0,
-    "2025-Q4": 250.0,
-    "2026-Q1": 250.0
+    "2024-Q1": 237.3,
+    "2024-Q2": 237.3,
+    "2024-Q3": 237.3,
+    "2024-Q4": 333.0,
+    "2025-Q1": 249.0,
+    "2025-Q2": 166.0,
+    "2025-Q3": 218.0,
+    "2025-Q4": 230.0,
+    "2026-Q1": 244.0
   }
 }
