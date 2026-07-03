@@ -52,6 +52,27 @@ class GoldIndexEngineTest {
         assertEquals("BEARISH", GoldIndexEngine.toLabel(44.9f))
     }
 
+    // The spot composite is a nowcast: its headline speaks conditions (HOT/MIXED/WEAK), never
+    // direction — the backtest showed composite >= 70 preceded NEGATIVE mean 3M returns, so a
+    // "BULLISH" spot label promised the opposite of the data. Direction = Forward Signal only.
+    @Test fun composite_headline_uses_conditions_vocabulary() {
+        assertEquals("HOT", GoldIndexEngine.toConditionsLabel(70f))
+        assertEquals("MIXED", GoldIndexEngine.toConditionsLabel(69.9f))
+        assertEquals("MIXED", GoldIndexEngine.toConditionsLabel(45f))
+        assertEquals("WEAK", GoldIndexEngine.toConditionsLabel(44.9f))
+
+        val dates = dailyDates(80)
+        val report = GoldIndexEngine.compute(
+            GoldIndexEngine.Inputs(gldCandles = candles(dates) { 100.0 + it }, dxyCandles = emptyList(),
+                realYield = emptyList(), inflation = emptyList())
+        )
+        assertTrue("composite label must be conditions vocabulary, was '${report.compositeLabel}'",
+            report.compositeLabel in setOf("HOT", "MIXED", "WEAK"))
+        // components and the forward signal keep directional labels
+        assertTrue(report.components.all { it.label in setOf("BULLISH", "NEUTRAL", "BEARISH", "N/A") })
+        assertTrue(report.forwardLabel in setOf("BULLISH", "NEUTRAL", "BEARISH"))
+    }
+
     // ── scoreTechnical direction ────────────────────────────────────────────
     @Test fun scoreTechnical_uptrend_is_bullish() {
         val s = GoldIndexEngine.scoreTechnical((0 until 260).map { 100.0 + it })   // strictly rising

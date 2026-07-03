@@ -159,11 +159,12 @@ class QuoteFragment : Fragment() {
             binding.tvGoldMissing.visibility = View.GONE
         }
 
-        // Composite score
+        // Composite score — conditions vocabulary (HOT/MIXED/WEAK); "BULLISH"/"BEARISH" handles
+        // reports cached by pre-v2.1 builds until their next refresh.
         val scoreColor = when (report.compositeLabel) {
-            "BULLISH" -> Color.parseColor("#26A69A")
-            "BEARISH" -> Color.parseColor("#EF5350")
-            else      -> Color.parseColor("#FFA726")
+            "HOT", "BULLISH"  -> Color.parseColor("#26A69A")
+            "WEAK", "BEARISH" -> Color.parseColor("#EF5350")
+            else              -> Color.parseColor("#FFA726")
         }
         binding.tvGoldIndexScore.text = "${String.format("%.0f", report.compositeScore)} / 100"
         binding.tvGoldIndexLabel.text = report.compositeLabel

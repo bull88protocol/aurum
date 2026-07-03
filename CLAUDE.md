@@ -21,7 +21,7 @@ instrument (the Dollar / DXY via the HMAI engine). No backend; runs on-device.
 - **iOS** — in progress (Apple App Store). Architecture + phased plan in **`ios/APPLE_RELEASE_PLAN.md`**.
   Decision: **Kotlin Multiplatform shared core + native SwiftUI**. Needs a Mac (Xcode is macOS-only).
   **Phase 1 underway on branch `ios-port`:** `:shared` KMP module stood up; **the entire domain —
-  `model` + both engines (`GoldIndexEngine` + HMAI) — now lives in `commonMain`**; 28/28 tests green (Forward Signal v2 added 5).
+  `model` + both engines (`GoldIndexEngine` + HMAI) — now lives in `commonMain`**; 29/29 tests green (Forward Signal v2 + conditions labels added 6).
   Next: network clients → Ktor, storage/biometric → expect/actual, tests → commonTest, then iOS
   targets + SwiftUI on the Mac (Phase 2).
 
@@ -39,7 +39,7 @@ instrument (the Dollar / DXY via the HMAI engine). No backend; runs on-device.
 ## Build / test the shared module
 ```bash
 ./gradlew :shared:assembleDebug          # build the KMP android artifact
-./gradlew :app:testDebugUnitTest         # 28 engine tests (still run from :app for now)
+./gradlew :app:testDebugUnitTest         # 29 engine tests (still run from :app for now)
 ```
 
 ## Branch model
@@ -53,7 +53,7 @@ instrument (the Dollar / DXY via the HMAI engine). No backend; runs on-device.
 ```bash
 source /home/sun/option_android/android_env.sh   # this Linux box only
 ./gradlew :app:assembleDebug                      # debug build
-./gradlew :app:testDebugUnitTest                  # 28 engine tests (Gold Index 18 + HMAI 10)
+./gradlew :app:testDebugUnitTest                  # 29 engine tests (Gold Index 19 + HMAI 10)
 ./gradlew :app:bundleRelease                       # signed Play AAB (needs keystore.properties)
 ```
 

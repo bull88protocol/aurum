@@ -227,6 +227,14 @@
 
                     </LinearLayout>
 
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Current macro conditions · not a forecast — outlook is the Forward Signal below"
+                        android:textSize="11sp"
+                        android:textColor="@color/text_secondary"
+                        android:layout_marginBottom="4dp" />
+
                     <!-- Missing keys warning -->
                     <TextView
                         android:id="@+id/tvGoldMissing"
@@ -308,7 +316,7 @@
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="3-6 Month Outlook · delta-based macro"
+                        android:text="3-6 Month Outlook · real-rate regime · 12M trend · Fed cycle"
                         android:textSize="11sp"
                         android:textColor="@color/text_secondary"
                         android:layout_marginBottom="6dp" />

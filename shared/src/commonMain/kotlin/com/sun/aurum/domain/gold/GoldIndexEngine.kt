@@ -85,7 +85,7 @@ object GoldIndexEngine {
 
         return GoldIndexReport(
             compositeScore    = composite,
-            compositeLabel    = toLabel(composite),
+            compositeLabel    = toConditionsLabel(composite),
             components        = components,
             historicalScores  = historical,
             timestamp         = nowMs(),
@@ -579,6 +579,16 @@ object GoldIndexEngine {
         else -> "BEARISH"
     }
 
+    // The spot composite is a NOWCAST, so its headline uses conditions vocabulary, not
+    // direction. Backtest 2005-2026 (research/README.md): composite >= 70 was followed by a
+    // MEAN -0.6% next-3M return (42% up) — printing "BULLISH" there promised the opposite of
+    // what the data delivered. Direction lives exclusively in the Forward Signal.
+    fun toConditionsLabel(score: Float) = when {
+        score >= 70f -> "HOT"
+        score >= 45f -> "MIXED"
+        else -> "WEAK"
+    }
+
     private fun buildFredSeries(obs: List<FredObs>): SortedDateSeries {
         val m = mutableMapOf<String, Double>()
         for (o in obs) m[o.dateStr] = o.value   // dedupe by date, last wins (matches the old TreeMap)
@@ -611,5 +621,5 @@ object GoldIndexEngine {
         }
     }
 
-    private fun emptyReport() = GoldIndexReport(50f, "NEUTRAL", emptyList(), emptyList(), nowMs())
+    private fun emptyReport() = GoldIndexReport(50f, "MIXED", emptyList(), emptyList(), nowMs())
 }
