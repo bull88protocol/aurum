@@ -25,3 +25,7 @@ Thumbs.db
 
 # app guide 
 APP_GUIDE.md
+
+# research data caches are reproducible (see research/README.md)
+research/cache/
+__pycache__/

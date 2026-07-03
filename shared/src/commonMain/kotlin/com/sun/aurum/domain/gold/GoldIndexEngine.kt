@@ -33,10 +33,11 @@ object GoldIndexEngine {
     data class Inputs(
         val gldCandles: List<Candle>,
         val dxyCandles: List<Candle>,
-        val realYield: List<FredObs>,    // FRED DFII10
+        val realYield: List<FredObs>,    // FRED DFII10 (fetch >= 5y: the forward signal ranks the level in a 5y window)
         val inflation: List<FredObs>,    // FRED T10YIE
         val centralBankScore: Int? = null,      // deprecated: ignored; CB now from the WGC series below
         val cbQuarterly: List<CbQuarter> = emptyList(),  // hosted WGC quarterly feed; empty → bundled annual
+        val dgs2: List<FredObs> = emptyList(),  // FRED DGS2 — Fed-cycle sleeve of the forward signal
     )
 
     data class HistoricalRow(
@@ -261,20 +262,12 @@ object GoldIndexEngine {
     // tonnage bands (net-selling → record-buying), so it is look-ahead-free and stable across
     // regimes — unlike sample min-max scaling, which either leaks the future peak (full-sample) or
     // inflates the calm era (expanding-window).
-    fun cbScoreFromTonnes(tonnes: Double): Float {
-        val anchors = listOf(
-            -100.0 to 10f, 0.0 to 28f, 300.0 to 45f, 500.0 to 55f,
-            800.0 to 72f, 1100.0 to 90f, 1300.0 to 95f,
-        )
-        if (tonnes <= anchors.first().first) return anchors.first().second
-        if (tonnes >= anchors.last().first) return anchors.last().second
-        for (i in 0 until anchors.size - 1) {
-            val (x0, y0) = anchors[i]
-            val (x1, y1) = anchors[i + 1]
-            if (tonnes >= x0 && tonnes <= x1) return y0 + (y1 - y0) * ((tonnes - x0) / (x1 - x0)).toFloat()
-        }
-        return 50f
-    }
+    private val CB_ANCHORS = listOf(
+        -100.0 to 10f, 0.0 to 28f, 300.0 to 45f, 500.0 to 55f,
+        800.0 to 72f, 1100.0 to 90f, 1300.0 to 95f,
+    )
+
+    fun cbScoreFromTonnes(tonnes: Double): Float = piecewise(tonnes, CB_ANCHORS)
 
     private fun centralBankScoreAt(dateStr: String, quarterly: List<CbQuarter>): Float =
         cbScoreFromTonnes(cbTonnes(dateStr.substring(0, 4).toInt(), dateStr.substring(5, 7).toInt(), quarterly))
@@ -301,20 +294,40 @@ object GoldIndexEngine {
         )
     }
 
-    // ── Forward Signal (3-6M outlook) — delta-based, macro-weighted ─────────
-    // Central-bank demand is deliberately excluded here. Validation vs forward-6M gold returns:
-    // CB *level* IC≈-0.16 and CB *YoY-momentum* IC≈-0.45 in the 2022+ regime — both negative,
-    // because buying spiked once (2022) then plateaued while gold kept rising. CB belongs in the
-    // spot index as a structural level, not as a forward timing signal. A genuine monthly WGC flow
-    // series (QoQ momentum) could be revisited; annual-derived momentum is degenerate, so do not add.
+    // ── Forward Signal v2 (3-6M outlook) — real-rate regime + trend + Fed cycle ──
+    //
+    // Rebuilt 2026-07 after a full backtest against real 2005-2026 history (see research/README.md
+    // for methodology, data and every number). The v1 delta-based signal (RY Δ 0.40 / USD Δ 0.30 /
+    // INF Δ 0.20 / ROC60 0.10) measured Spearman IC ≈ -0.05 vs forward 63-trading-day gold returns
+    // (monthly obs, 2005-2026) — its BEARISH months were followed by BETTER returns (+3.2%) than
+    // its BULLISH months (+2.7%). All three of its macro deltas were individually ~zero or
+    // wrong-signed as predictors.
+    //
+    // What did survive validation, era by era (2005-12 / 13-18 / 19-21 / 22-26 all positive):
+    //   * Real-yield LEVEL, oriented HIGH = bullish (IC +0.42 train AND test at 63d, +0.70 at
+    //     126d test): high real yields = restrictive peak → market prices future easing, and
+    //     gold positioning is washed out. Mapped 0.5 fixed anchors + 0.5 rolling 5y percentile
+    //     (the pure fixed map mislabels QE eras like 2019-21; the blend keeps ranks stable).
+    //   * 12M price trend (ROC252): weak alone (mildly negative within pre-2022 eras) but adds
+    //     robustness as a 0.25 sleeve.
+    //   * Fed cycle (DGS2 63-obs change, falling = easing = bullish): flat pre-2019, IC -0.24
+    //     (right sign) since. Small 0.20 sleeve.
+    // Composite v2: IC +0.29 train [CI +0.04,+0.47], +0.38 test [CI +0.20,+0.57], +0.33 full
+    // [CI +0.17,+0.49]; positive in all four eras at both horizons. Kept OUT, with measured
+    // reasons: USD Δ (test IC +0.11 wrong-signed vs its bullish orientation), inflation Δ
+    // (IC ≈ -0.14 BOTH halves — rising breakevens preceded weaker gold), ROC60 (~0.00), and
+    // CB demand (sign flips: -0.31 train / +0.33 test — structural level, not a timing signal;
+    // it stays in the spot index).
+    private const val W_FWD_REAL_RATE = 0.55f
+    private const val W_FWD_TREND    = 0.25f
+    private const val W_FWD_FED      = 0.20f
+
     private fun computeForwardSignal(inputs: Inputs): Triple<Float, String, List<GoldComponentScore>> {
-        val closes = inputs.gldCandles.map { it.close }
-        val c1 = scoreRealYieldDelta(inputs.realYield)
-        val c2 = scoreUSDDelta(inputs.dxyCandles)
-        val c3 = scoreInflationDelta(inputs.inflation, inputs.realYield)
-        val c4 = scoreTechnicalLight(closes)
-        val components = listOf(c1, c2, c3, c4)
-        val weights    = listOf(0.40f, 0.30f, 0.20f, 0.10f)
+        val c1 = scoreRealRateRegime(inputs.realYield)
+        val c2 = scoreTrend12M(inputs.gldCandles.map { it.close })
+        val c3 = scoreFedCycle(inputs.dgs2)
+        val components = listOf(c1, c2, c3)
+        val weights    = listOf(W_FWD_REAL_RATE, W_FWD_TREND, W_FWD_FED)
         var wSum = 0f; var wTotal = 0f
         for ((comp, w) in components.zip(weights)) {
             if (comp.available) { wSum += comp.score * w; wTotal += w }
@@ -323,84 +336,74 @@ object GoldIndexEngine {
         return Triple(score, toLabel(score), components)
     }
 
-    private fun scoreRealYieldDelta(obs: List<FredObs>): GoldComponentScore {
-        if (obs.size < 60) return GoldComponentScore(
-            name = "Real Yield Delta", score = 50f, label = "N/A",
-            detail = "FRED API key required → Settings", available = false,
+    // DFII10 level -> 3-6M gold score, HIGH yields = bullish (rate-cut runway + washed-out
+    // positioning). Anchors span the 2003-2026 DFII10 range (-1.2%..3.2%).
+    private val RY_REGIME_ANCHORS = listOf(
+        -1.0 to 12f, -0.5 to 22f, 0.0 to 32f, 0.5 to 42f, 1.0 to 52f,
+        1.5 to 62f, 2.0 to 74f, 2.5 to 86f, 3.0 to 92f,
+    )
+
+    // 12M price ROC (%) -> score. Deliberately flat-ish: trend is the diversifying sleeve.
+    private val TREND_ANCHORS = listOf(
+        -25.0 to 15f, -10.0 to 30f, 0.0 to 45f, 10.0 to 58f,
+        20.0 to 70f, 35.0 to 82f, 50.0 to 90f,
+    )
+
+    // DGS2 3M change (pct pts) -> score, FALLING 2y yields (easing) = bullish.
+    private val FED_ANCHORS = listOf(
+        -2.0 to 90f, -1.0 to 75f, -0.25 to 60f, 0.25 to 50f, 1.0 to 35f, 2.0 to 15f,
+    )
+
+    /** Real-rate regime: 0.5 × fixed level anchors + 0.5 × rolling 5y percentile of DFII10.
+     *  The percentile half needs >= 504 obs (2y) to be meaningful; below that, fixed-only. */
+    private fun scoreRealRateRegime(obs: List<FredObs>): GoldComponentScore {
+        if (obs.size < 5) return GoldComponentScore(
+            name = "Real-Rate Regime", score = 50f, label = "N/A",
+            detail = "FRED API key required → Settings", available = false, keyRequired = true,
         )
-        val vals   = obs.map { it.value }
-        val delta  = vals.last() - vals[maxOf(0, vals.size - 63)]  // 3M change; fall = bullish
-        val score  = when {
-            delta < -0.50 -> 90f;  delta < -0.25 -> 78f;  delta < -0.10 -> 65f
-            delta <  0.10 -> 50f;  delta <  0.25 -> 35f;  delta <  0.50 -> 22f
-            else          -> 10f
-        }
-        val dir = if (delta < -0.05) "↓ Falling (Bullish)" else if (delta > 0.05) "↑ Rising (Bearish)" else "→ Stable"
+        val vals = obs.map { it.value }
+        val current = vals.last()
+        val fixed = piecewise(current, RY_REGIME_ANCHORS)
+        val window = vals.takeLast(minOf(vals.size, 1260))
+        val score = if (window.size >= 504) {
+            0.5f * fixed + 0.5f * directPct(current, window) * 100f
+        } else fixed
+        val pctNote = if (window.size >= 504)
+            " · ${(directPct(current, window) * 100).roundToInt()}th pct (5y)" else ""
+        val stance = if (current >= 1.5) "restrictive → cut runway (Bullish)"
+                     else if (current <= 0.0) "easy money already in (Bearish)" else "mid-cycle"
         return GoldComponentScore(
-            name = "Real Yield Delta", score = score, label = toLabel(score),
+            name = "Real-Rate Regime", score = score, label = toLabel(score),
+            detail = "${formatDecimals(current, 2)}%$pctNote  $stance",
+        )
+    }
+
+    private fun scoreTrend12M(closes: List<Double>): GoldComponentScore {
+        if (closes.size < 253) return GoldComponentScore(
+            name = "12M Trend", score = 50f, label = "NEUTRAL",
+            detail = "Needs 12 months of price history", available = false,
+        )
+        val roc = (closes.last() / closes[closes.size - 253] - 1) * 100
+        val score = piecewise(roc, TREND_ANCHORS)
+        val dir = if (roc > 2.0) "↑ Uptrend" else if (roc < -2.0) "↓ Downtrend" else "→ Flat"
+        return GoldComponentScore(
+            name = "12M Trend", score = score, label = toLabel(score),
+            detail = "ROC(252): ${if (roc >= 0) "+" else ""}${formatDecimals(roc, 1)}%  $dir",
+        )
+    }
+
+    private fun scoreFedCycle(obs: List<FredObs>): GoldComponentScore {
+        if (obs.size < 60) return GoldComponentScore(
+            name = "Fed Cycle (2Y)", score = 50f, label = "N/A",
+            detail = "FRED API key required → Settings", available = false, keyRequired = true,
+        )
+        val vals = obs.map { it.value }
+        val delta = vals.last() - vals[maxOf(0, vals.size - 63)]  // 3M change; fall = easing = bullish
+        val score = piecewise(delta, FED_ANCHORS)
+        val dir = if (delta < -0.10) "↓ Easing (Bullish)" else if (delta > 0.10) "↑ Tightening (Bearish)" else "→ On hold"
+        return GoldComponentScore(
+            name = "Fed Cycle (2Y)", score = score, label = toLabel(score),
             detail = "${if (delta >= 0) "+" else ""}${formatDecimals(delta, 2)}% (3M)  $dir",
-        )
-    }
-
-    private fun scoreUSDDelta(dxy: List<Candle>): GoldComponentScore {
-        if (dxy.size < 60) return GoldComponentScore(
-            name = "USD Delta", score = 50f, label = "NEUTRAL",
-            detail = if (dxy.isEmpty()) "Fetching DXY..." else "Insufficient data",
-            available = dxy.isNotEmpty(),
-        )
-        val closes  = dxy.map { it.close }
-        val deltaPct = (closes.last() / closes[maxOf(0, closes.size - 63)] - 1) * 100  // fall = bullish
-        val score   = when {
-            deltaPct < -3.0 -> 90f;  deltaPct < -1.5 -> 77f;  deltaPct < -0.5 -> 63f
-            deltaPct <  0.5 -> 50f;  deltaPct <  1.5 -> 37f;  deltaPct <  3.0 -> 23f
-            else            -> 10f
-        }
-        val dir = if (deltaPct < -0.5) "↓ Weaker (Bullish)" else if (deltaPct > 0.5) "↑ Stronger (Bearish)" else "→ Stable"
-        return GoldComponentScore(
-            name = "USD Delta", score = score, label = toLabel(score),
-            detail = "${if (deltaPct >= 0) "+" else ""}${formatDecimals(deltaPct, 1)}% (3M)  $dir",
-        )
-    }
-
-    private fun scoreInflationDelta(obs: List<FredObs>, ryObs: List<FredObs>): GoldComponentScore {
-        if (obs.size < 60) return GoldComponentScore(
-            name = "Inflation Delta", score = 50f, label = "N/A",
-            detail = "FRED API key required → Settings", available = false,
-        )
-        val vals  = obs.map { it.value }
-        val delta = vals.last() - vals[maxOf(0, vals.size - 63)]  // 3M change; rise = bullish
-        val baseScore = when {
-            delta >  0.30 -> 85f;  delta >  0.15 -> 72f;  delta >  0.05 -> 60f
-            delta > -0.05 -> 50f;  delta > -0.15 -> 38f;  delta > -0.30 -> 25f
-            else          -> 12f
-        }
-        // Mute bullish inflation signal when real yields are ALSO rising (Fed-hawkish regime)
-        val ryDelta = if (ryObs.size >= 63) ryObs.last().value - ryObs[maxOf(0, ryObs.size - 63)].value else 0.0
-        val muted   = ryDelta > 0.20 && delta > 0.10
-        val score   = if (muted) (baseScore * 0.6f).coerceAtLeast(30f) else baseScore
-        val dir     = if (delta > 0.05) "↑ Rising (Bullish)" else if (delta < -0.05) "↓ Falling (Bearish)" else "→ Stable"
-        val note    = if (muted) " ⚠ muted (yields↑)" else ""
-        return GoldComponentScore(
-            name = "Inflation Delta", score = score, label = toLabel(score),
-            detail = "${if (delta >= 0) "+" else ""}${formatDecimals(delta, 2)}% (3M)  $dir$note",
-        )
-    }
-
-    private fun scoreTechnicalLight(closes: List<Double>): GoldComponentScore {
-        if (closes.size < 60) return GoldComponentScore(
-            name = "Technical Trend", score = 50f, label = "NEUTRAL",
-            detail = "Insufficient data", available = false,
-        )
-        val roc60 = (closes.last() / closes[maxOf(0, closes.size - 61)] - 1) * 100
-        val score = when {
-            roc60 >  8.0 -> 85f;  roc60 >  5.0 -> 75f;  roc60 >  2.0 -> 63f
-            roc60 >  0.0 -> 53f;  roc60 > -2.0 -> 43f;  roc60 > -5.0 -> 30f
-            else         -> 18f
-        }
-        val dir = if (roc60 > 1.0) "↑ Rising" else if (roc60 < -1.0) "↓ Falling" else "→ Flat"
-        return GoldComponentScore(
-            name = "Technical Trend", score = score, label = toLabel(score),
-            detail = "ROC(60): ${if (roc60 >= 0) "+" else ""}${formatDecimals(roc60, 1)}%  $dir",
         )
     }
 
@@ -530,17 +533,21 @@ object GoldIndexEngine {
     // Structural DXY level -> gold score (inverse: a strong dollar is bearish for gold). Anchored to
     // the multi-year DXY range (~84-120) so the read reflects where the dollar sits historically,
     // not merely within a short rolling window. Look-ahead-free and stable across regimes.
-    private fun dxyLevelScore(dxy: Double): Float {
-        val anchors = listOf(
-            84.0 to 92f, 89.0 to 82f, 93.0 to 70f, 97.0 to 58f, 100.0 to 50f,
-            103.0 to 42f, 107.0 to 32f, 113.0 to 18f, 120.0 to 8f,
-        )
-        if (dxy <= anchors.first().first) return anchors.first().second
-        if (dxy >= anchors.last().first) return anchors.last().second
+    private val DXY_ANCHORS = listOf(
+        84.0 to 92f, 89.0 to 82f, 93.0 to 70f, 97.0 to 58f, 100.0 to 50f,
+        103.0 to 42f, 107.0 to 32f, 113.0 to 18f, 120.0 to 8f,
+    )
+
+    private fun dxyLevelScore(dxy: Double): Float = piecewise(dxy, DXY_ANCHORS)
+
+    /** Linear interpolation over (x, score) anchors, clamped to the end scores outside the range. */
+    private fun piecewise(x: Double, anchors: List<Pair<Double, Float>>): Float {
+        if (x <= anchors.first().first) return anchors.first().second
+        if (x >= anchors.last().first) return anchors.last().second
         for (i in 0 until anchors.size - 1) {
             val (x0, y0) = anchors[i]
             val (x1, y1) = anchors[i + 1]
-            if (dxy >= x0 && dxy <= x1) return y0 + (y1 - y0) * ((dxy - x0) / (x1 - x0)).toFloat()
+            if (x >= x0 && x <= x1) return y0 + (y1 - y0) * ((x - x0) / (x1 - x0)).toFloat()
         }
         return 50f
     }

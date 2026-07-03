@@ -205,6 +205,84 @@ class GoldIndexEngineTest {
         assertTrue("CB detail should show a live quarter (…-Qn), was '${cb.detail}'", cb.detail.contains("-Q"))
     }
 
+    // ── Forward Signal v2: real-rate regime + 12M trend + Fed cycle ─────────
+    // Weights 0.55/0.25/0.20; scorers are fixed anchor maps (see research/README.md for the
+    // backtest that set them). These tests pin the exact anchor arithmetic.
+
+    private fun fwdInputs(
+        gldClose: (Int) -> Double = { 100.0 },
+        ry: List<FredObs> = emptyList(),
+        dgs2: List<FredObs> = emptyList(),
+        nDays: Int = 300,
+    ): GoldIndexEngine.Inputs {
+        val dates = dailyDates(nDays)
+        return GoldIndexEngine.Inputs(
+            gldCandles = candles(dates, gldClose), dxyCandles = emptyList(),
+            realYield = ry, inflation = emptyList(), dgs2 = dgs2,
+        )
+    }
+
+    private fun fwdComp(r: GoldIndexEngine.Inputs, name: String) =
+        GoldIndexEngine.compute(r).forwardComponents.first { it.name == name }
+
+    @Test fun forward_realRate_fixed_anchors_when_history_shallow() {
+        val dates = dailyDates(100)
+        // < 504 obs -> fixed-anchor map only. 2.5% -> 86; 0.0% -> 32; clamps at 12/92.
+        assertEquals(86f, fwdComp(fwdInputs(ry = obs(dates) { 2.5 }), "Real-Rate Regime").score, 0.01f)
+        assertEquals(32f, fwdComp(fwdInputs(ry = obs(dates) { 0.0 }), "Real-Rate Regime").score, 0.01f)
+        assertEquals(12f, fwdComp(fwdInputs(ry = obs(dates) { -2.0 }), "Real-Rate Regime").score, 0.01f)
+        assertEquals(92f, fwdComp(fwdInputs(ry = obs(dates) { 3.5 }), "Real-Rate Regime").score, 0.01f)
+        // interpolation midpoint: 2.25% -> (74+86)/2 = 80
+        assertEquals(80f, fwdComp(fwdInputs(ry = obs(dates) { 2.25 }), "Real-Rate Regime").score, 0.01f)
+    }
+
+    @Test fun forward_realRate_blends_5y_percentile_with_deep_history() {
+        val dates = dailyDates(600)
+        // Flat at 2.5 for 600 obs: fixed=86; percentile of a flat series clamps to 5 -> 45.5.
+        assertEquals(45.5f, fwdComp(fwdInputs(ry = obs(dates) { 2.5 }), "Real-Rate Regime").score, 0.1f)
+        // Rising ramp ending at its high: fixed(3.0)=92, percentile clamps at 95 -> 93.5.
+        val ramp = obs(dates) { it * 3.0 / 599.0 }
+        assertEquals(93.5f, fwdComp(fwdInputs(ry = ramp), "Real-Rate Regime").score, 0.1f)
+    }
+
+    @Test fun forward_trend12M_uses_roc252_anchors() {
+        // closes[size-253] = 100, last = 130 -> ROC +30% -> between (20,70) and (35,82): 78.
+        val up = fwdInputs(gldClose = { i -> if (i < 47) 100.0 else 100.0 + (i - 47) * (30.0 / 252.0) })
+        assertEquals(78f, fwdComp(up, "12M Trend").score, 0.5f)
+        // flat -> ROC 0 -> anchor point 45
+        assertEquals(45f, fwdComp(fwdInputs(), "12M Trend").score, 0.01f)
+        // < 253 closes -> unavailable
+        val short = fwdInputs(nDays = 252)
+        assertFalse(fwdComp(short, "12M Trend").available)
+    }
+
+    @Test fun forward_fedCycle_scores_2y_delta() {
+        val dates = dailyDates(100)
+        // last - vals[size-63]: first 38 obs at 5.0, rest at 4.0 -> delta -1.0 -> 75 (easing).
+        assertEquals(75f, fwdComp(fwdInputs(dgs2 = obs(dates) { if (it < 38) 5.0 else 4.0 }), "Fed Cycle (2Y)").score, 0.01f)
+        assertEquals(35f, fwdComp(fwdInputs(dgs2 = obs(dates) { if (it < 38) 4.0 else 5.0 }), "Fed Cycle (2Y)").score, 0.01f)
+        // flat: the validated map is asymmetric around zero -> 55 (mild bullish tilt on hold)
+        assertEquals(55f, fwdComp(fwdInputs(dgs2 = obs(dates) { 4.0 }), "Fed Cycle (2Y)").score, 0.01f)
+    }
+
+    @Test fun forward_composite_weights_and_renormalization() {
+        val dates = dailyDates(300)
+        val ry = obs(dates) { 2.25 }       // 80 (fixed-only)
+        val dgs2 = obs(dates) { 4.0 }      // 55 (flat -> asymmetric map)
+        // flat gold -> trend 45. All available: 0.55*80 + 0.25*45 + 0.20*55 = 66.25
+        val full = GoldIndexEngine.compute(fwdInputs(ry = ry, dgs2 = dgs2))
+        assertEquals(3, full.forwardComponents.size)
+        assertEquals(66.25f, full.forwardScore, 0.05f)
+        // no DGS2 -> renormalize over 0.80: (0.55*80 + 0.25*45)/0.80 = 69.06
+        val noFed = GoldIndexEngine.compute(fwdInputs(ry = ry))
+        assertEquals(69.06f, noFed.forwardScore, 0.05f)
+        // no FRED at all -> trend-only (45), both FRED components flagged keyRequired
+        val noFred = GoldIndexEngine.compute(fwdInputs())
+        assertEquals(45f, noFred.forwardScore, 0.05f)
+        assertTrue(noFred.forwardComponents.first { it.name == "Real-Rate Regime" }.keyRequired)
+        assertTrue(noFred.forwardComponents.first { it.name == "Fed Cycle (2Y)" }.keyRequired)
+    }
+
     // ── P1-2: "needs a key" is flagged distinctly from a data/network failure ──
     @Test fun missing_fred_is_keyRequired_but_dxy_is_not() {
         val dates = dailyDates(80)

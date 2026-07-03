@@ -105,13 +105,17 @@ class DataRepository(private val context: Context) {
 
         val goldIndexReport = if (symbol == "GLD") {
             val dxyCandles = sharedDxyCandles ?: yahoo.fetchDailyCandles("DX-Y.NYB")
-            val threeYearsAgo = run {
+            fun yearsAgo(n: Int): String {
                 val cal = java.util.Calendar.getInstance()
-                cal.add(java.util.Calendar.YEAR, -3)
-                java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(cal.time)
+                cal.add(java.util.Calendar.YEAR, -n)
+                return java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(cal.time)
             }
-            val realYield = if (fredKey.isNotBlank()) fred.fetchSeries("DFII10", fredKey, startDate = threeYearsAgo) else emptyList()
+            val threeYearsAgo = yearsAgo(3)
+            // DFII10 needs >= 5y so the forward signal's rolling 5y percentile has a full window
+            // (~250 obs/yr; the default fetch limit of 1000 would silently cap it at ~4y).
+            val realYield = if (fredKey.isNotBlank()) fred.fetchSeries("DFII10", fredKey, startDate = yearsAgo(6), limit = 2000) else emptyList()
             val inflation = if (fredKey.isNotBlank()) fred.fetchSeries("T10YIE", fredKey, startDate = threeYearsAgo) else emptyList()
+            val dgs2 = if (fredKey.isNotBlank()) fred.fetchSeries("DGS2", fredKey, startDate = threeYearsAgo) else emptyList()
             val cbQuarterly = CentralBankClient.loadCached(context)
             val inputs = GoldIndexEngine.Inputs(
                 gldCandles        = candles,
@@ -119,6 +123,7 @@ class DataRepository(private val context: Context) {
                 realYield         = realYield,
                 inflation         = inflation,
                 cbQuarterly       = cbQuarterly,
+                dgs2              = dgs2,
             )
             GoldIndexEngine.compute(inputs)
         } else null
