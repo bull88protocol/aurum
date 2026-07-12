@@ -22,11 +22,12 @@ instrument (the Dollar / DXY via the HMAI engine). No backend; runs on-device.
 ## Platforms & status
 - **Android** — live on Google Play: v2.0.0 / versionCode 6. **v2.1.0 / versionCode 7** (Forward
   Signal v2 + conditions labels; carries the KMP `:shared` core) is on Play **internal testing**.
-  **v2.1.1 / versionCode 8** (Clear Cache also busts the 7-day CB feed cache) merged to `master`
-  2026-07-03 — signed AAB built, awaiting Play upload. See `release-2.1/RELEASE_NOTES.md`.
+  v2.1.1 / versionCode 8 (Clear Cache also busts the 7-day CB feed cache) was never uploaded —
+  **skipped, superseded by v2.2.0** (decision 2026-07-12; the fix is contained in it).
   **v2.2.0 / versionCode 9** (2026-07-10 audit adjustments: bundled CB 2025 fallback 1000→863 t
-  WGC actual + spot-HOT caution chip near the Forward Signal) merged to `master` 2026-07-12 —
-  not yet built/uploaded.
+  WGC actual + spot-HOT caution chip near the Forward Signal) merged to `master` 2026-07-12,
+  signed AAB built — **awaiting Play internal-testing upload**. See `release-2.2/RELEASE_NOTES.md`
+  (incl. paste-ready "What's new" + upload checklist).
 - **iOS** — parked for now (Apple App Store). Architecture + phased plan in **`ios/APPLE_RELEASE_PLAN.md`**.
   Decision: **Kotlin Multiplatform shared core + native SwiftUI**. Needs a Mac (Xcode is macOS-only).
   **Phase 1 code is on `master`** (rode the v2.1.0 merge): `:shared` KMP module with **the entire
