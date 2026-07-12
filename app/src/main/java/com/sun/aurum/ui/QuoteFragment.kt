@@ -190,6 +190,11 @@ class QuoteFragment : Fragment() {
         binding.tvForwardLabel.setTextColor(fwdColor)
         binding.forwardBar.progress = report.forwardScore.toInt()
         binding.forwardBar.progressTintList = android.content.res.ColorStateList.valueOf(fwdColor)
+        // Spot-HOT caution (research/VALIDATION_2026-07-10.md §5): stretched spot conditions
+        // systematically degrade forward outcomes (fwd-BEARISH & spot-HOT: −4.4%, 18% up), so
+        // surface a warning next to the outlook — informational only, never a label override.
+        binding.tvForwardCaution.visibility =
+            if (report.compositeScore >= 70f) View.VISIBLE else View.GONE
         binding.llForwardComponents.removeAllViews()
         for (comp in report.forwardComponents) {
             addGoldComponentRow(binding.llForwardComponents, comp)

@@ -321,6 +321,17 @@
                         android:textColor="@color/text_secondary"
                         android:layout_marginBottom="6dp" />
 
+                    <!-- Spot-HOT caution — shown only while the spot index reads HOT (≥70) -->
+                    <TextView
+                        android:id="@+id/tvForwardCaution"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="⚠ Conditions stretched: after HOT readings gold averaged −0.3% over 3M (47% up) vs +3.2% base."
+                        android:textSize="11sp"
+                        android:textColor="#FFA726"
+                        android:layout_marginBottom="6dp"
+                        android:visibility="gone" />
+
                     <ProgressBar
                         android:id="@+id/forwardBar"
                         style="?android:attr/progressBarStyleHorizontal"
