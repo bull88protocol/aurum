@@ -154,7 +154,7 @@ class GoldIndexEngineTest {
     @Test fun cb_tonnes_track_published_year() {
         assertEquals(1045.0, GoldIndexEngine.cbTonnesEffective(2025, 6), 0.0)   // 2024 actual
         assertEquals(1037.0, GoldIndexEngine.cbTonnesEffective(2025, 2), 0.0)   // 2023 actual
-        assertEquals(1000.0, GoldIndexEngine.cbTonnesEffective(2026, 6), 0.0)   // 2025 estimate
+        assertEquals(863.0, GoldIndexEngine.cbTonnesEffective(2026, 6), 0.0)    // 2025 actual (WGC)
     }
 
     @Test fun cb_score_anchors_are_monotonic_and_clamped() {

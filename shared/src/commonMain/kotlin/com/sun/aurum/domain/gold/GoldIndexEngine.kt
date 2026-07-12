@@ -216,10 +216,10 @@ object GoldIndexEngine {
         2009 to -34.0, 2010 to 79.0, 2011 to 481.0, 2012 to 544.0, 2013 to 409.0,
         2014 to 584.0, 2015 to 580.0, 2016 to 395.0, 2017 to 379.0, 2018 to 656.0,
         2019 to 605.0, 2020 to 255.0, 2021 to 463.0, 2022 to 1082.0, 2023 to 1037.0,
-        2024 to 1045.0, 2025 to 1000.0, 2026 to 1000.0,
+        2024 to 1045.0, 2025 to 863.0, 2026 to 1000.0,
     )
     // First year whose figure is a forward estimate (not yet a published WGC actual).
-    private const val CB_ESTIMATE_FROM_YEAR = 2025
+    private const val CB_ESTIMATE_FROM_YEAR = 2026
 
     /**
      * Calendar year whose net-purchase figure is publicly known as of (year, month). WGC publishes
@@ -273,7 +273,7 @@ object GoldIndexEngine {
         cbScoreFromTonnes(cbTonnes(dateStr.substring(0, 4).toInt(), dateStr.substring(5, 7).toInt(), quarterly))
 
     // Latest published quarter ("2025-Q1") when the live feed drives the score, else the bundled
-    // annual label ("2024" actual / "2025 est.") — surfaced so users see how current the CB input is.
+    // annual label ("2025" actual / "2026 est.") — surfaced so users see how current the CB input is.
     private fun cbAsOfLabel(year: Int, month: Int, quarterly: List<CbQuarter>): String {
         val latestQ = quarterly.filter { cbQuarterPublishedAsOf(it, year, month) }
             .takeIf { it.size >= 4 }
