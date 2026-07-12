@@ -1,5 +1,12 @@
 # Gold Index validation & Forward Signal v2 — research log (2026-07-03)
 
+> **Follow-up audit (2026-07-10): `VALIDATION_2026-07-10.md`** — an independent re-derivation of
+> every number below against fresh LBMA fixes (plus the live 2026 top/−24% crash episode and a
+> spot×forward joint-conditioning study). Outcome: all claims reproduced, no changes to the
+> shipped math; two small adjustments shipped in v2.2.0 — bundled CB 2025 fallback 1000→863 t
+> (WGC actual) and a spot-HOT caution chip near the Forward Signal. Scripts:
+> `scripts/validation-2026-07/`.
+
 Question asked: *do the Gold Index component weights/components need adjusting, and can the
 3-month outlook actually be predicted?* Everything below is measured on real downloaded
 history — no synthetic data, no full-sample fitting, train/test discipline throughout.
