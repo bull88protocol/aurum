@@ -10,7 +10,10 @@ instrument (the Dollar / DXY via the HMAI engine). No backend; runs on-device.
 > DataRepository). The old delta-based signal measured IC ≈ −0.05 (its BEARISH months out-returned
 > its BULLISH ones); v2 measures IC +0.30/+0.38 train/test. The spot index was validated as a
 > *nowcast* and deliberately left unchanged. Methodology, numbers and reproduction:
-> **`research/README.md`**.
+> **`research/README.md`**. Independently re-audited 2026-07-10 vs fresh LBMA data — all claims
+> reproduced, no math changes; v2.2.0 ships the audit's two adjustments (CB 2025 fallback 863 t,
+> spot-HOT caution chip). See **`research/VALIDATION_2026-07-10.md`** (incl. live watch-item:
+> v2 stayed BULLISH through the 2026 −24% crash).
 
 > **This file is the cross-machine source of truth.** Claude Code's memory is per-machine and does
 > **not** sync. When working from a different computer (e.g. a Mac for the iOS build), this committed
@@ -21,6 +24,9 @@ instrument (the Dollar / DXY via the HMAI engine). No backend; runs on-device.
   Signal v2 + conditions labels; carries the KMP `:shared` core) is on Play **internal testing**.
   **v2.1.1 / versionCode 8** (Clear Cache also busts the 7-day CB feed cache) merged to `master`
   2026-07-03 — signed AAB built, awaiting Play upload. See `release-2.1/RELEASE_NOTES.md`.
+  **v2.2.0 / versionCode 9** (2026-07-10 audit adjustments: bundled CB 2025 fallback 1000→863 t
+  WGC actual + spot-HOT caution chip near the Forward Signal) merged to `master` 2026-07-12 —
+  not yet built/uploaded.
 - **iOS** — parked for now (Apple App Store). Architecture + phased plan in **`ios/APPLE_RELEASE_PLAN.md`**.
   Decision: **Kotlin Multiplatform shared core + native SwiftUI**. Needs a Mac (Xcode is macOS-only).
   **Phase 1 code is on `master`** (rode the v2.1.0 merge): `:shared` KMP module with **the entire
