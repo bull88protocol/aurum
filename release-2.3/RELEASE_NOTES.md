@@ -72,9 +72,17 @@ edge-to-edge enforcement (since API 35) and were left in place as harmless.
   (upload key, cert valid to 2053-10-19). The "signed in JarFile but not in JarInputStream"
   lines are the usual benign AAB/jarsigner notices.
 
-**Not yet done — no Android device was attached to this machine.** An on-device smoke test is the
-one outstanding check; see step 4 below. It matters more than usual for a targetSdk bump because
-edge-to-edge and predictive back are runtime-only behaviours.
+**On-device smoke test — done 2026-08-08** (Pixel 8a, Android 16; build installed from Play
+internal testing 2026-08-01). Version reads 2.3.0, insets and back gesture correct, biometric
+unlock fine, CB row on the live feed. **One defect found: Google Sign-In failed** with
+`ApiException` code 10 / `DEVELOPER_ERROR` — no Android OAuth client was registered for the Play
+app-signing certificate, which is what a Play-installed build presents (App Signing re-signs the
+AAB, so neither the upload nor the debug key applies). Fixed the same day in Cloud Console:
+server-side only, no rebuild and no versionCode bump, so **this AAB is unaffected**. All three
+SHA-1s are recorded in `CLAUDE.md` → "Google Sign-In / OAuth (Cloud Console — the SHA-1 trap)".
+
+The smoke test also surfaced the cleartext API-key display on the Settings screen, fixed in
+**v2.4.0 (code 11)** — see `release-2.4/RELEASE_NOTES.md`.
 
 ## What's new (Play "What's new" copy)
 
@@ -103,7 +111,7 @@ Full detail in `release-2.2/RELEASE_NOTES.md` — unchanged by this release:
 2. Upload `app/build/outputs/bundle/release/app-release.aab` (release name auto-fills
    "10 (2.3.0)").
 3. Paste the "What's new" copy above → Save → Review → Roll out to internal testing.
-4. **On-device smoke test** (internal opt-in link) — the outstanding verification:
+4. ~~**On-device smoke test**~~ — **done 2026-08-08**, see "Verification performed" above:
    - App launches; confirm version **2.3.0** in settings.
    - Nothing is drawn under the status bar or nav bar (edge-to-edge insets still correct).
    - Back gesture works from both tabs and from Settings (predictive back is now on by default).

@@ -2,6 +2,7 @@
 <ScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/background">
@@ -179,16 +180,27 @@
                     android:layout_height="wrap_content"
                     style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                     android:hint="Paste FRED API key"
-                    android:layout_marginBottom="10dp">
+                    app:endIconMode="password_toggle"
+                    app:endIconTint="@color/text_secondary"
+                    android:layout_marginBottom="6dp">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/etFredKey"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:inputType="textVisiblePassword"
+                        android:inputType="textPassword"
                         android:textColor="@color/text_primary" />
 
                 </com.google.android.material.textfield.TextInputLayout>
+
+                <TextView
+                    android:id="@+id/tvFredKeyStatus"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textSize="12sp"
+                    android:textColor="@color/text_secondary"
+                    android:layout_marginBottom="10dp"
+                    tools:text="Saved · •••• 11d2 — enter a new key above to replace it" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -278,16 +290,27 @@
                     android:layout_height="wrap_content"
                     style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                     android:hint="Paste Gemini API key"
-                    android:layout_marginBottom="10dp">
+                    app:endIconMode="password_toggle"
+                    app:endIconTint="@color/text_secondary"
+                    android:layout_marginBottom="6dp">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/etGeminiKey"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:inputType="textVisiblePassword"
+                        android:inputType="textPassword"
                         android:textColor="@color/text_primary" />
 
                 </com.google.android.material.textfield.TextInputLayout>
+
+                <TextView
+                    android:id="@+id/tvGeminiKeyStatus"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textSize="12sp"
+                    android:textColor="@color/text_secondary"
+                    android:layout_marginBottom="10dp"
+                    tools:text="Saved · •••• 8c3f — enter a new key above to replace it" />
 
                 <LinearLayout
                     android:layout_width="match_parent"

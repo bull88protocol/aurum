@@ -3,6 +3,8 @@ package com.sun.aurum.ui
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
+import android.view.WindowManager
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
@@ -27,6 +29,11 @@ class SettingsActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // This screen handles the user's API keys: keep it out of screenshots, screen recordings
+        // and the recents thumbnail. FLAG_SECURE does *not* hide text from accessibility services
+        // (a UI-hierarchy dump still reads the tree), which is why the saved keys below are never
+        // written back into the input fields.
+        window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
         binding = ActivitySettingsBinding.inflate(layoutInflater)
         setContentView(binding.root)
         supportActionBar?.apply { title = "Settings"; setDisplayHomeAsUpEnabled(true) }
@@ -60,19 +67,29 @@ class SettingsActivity : AppCompatActivity() {
             AppCompatDelegate.setDefaultNightMode(mode)
         }
 
-        // Gemini key
-        binding.etGeminiKey.setText(prefs.geminiApiKey)
+        // Gemini key — the field starts empty even when a key is stored; only the masked summary
+        // is shown. Typing a new key replaces the stored one.
+        renderKeyStatus(binding.tvGeminiKeyStatus, prefs.geminiApiKey)
         binding.btnSave.setOnClickListener {
-            prefs.geminiApiKey = binding.etGeminiKey.text.toString().trim()
+            val entered = binding.etGeminiKey.text.toString().trim()
+            if (entered.isBlank()) {
+                Toast.makeText(this, "Enter a Gemini API key first", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            prefs.geminiApiKey = entered
+            binding.etGeminiKey.setText("")
+            renderKeyStatus(binding.tvGeminiKeyStatus, prefs.geminiApiKey)
             Toast.makeText(this, "Gemini key saved", Toast.LENGTH_SHORT).show()
         }
         binding.btnClear.setOnClickListener {
             prefs.geminiApiKey = ""
             binding.etGeminiKey.setText("")
+            renderKeyStatus(binding.tvGeminiKeyStatus, prefs.geminiApiKey)
             Toast.makeText(this, "Gemini key cleared", Toast.LENGTH_SHORT).show()
         }
         binding.btnGeminiTest.setOnClickListener {
-            val key = binding.etGeminiKey.text.toString().trim()
+            // Test what is being typed; fall back to the stored key when the field is empty.
+            val key = binding.etGeminiKey.text.toString().trim().ifBlank { prefs.geminiApiKey }
             if (key.isBlank()) {
                 Toast.makeText(this, "Enter a Gemini API key first", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
@@ -91,19 +108,28 @@ class SettingsActivity : AppCompatActivity() {
             }
         }
 
-        // FRED API key
-        binding.etFredKey.setText(prefs.fredApiKey)
+        // FRED API key — same rule as the Gemini key above: never re-populated into the field.
+        renderKeyStatus(binding.tvFredKeyStatus, prefs.fredApiKey)
         binding.btnFredSave.setOnClickListener {
-            prefs.fredApiKey = binding.etFredKey.text.toString().trim()
+            val entered = binding.etFredKey.text.toString().trim()
+            if (entered.isBlank()) {
+                Toast.makeText(this, "Enter a FRED API key first", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            prefs.fredApiKey = entered
+            binding.etFredKey.setText("")
+            renderKeyStatus(binding.tvFredKeyStatus, prefs.fredApiKey)
             Toast.makeText(this, "FRED key saved", Toast.LENGTH_SHORT).show()
         }
         binding.btnFredClear.setOnClickListener {
             prefs.fredApiKey = ""
             binding.etFredKey.setText("")
+            renderKeyStatus(binding.tvFredKeyStatus, prefs.fredApiKey)
             Toast.makeText(this, "FRED key cleared", Toast.LENGTH_SHORT).show()
         }
         binding.btnFredTest.setOnClickListener {
-            val key = binding.etFredKey.text.toString().trim()
+            // Test what is being typed; fall back to the stored key when the field is empty.
+            val key = binding.etFredKey.text.toString().trim().ifBlank { prefs.fredApiKey }
             if (key.isBlank()) {
                 Toast.makeText(this, "Enter a FRED API key first", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
@@ -168,5 +194,23 @@ class SettingsActivity : AppCompatActivity() {
         binding.btnGoogleSignOut.visibility = if (signedIn) View.VISIBLE else View.GONE
     }
 
+    /**
+     * Renders the one line the user gets about a stored key. The key itself never reaches the view
+     * tree — only a `•••• 11d2` tail, which is enough to tell two keys apart and to confirm a save
+     * landed, but useless to anyone reading the screen or the UI hierarchy.
+     */
+    private fun renderKeyStatus(label: TextView, key: String) {
+        label.text = when {
+            key.isBlank()          -> "No key saved yet"
+            key.length <= TAIL_LEN -> "Saved · •••• — enter a new key above to replace it"
+            else -> "Saved · •••• ${key.takeLast(TAIL_LEN)} — enter a new key above to replace it"
+        }
+    }
+
     override fun onSupportNavigateUp(): Boolean { finish(); return true }
+
+    private companion object {
+        /** Trailing characters left visible in a masked key summary. */
+        const val TAIL_LEN = 4
+    }
 }
