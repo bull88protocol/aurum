@@ -7,8 +7,13 @@
         <item name="colorSecondary">@color/gold</item>
         <item name="colorSurface">@color/surface</item>
         <item name="android:windowBackground">@drawable/bg_window_gradient</item>
-        <item name="android:statusBarColor">@color/background</item>
-        <item name="android:navigationBarColor">@color/background</item>
+        <!-- No android:statusBarColor / android:navigationBarColor here on purpose. Both are
+             deprecated as of API 35 and are outright no-ops at targetSdk 36, where edge-to-edge
+             is enforced: the app draws behind the system bars and the bars themselves are always
+             transparent. Setting them earned two "edge-to-edge" recommendations on the v2.5.0
+             production release dashboard. The window gradient below shows through instead.
+             The two attributes that follow are NOT deprecated and still do real work — they set
+             the contrast of the system icons drawn over that gradient. -->
         <!-- Dark status/nav icons in light mode, light icons in dark mode (see bools.xml) -->
         <item name="android:windowLightStatusBar">@bool/light_system_bars</item>
         <item name="android:windowLightNavigationBar">@bool/light_system_bars</item>

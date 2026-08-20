@@ -31,6 +31,10 @@ display-layer only (Settings key masking). Settled — the versionName is baked 
 
 ## Scope
 
+> **Implementation status 2026-08-20:** §1a, §1b, §2 and §3 are **written and committed**;
+> `assembleDebug` clean, **53 tests / 0 failures**. §1c (on-device verification) is **not done** —
+> no device was attached to this box. §4 is still open and needs the Console.
+
 ### 1. Edge-to-edge — the reason this release exists
 
 Clears **both** "User experience" cards on the Play release dashboard for 13 (2.5.0):
@@ -41,7 +45,7 @@ Clears **both** "User experience" cards on the Play release dashboard for 13 (2.
 The app targets API 36, where edge-to-edge is **enforced** — the app draws behind the system bars
 whether or not it opts in, and the old bar-colouring attributes are ignored.
 
-**1a. `app/src/main/res/values/themes.xml:10-11` — delete these two lines**
+**1a. ✅ Done — `app/src/main/res/values/themes.xml`, the two lines deleted**
 
 ```xml
 <item name="android:statusBarColor">@color/background</item>
@@ -56,7 +60,7 @@ edge-to-edge. They read `@bool/light_system_bars`, which has a `values-night/` v
 day/night icon switching is the only thing still making the bars legible over
 `@drawable/bg_window_gradient` once the colour attributes are gone.
 
-**1b. `app/src/main/java/com/sun/aurum/ui/SettingsActivity.kt` — add inset handling**
+**1b. ✅ Done — `app/src/main/java/com/sun/aurum/ui/SettingsActivity.kt`, inset handling added**
 
 This is card #1. `MainActivity.kt:55-68` already handles insets carefully — the comment there
 records the exact bug (toolbar drawing under the status bar, overflow menu landing in the system
@@ -64,14 +68,16 @@ pull-down zone and becoming untappable). **`SettingsActivity` has none of that.*
 `Theme.Aurum` from `<application>`, and no layout in the project uses `fitsSystemWindows`, so its
 content draws under both bars on Android 15/16.
 
-Root of `activity_settings.xml` is a `ScrollView` with `android:background="@color/background"`, so
-padding it is enough — the background keeps filling behind the bars while content clears them.
-After `setContentView(binding.root)`:
+Because §2 resolved to adding a real toolbar, the inset lands on the toolbar and the scroll view
+rather than on a bare root — the toolbar's surface colour then fills the status bar, matching
+MainActivity:
 
 ```kotlin
-ViewCompat.setOnApplyWindowInsetsListener(binding.root) { v, insets ->
+ViewCompat.setOnApplyWindowInsetsListener(binding.root) { _, insets ->
     val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-    v.updatePadding(top = bars.top, bottom = bars.bottom)
+    val ime  = insets.getInsets(WindowInsetsCompat.Type.ime())
+    binding.toolbar.updatePadding(top = bars.top)
+    binding.settingsScroll.updatePadding(bottom = maxOf(bars.bottom, ime.bottom))
     insets
 }
 ```
@@ -79,12 +85,15 @@ ViewCompat.setOnApplyWindowInsetsListener(binding.root) { v, insets ->
 Imports: `androidx.core.view.ViewCompat`, `androidx.core.view.WindowInsetsCompat`,
 `androidx.core.view.updatePadding` — all already used in `MainActivity`, no new dependency.
 
-**1c. Verify on-device.** This is UI-only; there is nothing to unit-test. On the Pixel 8a
-(Android 15+), check both screens in light **and** dark mode, portrait and landscape:
+**1c. ⚠️ NOT DONE — verify on-device.** This is UI-only; there is nothing to unit-test, and no
+device was attached when the code was written. **This is the gate before building the AAB.** On the
+Pixel 8a (Android 15+), check both screens in light **and** dark mode, portrait and landscape:
 
 - [ ] Main: toolbar title + overflow still clear of the status bar; tagline footer still clear of
       the nav bar (i.e. no regression from deleting the theme attrs)
-- [ ] Settings: heading not under the status bar, last row not under the nav bar
+- [ ] Settings: new toolbar not under the status bar, Terms row not under the nav bar
+- [ ] Settings: the back arrow appears, is accent-coloured, and returns to Main
+- [ ] Settings: tap the Gemini key field — it stays visible with the keyboard up (§3)
 - [ ] System bar icons legible over the gradient in both themes
 - [ ] Gesture-nav **and** 3-button nav
 
@@ -94,7 +103,7 @@ Imports: `androidx.core.view.ViewCompat`, `androidx.core.view.WindowInsetsCompat
 
 ---
 
-### 2. Settings screen has no toolbar — dead `supportActionBar` call
+### 2. ✅ Done — Settings toolbar restored
 
 Found while scoping §1b. `SettingsActivity.kt:41` runs:
 
@@ -107,16 +116,20 @@ calls `setSupportActionBar()`, and `activity_settings.xml` contains no `Toolbar`
 `supportActionBar` is **null**, the `?.` swallows it, and the whole line is dead: the screen has no
 title and no up affordance. Users get back only via the system back gesture.
 
-Pick one — both are small, and the choice changes §1b:
+**Resolved 2026-08-20: option (a), add a real toolbar.** Confirming the intent, the class *already*
+overrides `onSupportNavigateUp(): Boolean { finish(); return true }` at what is now line 216 — the
+whole screen was written for a toolbar that was never supplied.
 
-- **(a) Add a real `Toolbar`** to the layout, `setSupportActionBar(binding.toolbar)`, and pad *that*
-  by the top inset instead of the ScrollView (mirroring MainActivity). Restores the title and up
-  arrow the code has been trying to set. Slightly more work, better screen.
-- **(b) Delete the dead line.** Honest about what ships today, zero risk.
+`activity_settings.xml` was rewrapped: the root is now a vertical `LinearLayout` holding a
+`Toolbar` (`wrap_content` + `minHeight="?attr/actionBarSize"`, so the status-bar padding grows it
+instead of squashing its content), the gold divider from MainActivity's app bar, and the original
+`ScrollView` (now `@id/settingsScroll`, `layout_weight="1"`, `clipToPadding="false"`). Body content
+is unchanged apart from one level of indentation. `setSupportActionBar(binding.toolbar)` now runs
+before the `supportActionBar?.apply`, so the title, the back arrow and `onSupportNavigateUp()` are
+all live for the first time.
 
-Recommend **(a)** — the code's intent is unambiguous and this is the only release where the edge-to-
-edge work is already touching that file. But it is a real UI change, so it wants its own look on
-device.
+**This is a visible UI change on a screen that handles API keys — it is the main reason §1c
+matters.** `FLAG_SECURE` is untouched, so it still will not screenshot; verify by eye.
 
 ---
 
@@ -126,12 +139,11 @@ device.
 `android:windowSoftInputMode` in the manifest — `MainActivity` has `adjustResize`, Settings does
 not. Under enforced edge-to-edge, the keyboard can cover the field being typed into.
 
-- [ ] Open Settings, tap the lower key field, confirm it stays visible with the IME up
-- [ ] If not: add `android:windowSoftInputMode="adjustResize"` to the `<activity>` entry, and
-      consider folding `Type.ime()` into the §1b listener
+**✅ Handled in the §1b listener, no manifest change.** `adjustResize` would not have fixed this:
+at targetSdk 35+ it no longer resizes an edge-to-edge window. Instead the listener takes
+`maxOf(navBar.bottom, ime.bottom)`, so the scroll view gains real room when the keyboard opens.
 
-Verify before assuming it is broken — a `ScrollView` root plus `adjustResize` defaults often handles
-this already.
+- [ ] Still verify on device — tap the Gemini key field and confirm it stays visible with the IME up
 
 ---
 

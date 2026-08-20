@@ -26,6 +26,9 @@ Thumbs.db
 # app guide
 APP_GUIDE.md
 
+# Claude Code local machine state (per-machine; CLAUDE.md is the shared source of truth)
+.claude/settings.local.json
+
 # Scratch: pasted session transcripts and working notes, not source (despite the .sh names)
 plan.md
 session.sh

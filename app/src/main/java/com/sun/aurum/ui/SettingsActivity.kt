@@ -8,6 +8,9 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updatePadding
 import androidx.lifecycle.lifecycleScope
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.common.api.ApiException
@@ -36,7 +39,28 @@ class SettingsActivity : AppCompatActivity() {
         window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
         binding = ActivitySettingsBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        // The layout supplies the Toolbar this screen never had: Theme.Aurum is NoActionBar, so
+        // without this supportActionBar is null and the line below is a silent no-op — no title,
+        // no back arrow, and the onSupportNavigateUp() override further down never fires.
+        setSupportActionBar(binding.toolbar)
         supportActionBar?.apply { title = "Settings"; setDisplayHomeAsUpEnabled(true) }
+
+        // targetSdk 36 enforces edge-to-edge, so this activity draws behind the system bars and
+        // the theme can no longer colour them (statusBarColor/navigationBarColor are no-ops there).
+        // Pad the toolbar down by the status-bar inset — its surface colour then fills the bar —
+        // and pad the scroll view up off the navigation bar. Same shape as MainActivity. Without
+        // it the title sits under the status bar and the Terms row under the nav bar.
+        // The IME is folded in on purpose. This screen has two key fields, and at targetSdk 35+
+        // windowSoftInputMode="adjustResize" no longer resizes an edge-to-edge window — the
+        // keyboard would simply cover whichever field is being typed into. Taking the larger of
+        // the nav-bar and IME insets gives the scroll view room to bring that field into view.
+        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { _, insets ->
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            val ime  = insets.getInsets(WindowInsetsCompat.Type.ime())
+            binding.toolbar.updatePadding(top = bars.top)
+            binding.settingsScroll.updatePadding(bottom = maxOf(bars.bottom, ime.bottom))
+            insets
+        }
 
         prefs      = SecurePrefs(this)
         googleAuth = GoogleAuthManager(this)
