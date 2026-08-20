@@ -20,6 +20,17 @@ instrument (the Dollar / DXY via the HMAI engine). No backend; runs on-device. S
 > **not** sync. When working from a different computer (e.g. a Mac for the iOS build), this committed
 > file — plus the docs it points to — is the context. Keep it current.
 
+## ▶ "Execute 2.6.0" — resume phrase
+If the user says **"execute 2.6.0"** (or asks to finish/ship the current release), **open
+`release-2.5/NEXT_RELEASE_PLAN.md` §0 and follow it.** It is written for a session with no memory of
+the one that produced the code, and it names the **three things to ask the user for up front** — the
+phone plugged in, two Play Console lookups, and sign-off on the "What's new" copy. Do not start
+guessing at the work, and do not bump the version: `versionCode 14` / `2.6.0` is already committed.
+
+The v2.6.0 **code is done, committed and pushed**; what remains is on-device verification (the gate
+before any AAB), two Console lookups, and the upload. Same idea for any later release — the plan
+doc for the version in flight is the start-here doc, as `release-2.0/RESUME.md` was for v2.0.
+
 ## Platforms & status
 - **Android** — **live on Google Play production: v2.5.0 / versionCode 13** (approved 2026-08-20;
   previous production build was v2.0.0 / versionCode 6, so upgrading users jump five releases).

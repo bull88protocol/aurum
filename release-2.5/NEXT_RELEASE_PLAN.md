@@ -4,6 +4,83 @@ Written 2026-08-20, the day **13 (2.5.0)** was approved and went live on Product
 
 ---
 
+## 0. EXECUTE 2.6.0 — START HERE
+
+**Trigger phrase.** The user opens a fresh session in `/home/sun/gold` and says **"execute 2.6.0"**.
+That means: finish and ship v2.6.0. Read this section first, then §1–§4. Everything you need is in
+this file — a new session has no memory of the one that wrote it.
+
+**State as of 2026-08-20.** All v2.6.0 **code is written, committed and pushed** (`e311087` on
+`master`). `app/build.gradle.kts` already reads `versionCode = 14` / `versionName = "2.6.0"` — do
+not bump it again. `assembleDebug` clean, **53 tests / 0 failures**. **Nothing has been verified on
+a device and nothing has been uploaded to Play.** There is no code left to write unless §1c turns
+something up.
+
+Re-orient with:
+
+```bash
+git log --oneline -5          # expect 31957d8, e311087, 0ec48c3 (tagged v2.5.0)
+git status --short            # expect clean
+grep -nE "versionCode|versionName" app/build.gradle.kts   # expect 14 / 2.6.0
+adb devices -l                # is the phone attached?
+```
+
+### Ask the user for these three things, up front
+
+Ask for all three in one go at the start — two of them gate everything else, and waiting until you
+hit each one wastes a round trip.
+
+**1. Plug the phone in.** *(blocking — this is the gate before any AAB)*
+The Pixel 8a, USB, unlocked, adb authorized. `release-2.0/RESUME.md` records the serial as
+`44251JEKB01464`; re-check with `adb devices -l` rather than trusting it. Needed for §1c, which is
+the whole reason to be careful here: v2.6.0 changes the look of a `FLAG_SECURE` screen and **none
+of it has been seen by a human**. Also needed for the §5 screenshots.
+Install non-destructively — the debug variant is `com.sun.aurum.debug` and sits **alongside** the
+Play build, so the stored API keys are never at risk (`allowBackup="false"` means an uninstall
+would destroy them permanently). adb recipes are in `CLAUDE.md` → "On-device testing without
+destroying the Play install".
+
+**2. Two lookups in the Play Console.** *(blocking for §4 and §6 only — not for §1c)*
+- **§4** — Release dashboard for `13 (2.5.0)` → expand *"Improve your app's memory and performance
+  with R8 optimization"* and paste what it actually says. The build already has R8 full mode on, so
+  there is nothing to change until that text says otherwise. **Do not write code against this card
+  without reading it first.**
+- **§6** — Grow users → Main store listing → Full description. Confirm the live text carries the
+  post-close PDF bullets and not the old "market-open notification" line.
+
+**3. Approve the "What's new" copy.** *(not blocking — draft it and show them)*
+≤ **500 characters**, Play truncates silently past that. v2.6.0 is fix-only, so one or two lines is
+right. Do **not** reuse v2.5.0's copy — that described the PDF report, which these users already
+have. Something like: *"Layout fixes for Android 15 and 16, including the Settings screen, which
+now has a proper title bar and back button."*
+
+### What does NOT need the user
+
+- `keystore.properties` and `/home/sun/keystores/bull88-upload.jks` are both **present on this
+  box** — `./gradlew :app:bundleRelease` works unaided. (Linux box only: `source
+  /home/sun/option_android/android_env.sh` first.)
+- All the code, the tests, and drafting the release notes.
+
+### Order of operations
+
+1. Ask for the three things above.
+2. `assembleDebug` → install to `com.sun.aurum.debug` → **run the §1c checklist**. This is the gate.
+3. Fix whatever §1c turns up; re-verify.
+4. §4 once the user pastes the card text; §6 is a yes/no they report back.
+5. §5 screenshots while the phone is still attached — the PDF-report shot has been deferred once
+   already and the store page is now public.
+6. `bundleRelease` → `jarsigner -verify` → upload to **closed testing first**, never straight to
+   Production. Full checklist at the end of this file.
+7. Commit + **tag** the release (`v2.5.0` is the precedent), update `CLAUDE.md` status, push.
+
+### Do not
+
+- **Do not roll out versionCode 12.** It is a burned code holding the old 9 AM every-day build.
+- **Do not** add a `Co-Authored-By:` / Claude trailer to commits — attribution is `aurum88p`.
+- **Do not** promote to Production before closed testing sees the edge-to-edge change on a device.
+
+---
+
 ## Where things stand
 
 | | |
