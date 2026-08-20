@@ -37,6 +37,17 @@
             android:exported="false"
             android:parentActivityName=".MainActivity" />
 
+        <!-- Invisible handoff from the daily notification straight to the PDF. Its own (empty) task
+             affinity plus noHistory/excludeFromRecents keep it out of the app's back stack and out
+             of Recents — tapping the notification must not feel like entering the app. -->
+        <activity
+            android:name=".report.ReportActionActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
         <receiver
             android:name="androidx.work.impl.background.systemalarm.RescheduleReceiver"
             android:exported="false"

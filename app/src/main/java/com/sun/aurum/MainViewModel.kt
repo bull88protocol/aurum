@@ -11,6 +11,8 @@ import com.sun.aurum.model.SymbolState
 import com.sun.aurum.network.CentralBankClient
 import com.sun.aurum.network.FredClient
 import com.sun.aurum.network.YahooFinanceClient
+import com.sun.aurum.report.GoldReportPdf
+import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -104,6 +106,14 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 _states.update { map -> map.mapValues { (_, v) -> if (v.loading) v.copy(loading = false, error = e.message) else v } }
             }
         }
+    }
+
+    /**
+     * Builds the same PDF the 9 AM notification hands over, from whatever the app is currently
+     * showing. Returns null when there is no gold data to report on yet.
+     */
+    suspend fun buildReportPdf(): File? = withContext(Dispatchers.IO) {
+        GoldReportPdf.generate(getApplication(), states.value, hasFredKey, hasGeminiKey)
     }
 
     /**

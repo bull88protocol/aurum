@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
+import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -16,12 +17,15 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
+import androidx.lifecycle.lifecycleScope
 import com.google.android.material.tabs.TabLayoutMediator
 import com.sun.aurum.data.BiometricAuth
 import com.sun.aurum.databinding.ActivityMainBinding
+import com.sun.aurum.report.ReportDelivery
 import com.sun.aurum.ui.QuotePagerAdapter
 import com.sun.aurum.ui.SettingsActivity
 import com.sun.aurum.worker.DailyRefreshWorker
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
 
@@ -180,11 +184,35 @@ class MainActivity : AppCompatActivity() {
                     .show()
                 true
             }
+            R.id.action_report -> {
+                openTodaysReport()
+                true
+            }
             R.id.action_help -> {
                 showGettingStartedDialog()
                 true
             }
             else -> super.onOptionsItemSelected(item)
+        }
+    }
+
+    // ── Daily report ────────────────────────────────────────────────────────────
+
+    /**
+     * Builds and opens the same PDF the 9 AM notification delivers, from the data on screen. The
+     * notification is the primary route; this is here for anyone who dismissed it, and it makes the
+     * report reachable on demand rather than once a day.
+     */
+    private fun openTodaysReport() {
+        lifecycleScope.launch {
+            val file = vm.buildReportPdf()
+            if (file == null) {
+                Toast.makeText(this@MainActivity, "No gold data yet — pull to refresh first", Toast.LENGTH_SHORT).show()
+                return@launch
+            }
+            if (!ReportDelivery.open(this@MainActivity, file) && !ReportDelivery.share(this@MainActivity, file)) {
+                Toast.makeText(this@MainActivity, "No PDF viewer installed", Toast.LENGTH_LONG).show()
+            }
         }
     }
 

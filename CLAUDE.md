@@ -2,7 +2,8 @@
 
 A bring-your-own-keys **gold-macro app**: a single 0–100 Gold Index (real yields, USD, central-bank
 demand, inflation, technicals) + a forward signal, history chart, AI brief, news, and a second
-instrument (the Dollar / DXY via the HMAI engine). No backend; runs on-device.
+instrument (the Dollar / DXY via the HMAI engine). No backend; runs on-device. Since v2.5.0 the
+6 PM ET weekday report is delivered as a **PDF straight from the notification** — see `app/report/`.
 
 > **Forward Signal v2 (2026-07, ships in v2.1.0):** the 3-6M outlook was rebuilt after a full
 > backtest vs real 2005-2026 history — now 0.55 Real-Rate Regime (DFII10 level, HIGH = bullish)
@@ -20,7 +21,9 @@ instrument (the Dollar / DXY via the HMAI engine). No backend; runs on-device.
 > file — plus the docs it points to — is the context. Keep it current.
 
 ## Platforms & status
-- **Android** — live on Google Play: v2.0.0 / versionCode 6. **v2.1.0 / versionCode 7** (Forward
+- **Android** — **live on Google Play production: v2.5.0 / versionCode 13** (approved 2026-08-20;
+  previous production build was v2.0.0 / versionCode 6, so upgrading users jump five releases).
+  **v2.1.0 / versionCode 7** (Forward
   Signal v2 + conditions labels; carries the KMP `:shared` core) is on Play **internal testing**.
   v2.1.1 / versionCode 8 (Clear Cache also busts the 7-day CB feed cache) was never uploaded —
   **skipped, superseded by v2.2.0** (decision 2026-07-12; the fix is contained in it).
@@ -37,8 +40,34 @@ instrument (the Dollar / DXY via the HMAI engine). No backend; runs on-device.
   test: fields masked with a reveal toggle, the stored key never re-populated into the view tree
   (masked `•••• 11d2` summary instead), `FLAG_SECURE` on `SettingsActivity`. Display layer only —
   at-rest crypto (`SecurePrefs`/`Crypto`, Keystore AES-256-GCM) and `allowBackup="false"` were
-  already correct and are untouched. Built + 30/30 tests green; **AAB and Play upload still to do**.
-  See `release-2.4/RELEASE_NOTES.md`.
+  already correct and are untouched. Built + 30/30 tests green; **uploaded to Play internal testing
+  and installed on-device 2026-08-08** (confirmed 2026-08-09 from the phone: versionCode 11,
+  `installerPackageName=com.android.vending`). See `release-2.4/RELEASE_NOTES.md` — note its
+  "AAB and Play upload still to do" line predates the upload and is stale.
+  **v2.5.0 / versionCode 13** (2026-08-09) — **the daily report is now a PDF, and it moved from
+  9 AM to 6 PM ET, weekdays only.** The worker
+  renders the day's data to an A4 PDF and the notification hands that file over: tap opens it in a
+  viewer, actions save it to Downloads or share it — **no app launch, no refetch** (previously the
+  tap opened `MainActivity`, which re-ran the entire fetch to redraw data the worker already had).
+  The notification also carries the numbers now (`Index 63/100 MIXED · Outlook BULLISH · Gold
+  $398.47 +2.26%`). New `app/report/` package; no new dependencies (`android.graphics.pdf`) and no
+  new permissions. **Why 6 PM:** GLD's daily bar sets at the 4 PM equity close and the Fed's H.15
+  (DGS2 / DFII10 / T10YIE) posts at 4:15 PM, so a 9 AM send shipped an index and four FRED-backed
+  components that were all a full day stale; 6 PM is also when CME gold reopens. Weekends are
+  skipped — they close no US session. `WORK_NAME` is deliberately still `aurum_9am_refresh`:
+  renaming the unique work would leave the old 9 AM job enqueued on upgrades, i.e. two reports a
+  day. **versionCode 12 was consumed and skipped** — an AAB of this same release, but with the old
+  9 AM schedule, had already been uploaded under 12 before the send time moved, and Play never lets
+  a code be reused (it is claimed on upload, even into a draft that is never rolled out). 13 is the
+  first code carrying the 6 PM weekday schedule; **do not roll out 12**. Signed AAB built + verified
+  2026-08-09, and it ships v2.4.0's Settings hardening onward unchanged. **Promoted to Production
+  and approved by Play 2026-08-20** — full rollout, 177 countries / regions. This is the release
+  that finally clears Play's target-API-36 warning (testing tracks never did). Its production
+  release dashboard raised three recommendations, two of which are real and are the reason v2.6.0
+  exists — see `release-2.5/NEXT_RELEASE_PLAN.md`. See also `release-2.5/RELEASE_NOTES.md` and
+  `store/PLAY_STORE_v2.5.0.md` §6.
+  **Still open from this release:** no store screenshot shows the PDF report, and
+  `store/screenshots/02_*.png` still pictures the v1 forward card (stale since 2.2).
 - **iOS** — parked for now (Apple App Store). Architecture + phased plan in **`ios/APPLE_RELEASE_PLAN.md`**.
   Decision: **Kotlin Multiplatform shared core + native SwiftUI**. Needs a Mac (Xcode is macOS-only).
   **Phase 1 code is on `master`** (rode the v2.1.0 merge): `:shared` KMP module with **the entire
@@ -47,7 +76,12 @@ instrument (the Dollar / DXY via the HMAI engine). No backend; runs on-device.
   then iOS targets + SwiftUI on the Mac (Phase 2).
 
 ## Repo layout
-- `app/` — Android app (Kotlin). Holds `network/`, `data/`, `ui/` (engines now live in `:shared`).
+- `app/` — Android app (Kotlin). Holds `network/`, `data/`, `ui/`, `worker/`, `report/` (engines
+  now live in `:shared`). **`report/`** (v2.5.0) builds the daily PDF: `ReportContent.kt` assembles
+  it as pure Kotlin `Block`s (JVM-testable — `PdfDocument` is a stub in unit tests, so keep the
+  content logic out of the renderer), `GoldReportPdf.kt` paints them onto A4,
+  `ReportDelivery.kt` opens / shares / saves-to-Downloads, `ReportActionActivity.kt` is the
+  invisible notification trampoline.
 - `shared/` — KMP module (added on `ios-port`). `commonMain` now has the **full domain** (`model/`,
   `domain/gold/` + `domain/hmai/`) and `util/formatDecimals` (expect/actual); deps: kotlinx-datetime.
   `androidTarget` only for now; iOS targets get enabled on the Mac (Phase 2). The app depends on `:shared`.
@@ -60,7 +94,7 @@ instrument (the Dollar / DXY via the HMAI engine). No backend; runs on-device.
 ## Build / test the shared module
 ```bash
 ./gradlew :shared:assembleDebug          # build the KMP android artifact
-./gradlew :app:testDebugUnitTest         # 29 engine tests (still run from :app for now)
+./gradlew :app:testDebugUnitTest         # 53 tests (still run from :app for now)
 ```
 
 ## Branch model
@@ -74,8 +108,27 @@ instrument (the Dollar / DXY via the HMAI engine). No backend; runs on-device.
 ```bash
 source /home/sun/option_android/android_env.sh   # this Linux box only
 ./gradlew :app:assembleDebug                      # debug build
-./gradlew :app:testDebugUnitTest                  # 29 engine tests (Gold Index 19 + HMAI 10)
+./gradlew :app:testDebugUnitTest                  # 53 tests (Gold Index 19 + HMAI 10 + report 15 + schedule 8 + 1)
 ./gradlew :app:bundleRelease                       # signed Play AAB (needs keystore.properties)
+```
+
+### On-device testing without destroying the Play install (v2.5.0)
+Debug builds carry `applicationIdSuffix = ".debug"`, so `com.sun.aurum.debug` installs **alongside**
+the Play build. Before this, a debug APK could not be installed over a Play-signed install, and
+uninstalling to make room would have destroyed the stored API keys (`allowBackup="false"` — nothing
+comes back). Google Sign-In does not work in the debug variant (no OAuth client for that package);
+everything else does. Useful adb recipes, all non-destructive:
+```bash
+adb install -r app/build/outputs/apk/debug/app-debug.apk
+# skip the biometric gate: BiometricAuth reads a plain long from shared_prefs/biometric_session.xml
+adb shell run-as com.sun.aurum.debug sh -c 'cat shared_prefs/biometric_session.xml'
+# force-run the daily worker (job id rotates on each launch — REPLACE policy; re-read it every time)
+adb shell dumpsys jobscheduler | grep -oE "JOB #[^ ]+ com.sun.aurum.debug[^ ]*"
+adb shell cmd jobscheduler run -f com.sun.aurum.debug <jobId>
+adb shell dumpsys notification --noredact | grep -A6 "pkg=com.sun.aurum.debug"
+adb pull /sdcard/Android/data/com.sun.aurum.debug/files/reports/   # the generated PDFs
+# seed synthetic state (e.g. Gemini brief + news without a key) — app must be force-stopped first
+adb shell run-as com.sun.aurum.debug cat files/symbol_cache.json
 ```
 
 ### Google Sign-In / OAuth (Cloud Console — the SHA-1 trap)

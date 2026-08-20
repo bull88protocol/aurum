@@ -54,6 +54,13 @@ already applies to installs running 2.3.0. Details and all three SHA-1s: `CLAUDE
 - `./gradlew :app:assembleDebug` — **BUILD SUCCESSFUL**. Only warnings are the pre-existing
   `startActivityForResult` / `onActivityResult` deprecations carried from 2.3.0.
 - `./gradlew :app:testDebugUnitTest` — **tests=30 failures=0 errors=0**.
+- `./gradlew clean :app:bundleRelease` — **BUILD SUCCESSFUL** from clean (2026-08-08), including
+  `lintVitalRelease` and `minifyReleaseWithR8`.
+- Merged release manifest asserts `versionCode="11" versionName="2.4.0" minSdkVersion="26"
+  targetSdkVersion="36"`.
+- `jarsigner -verify app/build/outputs/bundle/release/app-release.aab` → **jar verified**, upload
+  key `CN=Bull88 Protocol, O=CoinTranscend, C=US`. The "signed in JarFile but not in
+  JarInputStream" lines are the usual benign AAB/jarsigner notices.
 
 **Not yet done — on-device smoke test.** The debug build cannot be installed over the Play build
 (different signing key, and there is no `applicationIdSuffix` for debug), and uninstalling the Play
@@ -71,7 +78,7 @@ nothing comes back. Verify from the internal-testing track instead; see step 4 b
 
 ## Play upload checklist
 
-1. `./gradlew clean :app:bundleRelease` (needs `keystore.properties`).
+1. ~~`./gradlew clean :app:bundleRelease`~~ — **done 2026-08-08**, AAB verified (see above).
 2. Play Console → Aurum88 Protocol → Test and release → **Internal testing** → Create new release.
 3. Upload `app/build/outputs/bundle/release/app-release.aab` (release name auto-fills "11 (2.4.0)").
 4. Paste the "What's new" copy above → Save → Review → Roll out to internal testing.

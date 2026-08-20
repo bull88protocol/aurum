@@ -15,6 +15,11 @@
         app:showAsAction="always" />
 
     <item
+        android:id="@+id/action_report"
+        android:title="Today's Report (PDF)"
+        app:showAsAction="never" />
+
+    <item
         android:id="@+id/action_help"
         android:title="Getting Started"
         android:icon="@android:drawable/ic_menu_help"

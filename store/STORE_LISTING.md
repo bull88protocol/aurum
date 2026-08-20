@@ -1,5 +1,8 @@
 # Aurum88 Protocol — Google Play Store Listing (draft)
 
+> Permanent listing copy. **Per-release** notes, "What's new" text and rollout steps live in
+> `store/PLAY_STORE_v<version>.md` — current: `store/PLAY_STORE_v2.5.0.md`.
+
 ## Identity
 - **App name:** Aurum88 Protocol
 - **Tagline / promo text:** The Macro Pulse of Gold
@@ -32,7 +35,8 @@ the way a commodity macro desk weights them:
 • A full-history index chart with regime bands — see where today sits vs the year
 • One-tap CSV export of the complete index history, to chart or backtest yourself
 • A daily AI market brief and the latest gold news in their own tabs
-• Daily background refresh and a market-open notification
+• A daily post-close report delivered as a PDF — read, save or share it from the notification
+• Daily background refresh, so the report is ready before you open the app
 • Biometric lock to keep it private
 
 **Your data stays yours.** Aurum88 Protocol runs no servers and collects nothing about you.

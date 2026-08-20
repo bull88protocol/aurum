@@ -23,8 +23,8 @@ android {
         applicationId = "com.sun.aurum"
         minSdk = 26
         targetSdk = 36
-        versionCode = 11
-        versionName = "2.4.0"
+        versionCode = 13
+        versionName = "2.5.0"
     }
 
     buildFeatures {
@@ -56,6 +56,12 @@ android {
         }
         debug {
             isMinifyEnabled = false
+            // Debug installs alongside the Play build instead of colliding with it. Without this a
+            // debug APK cannot be installed over a Play-signed install, and uninstalling that build
+            // would destroy the stored API keys (allowBackup="false" — nothing comes back).
+            // Note: Google Sign-In does not work in this variant, since com.sun.aurum.debug has no
+            // OAuth client registered. Everything else does.
+            applicationIdSuffix = ".debug"
         }
     }
 

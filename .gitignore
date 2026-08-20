@@ -23,8 +23,18 @@ google-services.json
 .DS_Store
 Thumbs.db
 
-# app guide 
+# app guide
 APP_GUIDE.md
+
+# Scratch: pasted session transcripts and working notes, not source (despite the .sh names)
+plan.md
+session.sh
+
+# Console/device screenshots pulled in for a session
+prod_gold.png
+
+# Generated: the app's own CSV export, pulled off a device. Regenerate from the app, not the repo.
+gold_index_history.csv
 
 # research data caches are reproducible (see research/README.md)
 research/cache/
