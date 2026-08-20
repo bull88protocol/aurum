@@ -208,17 +208,20 @@ package, its tests, `DailyRefreshScheduleTest`, the manifest / worker / menu / V
 This is the **first tagged release in the repo** — no tags existed for 2.0–2.4. Tag future releases
 at the commit whose AAB was uploaded, not at whatever `master` happens to be later.
 
-### 8. Untracked scratch ✅ (one item left)
+### 8. Untracked scratch ✅
 
 Added to `.gitignore`: `plan.md` and `session.sh` (pasted session transcripts, not source, despite
 the `.sh` name), `prod_gold.png` (Console screenshot), `gold_index_history.csv` (the app's own CSV
 export pulled off a device — 5,396 rows, regenerate from the app, and note it is *not* what
 `EngineHistoryDumpTest` produces; that writes to the already-ignored `research/cache/engine/`).
 
-- [ ] **`claude.sh` still needs a decision.** It is **tracked**, and it is also a pasted transcript
-      rather than a script — the working tree has it edited down from 34 lines to 1. Deliberately
-      left unstaged so the v2.5.0 commit stayed clean. Either commit the truncation, or
-      `git rm --cached claude.sh` and add it to `.gitignore` alongside the other two.
+`claude.sh` was tracked by mistake — it too is a pasted transcript rather than a script.
+`git rm --cached` in v2.6.0 untracks it and it now sits in `.gitignore` with the other two. **The
+file stays on disk; only its history stops there.** It remains in the history up to `v2.5.0`, so
+anything that needs it can still be recovered from the tag.
+
+Also ignored: `.claude/settings.local.json` — per-machine Claude Code state, and `CLAUDE.md` is
+already the cross-machine source of truth.
 
 ### 9. Stale docs ✅
 
