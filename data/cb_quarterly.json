@@ -1,7 +1,7 @@
 {
   "source": "World Gold Council — Gold Demand Trends (central-bank net purchases)",
   "unit": "tonnes",
-  "method": "Replace quarters with WGC actuals as published; init seeds an even split of WGC annual totals (a placeholder that matches the annual basis).",
+  "method": "2024-Q4 onward are WGC per-quarter net-purchase actuals (Gold Demand Trends): 2024-Q4 333, 2025 Q1-Q4 249/166/218/230 (FY 863t), 2026-Q1 57, 2026-Q2 289. 2026-Q1 was REVISED DOWN from 244t to 57t by WGC in the Q2 2026 Gold Demand Trends (H1 2026 = 345t, weakest first half since 2022) — historical quarters are overwritten when WGC publishes revisions, so prefer the latest vintage over the originally-published value. 2024 Q1-Q3 split evenly from the 1045t annual (WGC published only a 712t nine-month combined). Pre-2024 quarters remain even splits of WGC annual totals. Replace with actuals as WGC publishes; no app release needed.",
   "updated": "2026-09-03",
   "asOf": "2026-Q2",
   "quarterly": {
