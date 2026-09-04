@@ -223,10 +223,24 @@ claims a code permanently on upload even into an unrolled draft (see versionCode
    - **[open]** Google Sign-In still works (Play cert path — the reason this is worth testing here).
    - **[open]** Carry over the two items still open from 2.5.0: notification tap does **not** open
      the app, and Save-to-Downloads / Share both land the file intact.
-6. ~~Promote to Production~~ — **superseded: went straight to Production on 2026-09-03.** The
-   device pass in step 5 therefore happens *after* users have the build, not before. Do the
-   **Settings screen** check the moment the rollout reaches your phone; it is the only item in this
-   release that no human has seen render, and the only realistic cause of a versionCode 15.
+6. ~~Promote to Production~~ — **approved and live 2026-09-04.** Clears Play's target-API-36
+   warning for good.
+
+## Device verification — done 2026-09-04, after release
+
+The step-5 checklist ran against the build *after* it shipped. Results:
+
+- ✅ **Settings screen** — the item flagged as the only realistic cause of a versionCode 15.
+  `uiautomator` confirms `id/toolbar` at `[0,0][1080,268]`, an `ImageButton` with
+  `content-desc="Navigate up"` at `[0,121][147,268]`, and the title `"Settings"`. The back button
+  starting at **y=121 rather than y=0** is the status-bar inset being applied — exactly what §1b
+  intended. The rewrite works.
+- ✅ **Normal load** — Gold $405.85, Gold Index MIXED, five components scored, no hang.
+- ✅ **Central-bank correction reached users** — after a Clear Cache the phone reads
+  **72/100, ≈794 t/yr, as of 2026-Q2**, confirming the feed fix propagated. Note the 7-day
+  `CentralBankCache` TTL means users see it within a week without touching anything.
+- ⬜ **Still open:** the PDF "Open" tile has not been checked on a *gap* day, which is the only day
+  the old bug was visible. Worth one look the next time gold gaps.
 
 ## Follow-ups (not blocking)
 

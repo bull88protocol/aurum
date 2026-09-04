@@ -20,29 +20,25 @@ instrument (the Dollar / DXY via the HMAI engine). No backend; runs on-device. S
 > **not** sync. When working from a different computer (e.g. a Mac for the iOS build), this committed
 > file — plus the docs it points to — is the context. Keep it current.
 
-## ▶ Release in flight — v2.6.0 submitted to Production, awaiting review
-**v2.6.0 / versionCode 14 was uploaded to Google Play Production on 2026-09-03 and is in review.**
-Code is committed, pushed and **tagged `v2.6.0`**. Do not rebuild, do not bump the version, and do
-not re-upload — 14 is claimed. `release-2.5/NEXT_RELEASE_PLAN.md` §0 is now **spent**; the start-here
-doc for this release is **`release-2.6/RELEASE_NOTES.md`**.
+## ▶ Next up — v2.7.0 refresh-hang fixes, on `fix/refresh-timeouts`
+v2.6.0 is **live on Production (approved 2026-09-04)**, so nothing is in flight. The next release is
+**v2.7.0**, whose code is already written and committed on the branch **`fix/refresh-timeouts`**
+(`feb087d`) — five fixes for an unbounded refresh that left the app spinning forever, plus a Drive
+bug that minted duplicate sync spreadsheets on any transient Sheets failure. Not merged, not
+version-bumped: **`versionCode` is still 14 / 2.6.0 on `master`** — bump to 15 / 2.7.0 when merging.
 
-**Two things are still open and matter:**
-1. **Nothing in v2.6.0 has ever been verified on a device.** It went to Production without a device
-   pass — a deliberate call (the debug variant can't test Google Sign-In and carries no R8). The
-   riskiest item is the **Settings screen**, structurally rewritten (toolbar added where none
-   existed, layout rewrapped, insets handled) and never seen rendering. **When the rollout lands,
-   open Settings first — light and dark mode.** The §5 checklist in the release notes has the rest.
-2. Two Play Console lookups were never done (§4 R8 card text, §6 store description).
-
-When Play approves it, update the status block below and tick off the checklist in the release notes.
-Same idea for any later release — the plan doc for the version in flight is the start-here doc.
+**Deliberately held until ~2026-09-11** so 2.6.0 gets a full week of Play vitals on its own. Shipping
+2.7.0 on top immediately would make it impossible to attribute any new crash/ANR signal to the right
+release. See `release-2.6/RELEASE_NOTES.md` follow-ups.
 
 ## Platforms & status
 - **Android** — **live on Google Play production: v2.5.0 / versionCode 13** (approved 2026-08-20;
   previous production build was v2.0.0 / versionCode 6, so upgrading users jump five releases).
-  **v2.6.0 / versionCode 14 was submitted to Production 2026-09-03 and is awaiting review** — see
-  the section above and `release-2.6/RELEASE_NOTES.md`. Until it is approved, 13 is still what users
-  run.
+  **v2.6.0 / versionCode 14 — approved and live on Production 2026-09-04** (submitted 09-03).
+  Edge-to-edge fixes + a real Settings toolbar, the GLD open mapping (the "Open" tile had always
+  shown the previous close), and the AI brief anchored to the app's own market data. Verified on
+  device 2026-09-04 **after** release: Settings toolbar, "Navigate up" button and status-bar inset
+  all render correctly. See `release-2.6/RELEASE_NOTES.md`.
   **v2.1.0 / versionCode 7** (Forward
   Signal v2 + conditions labels; carries the KMP `:shared` core) is on Play **internal testing**.
   v2.1.1 / versionCode 8 (Clear Cache also busts the 7-day CB feed cache) was never uploaded —
