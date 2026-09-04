@@ -20,20 +20,29 @@ instrument (the Dollar / DXY via the HMAI engine). No backend; runs on-device. S
 > **not** sync. When working from a different computer (e.g. a Mac for the iOS build), this committed
 > file — plus the docs it points to — is the context. Keep it current.
 
-## ▶ "Execute 2.6.0" — resume phrase
-If the user says **"execute 2.6.0"** (or asks to finish/ship the current release), **open
-`release-2.5/NEXT_RELEASE_PLAN.md` §0 and follow it.** It is written for a session with no memory of
-the one that produced the code, and it names the **three things to ask the user for up front** — the
-phone plugged in, two Play Console lookups, and sign-off on the "What's new" copy. Do not start
-guessing at the work, and do not bump the version: `versionCode 14` / `2.6.0` is already committed.
+## ▶ Release in flight — v2.6.0 submitted to Production, awaiting review
+**v2.6.0 / versionCode 14 was uploaded to Google Play Production on 2026-09-03 and is in review.**
+Code is committed, pushed and **tagged `v2.6.0`**. Do not rebuild, do not bump the version, and do
+not re-upload — 14 is claimed. `release-2.5/NEXT_RELEASE_PLAN.md` §0 is now **spent**; the start-here
+doc for this release is **`release-2.6/RELEASE_NOTES.md`**.
 
-The v2.6.0 **code is done, committed and pushed**; what remains is on-device verification (the gate
-before any AAB), two Console lookups, and the upload. Same idea for any later release — the plan
-doc for the version in flight is the start-here doc, as `release-2.0/RESUME.md` was for v2.0.
+**Two things are still open and matter:**
+1. **Nothing in v2.6.0 has ever been verified on a device.** It went to Production without a device
+   pass — a deliberate call (the debug variant can't test Google Sign-In and carries no R8). The
+   riskiest item is the **Settings screen**, structurally rewritten (toolbar added where none
+   existed, layout rewrapped, insets handled) and never seen rendering. **When the rollout lands,
+   open Settings first — light and dark mode.** The §5 checklist in the release notes has the rest.
+2. Two Play Console lookups were never done (§4 R8 card text, §6 store description).
+
+When Play approves it, update the status block below and tick off the checklist in the release notes.
+Same idea for any later release — the plan doc for the version in flight is the start-here doc.
 
 ## Platforms & status
 - **Android** — **live on Google Play production: v2.5.0 / versionCode 13** (approved 2026-08-20;
   previous production build was v2.0.0 / versionCode 6, so upgrading users jump five releases).
+  **v2.6.0 / versionCode 14 was submitted to Production 2026-09-03 and is awaiting review** — see
+  the section above and `release-2.6/RELEASE_NOTES.md`. Until it is approved, 13 is still what users
+  run.
   **v2.1.0 / versionCode 7** (Forward
   Signal v2 + conditions labels; carries the KMP `:shared` core) is on Play **internal testing**.
   v2.1.1 / versionCode 8 (Clear Cache also busts the 7-day CB feed cache) was never uploaded —

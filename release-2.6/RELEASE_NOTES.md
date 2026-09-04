@@ -199,9 +199,17 @@ claims a code permanently on upload even into an unrolled draft (see versionCode
 
 1. ~~`./gradlew :app:bundleRelease`~~ — **done 2026-09-03**, AAB built and verified above.
 2. ~~`jarsigner -verify`~~ — **done**, jar verified with the Bull88 upload key.
-3. Play Console → Test and release → **Internal testing** → Create new release. Internal
-   propagates in minutes and is the track used for 2.3.0 / 2.4.0.
-4. Upload the AAB (release name auto-fills "14 (2.6.0)"), paste the "What's new" copy above.
+3. ~~Play Console → Create new release~~ — **done 2026-09-03. Uploaded straight to Production**,
+   not to a testing track, at the user's direction. **Submitted and awaiting Play review.**
+4. ~~Upload the AAB, paste the "What's new" copy~~ — **done.**
+
+   **Upload snag worth remembering:** the first attempt was rejected with *"Your APK or Android App
+   Bundle needs to have the package name com.sun.aurum"*. That was the **debug APK** being picked by
+   mistake — `app/build/outputs/apk/debug/app-debug.apk` is `com.sun.aurum.debug` (the
+   `applicationIdSuffix` that lets it install alongside the Play build) and sits one directory away
+   from the bundle. It is **not** a versionCode problem and bumping the version does not fix it; a
+   code collision reads *"Version code 14 has already been used"* instead. The right file is the
+   ~4.4 MB `.aab`, not the ~9 MB `.apk`. A rejected upload does not burn the versionCode.
 5. **On-device smoke test, from the Play install:**
    - **[open]** Settings screen: title and back arrow present; content clears both system bars;
      rotate and re-check. *This is the highest-risk item — no human has seen this screen since it
@@ -215,8 +223,10 @@ claims a code permanently on upload even into an unrolled draft (see versionCode
    - **[open]** Google Sign-In still works (Play cert path — the reason this is worth testing here).
    - **[open]** Carry over the two items still open from 2.5.0: notification tap does **not** open
      the app, and Save-to-Downloads / Share both land the file intact.
-6. Promote to **Production** only after the above. Do **not** go straight to Production — the
-   edge-to-edge change needs to be seen on a real device first.
+6. ~~Promote to Production~~ — **superseded: went straight to Production on 2026-09-03.** The
+   device pass in step 5 therefore happens *after* users have the build, not before. Do the
+   **Settings screen** check the moment the rollout reaches your phone; it is the only item in this
+   release that no human has seen render, and the only realistic cause of a versionCode 15.
 
 ## Follow-ups (not blocking)
 
