@@ -94,7 +94,7 @@ class DataRepository(private val context: Context) {
         // sent to the model.
         val geminiResult = if (symbol == "GLD" && geminiKey.isNotBlank()) {
             val cached = if (!forceGemini) GeminiCache.load(context, symbol) else null
-            cached ?: gemini.fetchAnalysisAndNews(symbol, geminiKey)?.also { fresh ->
+            cached ?: gemini.fetchAnalysisAndNews(symbol, geminiKey, yahooQuote)?.also { fresh ->
                 GeminiCache.save(context, symbol, fresh)
             }
         } else null

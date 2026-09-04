@@ -147,7 +147,7 @@ object GoldReportContent {
         blocks += Block.Stats(listOf(
             "Day high"   to money(q.high),
             "Day low"    to money(q.low),
-            "Open"       to money(q.open),
+            "Open"       to (q.open?.let { money(it) } ?: EM_DASH),
             "Prev close" to money(q.previousClose),
             "Volume"     to NumberFormat.getNumberInstance(Locale.US).format(q.volume),
             "As of"      to "${fmt("MMM d, h:mm a", gold.lastUpdated)} ET",
@@ -284,6 +284,8 @@ object GoldReportContent {
         "WEAK", "BEARISH" -> Band.BAD
         else              -> Band.MID
     }
+
+    private const val EM_DASH = "\u2014"
 
     private fun round(v: Float) = String.format(Locale.US, "%.0f", v)
     private fun money(v: Double) = "$" + String.format(Locale.US, "%,.2f", v)

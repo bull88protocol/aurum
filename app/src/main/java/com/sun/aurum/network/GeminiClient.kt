@@ -2,6 +2,7 @@ package com.sun.aurum.network
 
 import com.sun.aurum.model.GeminiResult
 import com.sun.aurum.model.NewsItem
+import com.sun.aurum.model.QuoteData
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -32,11 +33,18 @@ class GeminiClient {
         } catch (e: Exception) { false }
     }
 
-    fun fetchAnalysisAndNews(symbol: String, apiKey: String): GeminiResult? {
+    /**
+     * [quote] is the app's own market read for [symbol]. It is injected into the prompt as
+     * authoritative ground truth: without it the model free-floats on whatever its grounding
+     * snippets say, which is how a brief ends up citing a "critical floor" ABOVE the current
+     * price, or an intraday low above the close, or a % move that disagrees with the numbers
+     * printed two inches higher in the same report.
+     */
+    fun fetchAnalysisAndNews(symbol: String, apiKey: String, quote: QuoteData? = null): GeminiResult? {
         if (apiKey.isBlank()) return null
 
         val (lastSession, nextSession) = getTradingSessionDates()
-        val prompt = buildPrompt(symbol, lastSession.longLabel, nextSession.longLabel)
+        val prompt = buildPrompt(symbol, lastSession.longLabel, nextSession.longLabel, quote)
         val bodyJson = buildRequestBody(prompt)
 
         val url = "https://generativelanguage.googleapis.com/v1beta/models/" +
@@ -97,18 +105,62 @@ class GeminiClient {
 
     private data class SessionDate(val shortLabel: String, val longLabel: String)
 
-    private fun buildPrompt(symbol: String, lastSession: String, nextSession: String): String =
-        if (symbol == "GLD") goldPrompt(lastSession, nextSession)
-        else genericPrompt(symbol, lastSession, nextSession)
+    private fun buildPrompt(symbol: String, lastSession: String, nextSession: String, quote: QuoteData?): String =
+        if (symbol == "GLD") goldPrompt(lastSession, nextSession, marketFacts(symbol, quote))
+        else genericPrompt(symbol, lastSession, nextSession, marketFacts(symbol, quote))
+
+    /**
+     * The app's verified numbers, rendered as a prompt block the model is told to defer to.
+     * Empty when there is no quote, so the prompts degrade to their previous behaviour.
+     */
+    private fun marketFacts(symbol: String, q: QuoteData?): String {
+        if (q == null) return ""
+        fun money(v: Double) = "$" + String.format(Locale.US, "%,.2f", v)
+        fun signed(v: Double) = String.format(Locale.US, "%+.2f", v)
+        val openPart = q.open?.let { " open ${money(it)} ·" } ?: ""
+        return blockIndent(
+            """
+            VERIFIED MARKET DATA (from this app's own market feed — authoritative):
+              $symbol — market state ${q.marketState}
+                price ${money(q.price)}  (change ${signed(q.change)} = ${signed(q.changePct)}% vs previous close ${money(q.previousClose)})
+                regular session:$openPart high ${money(q.high)} · low ${money(q.low)}
+            """.trimIndent()
+        )
+    }
+
+    /**
+     * Aligns an interpolated multi-line block to the enclosing raw string's indent. Without this
+     * the block's own lines sit at column 0, which drops trimIndent()'s common indent to zero and
+     * leaves every other line of the prompt indented by eight spaces.
+     */
+    private fun blockIndent(text: String, pad: String = "        ") =
+        text.trim().replace("\n", "\n$pad")
+
+    // Consistency rules shared by both prompts. These target the specific ways a grounded model
+    // drifts from reality: quoting levels from articles written earlier in the session, and
+    // emitting an OHLC set that cannot physically coexist.
+    private val CONSISTENCY_RULES = """
+        Consistency requirements — the VERIFIED MARKET DATA above overrides any figure you find
+        in a source. If a source disagrees with it, the source is stale; follow the verified data.
+        - Your stated direction and percentage move MUST match the verified change above.
+        - Any support level you cite must be BELOW the current price, and any resistance ABOVE it.
+          If price has already broken through a level a source calls support, describe it as
+          broken support or a reclaim level — never as an intact floor.
+        - Any intraday low you mention must be <= the close, and any intraday high >= the close.
+        - When you cite spot XAU/USD rather than the ETF, its percentage move must still agree
+          with the verified change above (the ETF tracks spot; the price scales differ, the
+          percentages do not).
+    """.trimIndent()
 
     // Gold-as-macro-asset brief. Gold is not a stock, so steer the model toward the real drivers
     // (real yields, the dollar, Fed policy, inflation, central-bank/ETF flows) instead of company
     // news or generic equity-index recaps. Same JSON schema as genericPrompt for shared parsing.
-    private fun goldPrompt(lastSession: String, nextSession: String) = """
+    private fun goldPrompt(lastSession: String, nextSession: String, facts: String) = """
         You are a senior precious-metals analyst. Research the current state of GOLD
         (spot gold / XAU-USD; the GLD ETF tracks it) using real-time sources.
         Last closed trading session: $lastSession.
         Next trading session: $nextSession.
+        $facts
 
         Provide a daily gold market brief covering exactly these two sessions. Return ONLY a valid JSON object — no markdown, no code fences:
         {
@@ -127,13 +179,16 @@ class GeminiClient {
           ]
         }
         Rules: Include the 5 most impactful GOLD / macro news items from the past 7 days (real article URLs). Be specific — cite actual gold prices/levels, percentages, yields, and events. Focus on gold and its macro drivers, not unrelated single stocks.
+
+        ${blockIndent(CONSISTENCY_RULES)}
     """.trimIndent()
 
     // Generic instrument brief — used only if a non-gold symbol is surfaced (HMAI engine, v2.0).
-    private fun genericPrompt(symbol: String, lastSession: String, nextSession: String) = """
+    private fun genericPrompt(symbol: String, lastSession: String, nextSession: String, facts: String) = """
         You are a financial analyst. Search for real-time information about $symbol.
         Last closed trading session: $lastSession.
         Next trading session: $nextSession.
+        $facts
 
         Provide a daily market brief covering exactly these two sessions. Return ONLY a valid JSON object — no markdown, no code fences:
         {
@@ -152,6 +207,8 @@ class GeminiClient {
           ]
         }
         Rules: Include the 5 most impactful news items from the past 7 days. Provide real article URLs. Be specific — name actual prices, percentages, events.
+
+        ${blockIndent(CONSISTENCY_RULES)}
     """.trimIndent()
 
     private fun buildRequestBody(prompt: String): JSONObject {

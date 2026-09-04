@@ -24,7 +24,7 @@ data class QuoteData(
     val changePct: Double,
     val high: Double,
     val low: Double,
-    val open: Double,
+    val open: Double?,           // regular-session open; null when it can't be determined
     val previousClose: Double,
     val volume: Long,
     val marketState: String = "REGULAR",       // PRE | REGULAR | POST | POSTPOST | CLOSED

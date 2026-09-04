@@ -15,6 +15,8 @@ class YahooFinanceClient {
         const val EARLY_HISTORY_EPOCH = 946684800L
         const val MAX_ATTEMPTS = 3
         const val BACKOFF_MS = 300L
+        // Half a cent — tolerates rounding noise when checking an open against the day's range.
+        const val OHLC_EPS = 0.005
     }
 
     private val client = OkHttpClient.Builder()
@@ -179,14 +181,17 @@ class YahooFinanceClient {
                 }
             }
 
+            val high = meta.optDouble("regularMarketDayHigh", regularPrice)
+            val low  = meta.optDouble("regularMarketDayLow", regularPrice)
+
             QuoteData(
                 symbol             = symbol,
                 price              = displayPrice,
                 change             = change,
                 changePct          = changePct,
-                high               = meta.optDouble("regularMarketDayHigh", regularPrice),
-                low                = meta.optDouble("regularMarketDayLow", regularPrice),
-                open               = meta.optDouble("regularMarketOpen", prevClose),
+                high               = high,
+                low                = low,
+                open               = resolveOpen(json, meta, high, low),
                 previousClose      = prevClose,
                 volume             = meta.optLong("regularMarketVolume"),
                 marketState        = marketState,
@@ -194,6 +199,49 @@ class YahooFinanceClient {
             )
         } catch (e: Exception) { null }
     }
+
+    /**
+     * The regular-session open.
+     *
+     * NB: the v8 chart `meta` block carries NO `regularMarketOpen` — that field belongs to the v7
+     * quote API — so the old `meta.optDouble("regularMarketOpen", prevClose)` missed every single
+     * time and silently relabelled the *previous close* as today's open. It shipped values that
+     * contradicted the same response's high/low (e.g. GLD 2026-09-01: open printed 408.42 against
+     * a day high of 401.25). The real open is the first non-null bar in `indicators.quote[0].open`,
+     * which this same intraday response already carries.
+     *
+     * Both candidates are checked against the session's own range, and null is returned when
+     * neither holds — before the first bar prints (pre-market) there is genuinely no open yet, and
+     * showing "—" is honest where showing the previous close is not.
+     */
+    private fun resolveOpen(json: JSONObject, meta: JSONObject, high: Double, low: Double): Double? {
+        fun inRange(o: Double) = o >= low - OHLC_EPS && o <= high + OHLC_EPS
+
+        val metaOpen = meta.optDouble("regularMarketOpen")
+        if (!metaOpen.isNaN() && metaOpen > 0 && inRange(metaOpen)) return metaOpen
+
+        val barOpen = firstBarOpen(json)
+        if (barOpen != null && inRange(barOpen)) return barOpen
+
+        return null
+    }
+
+    /** First non-null open in the intraday bar series, i.e. the opening print of the session. */
+    private fun firstBarOpen(json: JSONObject): Double? = try {
+        val opens = json.getJSONObject("chart")
+            .getJSONArray("result")
+            .getJSONObject(0)
+            .getJSONObject("indicators")
+            .getJSONArray("quote")
+            .getJSONObject(0)
+            .getJSONArray("open")
+        var found: Double? = null
+        for (i in 0 until opens.length()) {
+            val o = opens.optDouble(i)
+            if (!o.isNaN() && o > 0) { found = o; break }
+        }
+        found
+    } catch (e: Exception) { null }
 
     private fun parseIntraday(json: JSONObject): List<IntradayPoint> {
         return try {

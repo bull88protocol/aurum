@@ -23,9 +23,9 @@ class GoldReportContentTest {
     // 2026-08-09 13:30 UTC = 09:30 ET, i.e. just after a normal 9 AM run.
     private val atMs = 1786282200000L
 
-    private fun quote() = QuoteData(
+    private fun quote(open: Double? = 310.00) = QuoteData(
         symbol = "GLD", price = 312.40, change = 2.55, changePct = 0.82,
-        high = 313.90, low = 309.10, open = 310.00, previousClose = 309.85,
+        high = 313.90, low = 309.10, open = open, previousClose = 309.85,
         volume = 7_450_000L, marketState = "PRE", regularMarketPrice = 309.85,
     )
 
@@ -51,9 +51,10 @@ class GoldReportContentTest {
         report: GoldIndexReport? = indexReport(),
         news: List<NewsItem> = emptyList(),
         geminiDescription: String? = null,
+        quote: QuoteData = quote(),
     ) = SymbolState(
         symbol = "GLD",
-        quote = quote(),
+        quote = quote,
         goldIndexReport = report,
         news = news,
         lastUpdated = atMs,
@@ -144,6 +145,26 @@ class GoldReportContentTest {
         assertEquals(Band.GOOD, score.band)
         assertTrue(score.caption.contains("Pre-market"))
         assertTrue(score.caption.contains("$309.85"))
+    }
+
+    @Test
+    fun `open is printed when it is a real open`() {
+        val stats = build().filterIsInstance<Block.Stats>().first().pairs.toMap()
+        assertEquals("$310.00", stats["Open"])
+    }
+
+    /**
+     * Regression: the Yahoo chart `meta` block has no `regularMarketOpen`, so the client used to
+     * fall back to the previous close and label it "Open" — printing a value that could sit
+     * outside the session's own high/low. An undeterminable open now arrives as null and must
+     * render as a dash rather than borrowing another field's number.
+     */
+    @Test
+    fun `an undeterminable open renders as a dash, not the previous close`() {
+        val blocks = build(gold = goldState(quote = quote(open = null)))
+        val stats = blocks.filterIsInstance<Block.Stats>().first().pairs.toMap()
+        assertEquals("\u2014", stats["Open"])
+        assertEquals("$309.85", stats["Prev close"])
     }
 
     // ── Key-gated sections ────────────────────────────────────────────────────
