@@ -42,6 +42,7 @@ class QuoteFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         binding.swipeRefresh.setOnRefreshListener { vm.refresh() }
+        binding.btnRetry.setOnClickListener { vm.refresh() }
         viewLifecycleOwner.lifecycleScope.launch {
             vm.isRefreshing.collectLatest { binding.swipeRefresh.isRefreshing = it }
         }
@@ -63,12 +64,16 @@ class QuoteFragment : Fragment() {
         binding.progressBar.visibility = View.GONE
         binding.scrollContent.visibility = View.VISIBLE
 
-        // Error
+        // Error. The retry button rides with it: a failed first load leaves no content and no
+        // pull-to-refresh target the user can find, so without this the only way out was to kill
+        // the app.
         if (state.error != null) {
             binding.tvError.visibility = View.VISIBLE
             binding.tvError.text = state.error
+            binding.btnRetry.visibility = View.VISIBLE
         } else {
             binding.tvError.visibility = View.GONE
+            binding.btnRetry.visibility = View.GONE
         }
 
         // Quote header

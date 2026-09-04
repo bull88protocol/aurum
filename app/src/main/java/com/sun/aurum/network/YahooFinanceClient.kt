@@ -13,7 +13,11 @@ class YahooFinanceClient {
     private companion object {
         // 2000-01-01 UTC — safely before GLD (2004) and DX-Y.NYB (2003) daily history begins.
         const val EARLY_HISTORY_EPOCH = 946684800L
-        const val MAX_ATTEMPTS = 3
+        // 2 attempts x 2 hosts = 4 requests, each bounded by callTimeout above. It was 3
+        // attempts: 6 requests x ~50s = ~5 minutes for ONE series, and fetchAll runs six
+        // of these back to back, so a Yahoo outage could spin the UI for ~30 minutes. The
+        // query2 mirror already covers the flaky-host case a third attempt was added for.
+        const val MAX_ATTEMPTS = 2
         const val BACKOFF_MS = 300L
         // Half a cent — tolerates rounding noise when checking an open against the day's range.
         const val OHLC_EPS = 0.005
@@ -22,6 +26,10 @@ class YahooFinanceClient {
     private val client = OkHttpClient.Builder()
         .connectTimeout(20, TimeUnit.SECONDS)
         .readTimeout(30, TimeUnit.SECONDS)
+        // Bounds the ENTIRE call. connect/read only bound individual socket
+        // operations, so a server that trickles bytes resets them forever and
+        // the refresh spins with no upper bound. This is that upper bound.
+        .callTimeout(45, TimeUnit.SECONDS)
         .addInterceptor { chain ->
             val req = chain.request().newBuilder()
                 .header("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36")
