@@ -20,40 +20,50 @@ instrument (the Dollar / DXY via the HMAI engine). No backend; runs on-device. S
 > **not** sync. When working from a different computer (e.g. a Mac for the iOS build), this committed
 > file — plus the docs it points to — is the context. Keep it current.
 
-## ▶ Release in flight — v2.7.0 built and ready to upload to Production
-**v2.7.0 / versionCode 15** — the refresh-hang fixes. Code is merged to `master` and the signed AAB
-is built and verified (`app/build/outputs/bundle/release/app-release.aab`, 2026-09-04). **Not yet
-uploaded.** Start-here doc: **`release-2.7/RELEASE_NOTES.md`** (§ Play upload checklist).
+## ▶ "What is pending?" — answer from the Open items list below
+If the user asks **"what is pending"** / "what's left" / "where were we", read **§Open items** below
+and show them **all** of it, most-actionable first, with a one-line status on the release in flight.
+Do not improvise a list from git log — that section is the maintained answer. Verify anything
+time-sensitive (Play status, whether a build is stale) before repeating it.
 
-Upload the **~4.4 MB `.aab`**, not the ~9 MB debug `.apk` — that mistake cost an attempt on 2.6.0
-and reads as a package-name error, *not* a versionCode one.
+## ▶ Release in flight — v2.7.0 submitted to Production, awaiting review
+**v2.7.0 / versionCode 15 was uploaded to Google Play Production on 2026-09-04, rolling out to
+100%, and is in review.** Code merged to `master`, tagged **`v2.7.0`**, pushed. Do not rebuild, do
+not bump the version, do not re-upload — **15 is claimed**. Start-here doc:
+**`release-2.7/RELEASE_NOTES.md`**.
 
-**After rollout, watch ANR rate first.** This release changes network timeout and cancellation
-behaviour app-wide, and it ships days after 2.6.0 at the owner's direction, so the two overlap in
-Play vitals and a new signal cannot be cleanly attributed to one release.
+It fixes the refresh hang reported the same day. It ships days after 2.6.0 rather than after a soak
+week, at the owner's direction, so the two **overlap in Play vitals** — a new signal in the next
+fortnight cannot be cleanly attributed to one release. **Watch ANR rate first**: this release
+changes network timeout and cancellation behaviour app-wide.
 
 ## Open items (nothing here is blocking; reviewed 2026-09-04)
 
-Kept in one place so they survive between sessions. Ordered by what actually matters.
+The maintained answer to "what is pending". Ordered by what actually matters. Keep it current —
+when an item is done, delete it rather than leaving it ticked.
 
-1. **Upload v2.7.0.** AAB built and verified; see the section above. The only live task.
-2. **After 2.7.0 rolls out, watch ANR rate** — it changes network timeout/cancellation behaviour
-   app-wide and ships days after 2.6.0, so the two overlap in Play vitals.
-3. **PDF "Open" tile on a gap day.** The one 2.6.0 fix never confirmed in the wild — the old bug
+1. **Confirm v2.7.0 clears Play review**, then update the status block above and tick the checklist
+   in `release-2.7/RELEASE_NOTES.md`. Submitted 2026-09-04; 2.6.0 took ~1 day, 2.5.0 took ~11.
+2. **Watch ANR rate once 2.7.0 rolls out** — see the caveat above about overlapping vitals. This is
+   the highest-value thing to look at, and the reason is specific: the fix changed cancellation and
+   timeout behaviour on every screen.
+3. **PDF "Open" tile on a gap day.** The one v2.6.0 fix never confirmed in the wild — the old bug
    (previous close shown as the open) was only visible when the previous close fell outside the
    day's range. One look, next time gold gaps.
-4. **Duplicate "Aurum Market Data" spreadsheets in Drive.** v2.7.0 stops new ones; it does not
-   clean up existing ones. Delete any strays by hand.
-5. **`resolveOpen` and the refresh timeout paths have no unit tests** — `org.json` is stubbed in
-   Android unit tests and `MainViewModel` needs a context. Moving the pure logic to `:shared` fixes
-   both; folded into `api-37/API_37_UPGRADE_PLAN.md` §4.
-6. **API 37 / Android 17** — the next *forced* work. AGP 9.1.1 + Gradle 9.3.1 + Kotlin 2.x, no Play
-   deadline published but the pattern points at **August 2027**. Revisit Q1-Q2 2027.
-   Plan: `api-37/API_37_UPGRADE_PLAN.md`.
-7. **Store polish — consciously skipped, not forgotten.** No screenshot shows the PDF report;
-   `store/screenshots/02_*.png` still pictures the v1 forward card (stale since 2.2); the live
-   full description was never confirmed against `store/STORE_LISTING.md`. All store-side, no
-   release needed, can land any time. Decision 2026-09-04: not important enough to hold a release.
+4. **Duplicate "Aurum Market Data" spreadsheets in Drive.** v2.7.0 stops new ones; it does **not**
+   clean up existing ones. Delete strays by hand.
+5. **`resolveOpen` and the refresh-timeout paths have no unit tests** — `org.json` is stubbed in
+   Android unit tests and `MainViewModel` needs a context. Moving the pure logic into `:shared`
+   fixes both; folded into `api-37/API_37_UPGRADE_PLAN.md` §4.
+6. **API 37 / Android 17** — the next *forced* work, and the only item with a deadline. Needs
+   AGP 9.1.1 + Gradle 9.3.1 + Kotlin 2.x (three major migrations; JDK 17 still fine). No Play
+   deadline published; the annual pattern points at **August 2027**. Revisit Q1-Q2 2027.
+   Plan, with a trial run behind it: `api-37/API_37_UPGRADE_PLAN.md`.
+7. **Store polish — consciously skipped 2026-09-04, not forgotten.** No screenshot shows the PDF
+   report; `store/screenshots/02_*.png` still pictures the v1 forward card (stale since 2.2); the
+   live full description was never confirmed against `store/STORE_LISTING.md`; the Play R8
+   recommendation card was never read (the build already runs R8 full mode, so it is almost
+   certainly generic). All store-side, no release needed, can land any time.
 8. **iOS Phase 2** — parked, needs a Mac. `ios/APPLE_RELEASE_PLAN.md`. Do **not** run it in
    parallel with the API 37 work; both touch `shared/build.gradle.kts` and the Kotlin version.
 
@@ -65,12 +75,13 @@ Kept in one place so they survive between sessions. Ordered by what actually mat
   shown the previous close), and the AI brief anchored to the app's own market data. Verified on
   device 2026-09-04 **after** release: Settings toolbar, "Navigate up" button and status-bar inset
   all render correctly. See `release-2.6/RELEASE_NOTES.md`.
-  **v2.7.0 / versionCode 15** (2026-09-04) — bounds an unbounded refresh that could spin forever:
+  **v2.7.0 / versionCode 15** — **submitted to Production 2026-09-04, rolling out to 100%, awaiting
+  review.** Bounds an unbounded refresh that could spin forever:
   `callTimeout` on all five HTTP clients, Yahoo retries 3→2, `fetchAll`'s pre-loop work guarded (the
   Sheets sync runs only when signed in, which is why the hang looked login-specific), a 180s ceiling
   on `refresh()`, and a Retry button. Also stops `fetchLiveQuotes` minting a duplicate Drive
-  spreadsheet on any transient failure. AAB built + verified, **upload pending**.
-  See `release-2.7/RELEASE_NOTES.md`.
+  spreadsheet on any transient failure. Verified on a Pixel 8a: radios off → error + RETRY button
+  instead of a spinner, recovers when tapped. See `release-2.7/RELEASE_NOTES.md`.
   **v2.1.0 / versionCode 7** (Forward
   Signal v2 + conditions labels; carries the KMP `:shared` core) is on Play **internal testing**.
   v2.1.1 / versionCode 8 (Clear Cache also busts the 7-day CB feed cache) was never uploaded —

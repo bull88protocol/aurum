@@ -107,14 +107,16 @@ Paste-ready, 352 characters — within Play's 500-character limit.
 
 1. ~~`./gradlew :app:bundleRelease`~~ — **done 2026-09-04**, built and verified above.
 2. ~~`jarsigner -verify`~~ — **done**, jar verified with the Bull88 upload key.
-3. Play Console → Test and release → **Production** → Create new release. Name auto-fills
-   "15 (2.7.0)". Upload `app/build/outputs/bundle/release/app-release.aab` — the **~4.4 MB `.aab`**,
-   not the ~9 MB debug `.apk` (that mistake cost an upload attempt on 2.6.0; it is
-   `com.sun.aurum.debug` and Play rejects it as a wrong package name, which is *not* a versionCode
-   problem).
-4. Paste the "What's new" copy above. Rolling out to **100%** at the owner's direction.
-5. **After rollout, watch ANR rate first.** This release changes network timeout and cancellation
-   behaviour on every screen, and ANR is the shape a regression here would take.
+3. ~~Play Console → Production → Create new release~~ — **done 2026-09-04.** Uploaded as
+   "15 (2.7.0)".
+4. ~~Paste the "What's new" copy, roll out~~ — **done: submitted 2026-09-04, rolling out to 100%,
+   awaiting Play review.**
+5. **[open] After rollout, watch ANR rate first.** This release changes network timeout and
+   cancellation behaviour on every screen, and ANR is the shape a regression here would take.
+   Compounded by shipping days after 2.6.0: the two overlap in vitals, so a new signal cannot be
+   cleanly attributed to one release.
+6. **[open] Confirm approval**, then update `CLAUDE.md`'s status block. 2.6.0 cleared review in
+   ~1 day; 2.5.0 took ~11.
 
 ## Follow-ups (not blocking)
 
