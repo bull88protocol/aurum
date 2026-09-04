@@ -1,5 +1,18 @@
 # v2.6.0 — next release plan
 
+> ## ⚠️ SPENT — do not follow this document
+> **v2.6.0 shipped: approved and live on Play Production 2026-09-04.** Everything below is the plan
+> that produced it, kept for the record. The "execute 2.6.0" trigger phrase it describes is
+> **retired** — there is no work left in here.
+>
+> Two items in §5 and §6 (store screenshots, full-description check) were **deliberately skipped**
+> as low value; they need no release and can land any time.
+> §4 (the R8 card) was triaged as almost certainly a generic promotion card — the build already runs
+> R8 full mode.
+>
+> **For current state, read `CLAUDE.md` first**, then the release-notes doc for the version in
+> flight (`release-2.7/RELEASE_NOTES.md` as of 2026-09-04).
+
 Written 2026-08-20, the day **13 (2.5.0)** was approved and went live on Production.
 
 ---

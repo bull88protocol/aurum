@@ -32,6 +32,31 @@ and reads as a package-name error, *not* a versionCode one.
 behaviour app-wide, and it ships days after 2.6.0 at the owner's direction, so the two overlap in
 Play vitals and a new signal cannot be cleanly attributed to one release.
 
+## Open items (nothing here is blocking; reviewed 2026-09-04)
+
+Kept in one place so they survive between sessions. Ordered by what actually matters.
+
+1. **Upload v2.7.0.** AAB built and verified; see the section above. The only live task.
+2. **After 2.7.0 rolls out, watch ANR rate** — it changes network timeout/cancellation behaviour
+   app-wide and ships days after 2.6.0, so the two overlap in Play vitals.
+3. **PDF "Open" tile on a gap day.** The one 2.6.0 fix never confirmed in the wild — the old bug
+   (previous close shown as the open) was only visible when the previous close fell outside the
+   day's range. One look, next time gold gaps.
+4. **Duplicate "Aurum Market Data" spreadsheets in Drive.** v2.7.0 stops new ones; it does not
+   clean up existing ones. Delete any strays by hand.
+5. **`resolveOpen` and the refresh timeout paths have no unit tests** — `org.json` is stubbed in
+   Android unit tests and `MainViewModel` needs a context. Moving the pure logic to `:shared` fixes
+   both; folded into `api-37/API_37_UPGRADE_PLAN.md` §4.
+6. **API 37 / Android 17** — the next *forced* work. AGP 9.1.1 + Gradle 9.3.1 + Kotlin 2.x, no Play
+   deadline published but the pattern points at **August 2027**. Revisit Q1-Q2 2027.
+   Plan: `api-37/API_37_UPGRADE_PLAN.md`.
+7. **Store polish — consciously skipped, not forgotten.** No screenshot shows the PDF report;
+   `store/screenshots/02_*.png` still pictures the v1 forward card (stale since 2.2); the live
+   full description was never confirmed against `store/STORE_LISTING.md`. All store-side, no
+   release needed, can land any time. Decision 2026-09-04: not important enough to hold a release.
+8. **iOS Phase 2** — parked, needs a Mac. `ios/APPLE_RELEASE_PLAN.md`. Do **not** run it in
+   parallel with the API 37 work; both touch `shared/build.gradle.kts` and the Kotlin version.
+
 ## Platforms & status
 - **Android** — **live on Google Play production: v2.5.0 / versionCode 13** (approved 2026-08-20;
   previous production build was v2.0.0 / versionCode 6, so upgrading users jump five releases).
@@ -123,7 +148,8 @@ Play vitals and a new signal cannot be cleanly attributed to one release.
 ## Branch model
 - `master` — stable mainline for **both** platforms; always shippable.
 - Big/risky work goes on a **temporary feature branch**, validated, then merged to `master`
-  (e.g. `release-2.0` did this for v2.0; the iOS port uses **`ios-port`**).
+  (e.g. `release-2.0` for v2.0, `fix/refresh-timeouts` for v2.7.0; the iOS port uses **`ios-port`**,
+  and the API 37 work gets **`api-37`**).
 - One repo, one `master` — never split Android and iOS onto separate long-lived branches (it would
   fork the shared core).
 
