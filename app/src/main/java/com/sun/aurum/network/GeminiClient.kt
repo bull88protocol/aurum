@@ -19,6 +19,10 @@ class GeminiClient {
     private val client = OkHttpClient.Builder()
         .connectTimeout(30, TimeUnit.SECONDS)
         .readTimeout(120, TimeUnit.SECONDS)
+        // Bounds the ENTIRE call. connect/read only bound individual socket
+        // operations, so a server that trickles bytes resets them forever and
+        // the refresh spins with no upper bound. This is that upper bound.
+        .callTimeout(150, TimeUnit.SECONDS)
         .build()
 
     /**

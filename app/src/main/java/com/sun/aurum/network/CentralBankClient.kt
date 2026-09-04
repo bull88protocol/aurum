@@ -28,6 +28,10 @@ class CentralBankClient {
     private val client = OkHttpClient.Builder()
         .connectTimeout(15, TimeUnit.SECONDS)
         .readTimeout(20, TimeUnit.SECONDS)
+        // Bounds the ENTIRE call. connect/read only bound individual socket
+        // operations, so a server that trickles bytes resets them forever and
+        // the refresh spins with no upper bound. This is that upper bound.
+        .callTimeout(30, TimeUnit.SECONDS)
         .build()
 
     /** Raw JSON body, or null on any failure. */

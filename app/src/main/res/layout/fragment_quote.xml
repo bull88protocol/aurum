@@ -40,6 +40,15 @@
                 android:textSize="13sp"
                 android:visibility="gone" />
 
+            <Button
+                android:id="@+id/btnRetry"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginBottom="8dp"
+                android:text="@string/retry"
+                android:visibility="gone" />
+
             <!-- Quote Header Card -->
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"

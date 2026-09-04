@@ -29,6 +29,10 @@ class GoogleSheetsClient {
     private val http = OkHttpClient.Builder()
         .connectTimeout(20, TimeUnit.SECONDS)
         .readTimeout(30, TimeUnit.SECONDS)
+        // Bounds the ENTIRE call. connect/read only bound individual socket
+        // operations, so a server that trickles bytes resets them forever and
+        // the refresh spins with no upper bound. This is that upper bound.
+        .callTimeout(45, TimeUnit.SECONDS)
         .build()
 
     data class SheetsResult(
@@ -48,22 +52,40 @@ class GoogleSheetsClient {
      * Passes [savedSheetId] to skip re-creation; returns the (possibly new) sheet ID.
      */
     fun fetchLiveQuotes(token: String, savedSheetId: String?): SheetsResult {
-        // Try existing sheet first
+        // Try existing sheet first.
+        //
+        // NB: only a genuine "the sheet is gone" answer may fall through to creating a new one.
+        // This used to recreate whenever the read returned null, and the read returned null on
+        // ANY failure — a timeout, a 500, a dropped connection. Every transient blip therefore
+        // minted a fresh "Aurum Market Data" spreadsheet in the user's Drive and orphaned the
+        // previous one, so a flaky commute could leave a pile of duplicates behind.
         if (!savedSheetId.isNullOrBlank()) {
-            val data = tryRead(token, savedSheetId)
-            if (data != null) return SheetsResult(savedSheetId, data.first, data.second)
+            when (val r = tryRead(token, savedSheetId)) {
+                is ReadResult.Ok -> return SheetsResult(savedSheetId, r.quotes, r.vix)
+                // Transient — keep the sheet id and report no quotes. Next refresh retries.
+                ReadResult.Failed -> return SheetsResult(savedSheetId, emptyMap(), null)
+                // Genuinely gone (404/403) — fall through and recreate.
+                ReadResult.Missing -> Unit
+            }
         }
-        // Sheet missing or deleted — create a fresh one
         val newId = createSheet(token)
         writeFormulas(token, newId)
         Thread.sleep(3500)   // give Google a moment to evaluate GOOGLEFINANCE()
-        val data = tryRead(token, newId)
-        return SheetsResult(newId, data?.first ?: emptyMap(), data?.second)
+        val r = tryRead(token, newId)
+        return if (r is ReadResult.Ok) SheetsResult(newId, r.quotes, r.vix)
+               else SheetsResult(newId, emptyMap(), null)
+    }
+
+    /** Distinguishes "the sheet is gone" from "the read failed" — see fetchLiveQuotes. */
+    private sealed interface ReadResult {
+        data class Ok(val quotes: Map<String, QuoteData>, val vix: Double?) : ReadResult
+        object Missing : ReadResult
+        object Failed : ReadResult
     }
 
     // ── Internal helpers ──────────────────────────────────────────────────────
 
-    private fun tryRead(token: String, sheetId: String): Pair<Map<String, QuoteData>, Double?>? {
+    private fun tryRead(token: String, sheetId: String): ReadResult {
         val url = "https://sheets.googleapis.com/v4/spreadsheets/$sheetId" +
                 "/values/Quotes!A2:I3?valueRenderOption=UNFORMATTED_VALUE"
         return try {
@@ -72,11 +94,14 @@ class GoogleSheetsClient {
                 .header("Authorization", "Bearer $token")
                 .build()
             http.newCall(req).execute().use { resp ->
-                if (resp.code == 404 || resp.code == 403) return null
-                if (!resp.isSuccessful) return null
-                parseRows(JSONObject(resp.body!!.string()))
+                // 404 = deleted, 403 = we can no longer reach it under drive.file. Both mean the
+                // saved id is unusable and a new sheet is the right answer.
+                if (resp.code == 404 || resp.code == 403) return ReadResult.Missing
+                if (!resp.isSuccessful) return ReadResult.Failed
+                val (quotes, vix) = parseRows(JSONObject(resp.body!!.string()))
+                ReadResult.Ok(quotes, vix)
             }
-        } catch (e: Exception) { null }
+        } catch (e: Exception) { ReadResult.Failed }
     }
 
     private fun parseRows(json: JSONObject): Pair<Map<String, QuoteData>, Double?> {

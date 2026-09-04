@@ -21,12 +21,29 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 
 class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     companion object {
+        /**
+         * Hard ceiling on a whole refresh. The per-request callTimeouts bound each HTTP call, but a
+         * refresh is ~6 Yahoo calls plus FRED plus Gemini in series, so their worst cases still
+         * compound into many minutes of spinner. This turns "loads forever" into "an error and a
+         * retry button". Generous on purpose — a healthy refresh takes a few seconds and Gemini
+         * alone is allowed 150s, so only a genuinely stuck refresh ever reaches it.
+         *
+         * NB: this frees the UI, not the socket. fetchAll does blocking OkHttp work, which
+         * coroutine cancellation cannot interrupt — the orphaned request keeps running until its
+         * own callTimeout fires. That is why both fixes are needed.
+         */
+        const val REFRESH_TIMEOUT_MS = 180_000L
+        const val REFRESH_TIMEOUT_MSG =
+            "Couldn't reach the market data providers. Check your connection and try again."
+
         // Gold is the hero (GLD → the Gold Index). DX-Y.NYB (the US Dollar Index) is surfaced as a
         // second instrument through the HMAI engine — the dollar is gold's key inverse driver.
         val SYMBOLS = listOf("GLD", "DX-Y.NYB")
@@ -89,21 +106,29 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         _states.update { map -> map.mapValues { (_, v) -> v.copy(loading = true, error = null) } }
         viewModelScope.launch {
             try {
-                val accessToken    = googleAuth.getAccessToken()
-                val updatedSheetId = repo.fetchAll(
-                    symbols      = SYMBOLS,
-                    accessToken  = accessToken,
-                    sheetId      = prefs.googleSheetId.ifBlank { null },
-                    geminiKey    = prefs.geminiApiKey,
-                    fredKey      = prefs.fredApiKey,
-                    forceGemini  = forceGemini,
-                ) { state -> _states.update { it + (state.symbol to state) } }
-                if (updatedSheetId != null && updatedSheetId != prefs.googleSheetId) {
-                    prefs.googleSheetId = updatedSheetId
+                withTimeout(REFRESH_TIMEOUT_MS) {
+                    val accessToken    = googleAuth.getAccessToken()
+                    val updatedSheetId = repo.fetchAll(
+                        symbols      = SYMBOLS,
+                        accessToken  = accessToken,
+                        sheetId      = prefs.googleSheetId.ifBlank { null },
+                        geminiKey    = prefs.geminiApiKey,
+                        fredKey      = prefs.fredApiKey,
+                        forceGemini  = forceGemini,
+                    ) { state -> _states.update { it + (state.symbol to state) } }
+                    if (updatedSheetId != null && updatedSheetId != prefs.googleSheetId) {
+                        prefs.googleSheetId = updatedSheetId
+                    }
+                    repo.saveCache(_states.value)
                 }
-                repo.saveCache(_states.value)
+            } catch (e: TimeoutCancellationException) {
+                _states.update { map -> map.mapValues { (_, v) ->
+                    if (v.loading) v.copy(loading = false, error = REFRESH_TIMEOUT_MSG) else v
+                } }
             } catch (e: Exception) {
-                _states.update { map -> map.mapValues { (_, v) -> if (v.loading) v.copy(loading = false, error = e.message) else v } }
+                _states.update { map -> map.mapValues { (_, v) ->
+                    if (v.loading) v.copy(loading = false, error = e.message ?: "Couldn't refresh") else v
+                } }
             }
         }
     }

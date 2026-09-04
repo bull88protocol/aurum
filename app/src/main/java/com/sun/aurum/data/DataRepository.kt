@@ -40,17 +40,25 @@ class DataRepository(private val context: Context) {
         // user is signed in we still maintain their own "sync" Sheet, but no longer read its
         // delayed GOOGLEFINANCE values back for display (GOOGLEFINANCE lags ~20m and has no
         // extended hours, so it was making the quote worse, not better).
+        // Everything before the per-symbol loop used to run unguarded, so a failure here took
+        // down the whole refresh before a single symbol had been attempted — and this Sheets
+        // call only runs when signed in, which is why the hang looked login-specific. Sync is
+        // optional; it must never block the quotes.
         if (accessToken != null) {
-            val result = sheets.fetchLiveQuotes(accessToken, sheetId)
-            if (result.sheetId != sheetId) updatedSheetId = result.sheetId
+            try {
+                val result = sheets.fetchLiveQuotes(accessToken, sheetId)
+                if (result.sheetId != sheetId) updatedSheetId = result.sheetId
+            } catch (e: Exception) { /* sync is best-effort — keep the saved id and carry on */ }
         }
-        val vix: Double? = yahoo.fetchVix()
+        val vix: Double? = try { yahoo.fetchVix() } catch (e: Exception) { null }
 
         // DX-Y.NYB daily candles feed both the Dollar tab's HMAI (its own series) and GLD's Gold
         // Index (the USD component) — fetch once here and share across both symbols so a batch
         // refresh hits Yahoo for the dollar history a single time.
         val sharedDxyCandles: List<Candle>? =
-            if ("DX-Y.NYB" in symbols || "GLD" in symbols) yahoo.fetchDailyCandles("DX-Y.NYB") else null
+            if ("DX-Y.NYB" in symbols || "GLD" in symbols)
+                try { yahoo.fetchDailyCandles("DX-Y.NYB") } catch (e: Exception) { null }
+            else null
 
         for (symbol in symbols) {
             try {
