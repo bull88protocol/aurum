@@ -97,7 +97,7 @@ doc for the version in flight is the start-here doc, as `release-2.0/RESUME.md` 
   `domain/gold/` + `domain/hmai/`) and `util/formatDecimals` (expect/actual); deps: kotlinx-datetime.
   `androidTarget` only for now; iOS targets get enabled on the Mac (Phase 2). The app depends on `:shared`.
 - `data/cb_quarterly.json` (hosted CB feed) · `release-2.0/` (v2.0 docs) · `ios/` (Apple plan) ·
-  `cb-data/` (CB feed tool) · `research/` (Gold Index backtest: scripts + results; `cache/` gitignored,
+  `release-2.0/cb-data/` (CB feed tool) · `research/` (Gold Index backtest: scripts + results; `cache/` gitignored,
   regenerate via `research/README.md`).
 - **Target:** all engines + `model/` + `network/` in `shared/commonMain` (one source of truth);
   `app/` (Android UI) and `ios/` (SwiftUI UI) on top.
@@ -105,7 +105,7 @@ doc for the version in flight is the start-here doc, as `release-2.0/RESUME.md` 
 ## Build / test the shared module
 ```bash
 ./gradlew :shared:assembleDebug          # build the KMP android artifact
-./gradlew :app:testDebugUnitTest         # 53 tests (still run from :app for now)
+./gradlew :app:testDebugUnitTest         # 55 tests (still run from :app for now)
 ```
 
 ## Branch model
@@ -119,7 +119,7 @@ doc for the version in flight is the start-here doc, as `release-2.0/RESUME.md` 
 ```bash
 source /home/sun/option_android/android_env.sh   # this Linux box only
 ./gradlew :app:assembleDebug                      # debug build
-./gradlew :app:testDebugUnitTest                  # 53 tests (Gold Index 19 + HMAI 10 + report 15 + schedule 8 + 1)
+./gradlew :app:testDebugUnitTest                  # 55 tests (Gold Index 19 + HMAI 10 + report 17 + schedule 8 + 1)
 ./gradlew :app:bundleRelease                       # signed Play AAB (needs keystore.properties)
 ```
 
@@ -177,7 +177,9 @@ and probably Kotlin 2.x — treat that as a feature-branch job.
   `*.aab` are gitignored. Testers onboard by email → see `TESTING.md`.
 - **Secrets** live in `keystore.properties` (gitignored); never commit keys/keystores.
 - The CB feed is a **git-pushed data file** read from `master` — update via
-  `cb-data/cb_update.py … --push` (no app release). See `cb-data/README.md`.
+  `release-2.0/cb-data/cb_update.py set <YYYY-QN> <tonnes> --push` (no app release).
+  See `release-2.0/cb-data/README.md`. NB: `set` regenerates the `method` field from a generic
+  template — restore the provenance note by hand afterwards.
 
 ## Key docs
 - `ios/APPLE_RELEASE_PLAN.md` · `ios/APP_STORE_SUBMISSION_CHECKLIST.md` · `ios/MAC_SETUP.md`
