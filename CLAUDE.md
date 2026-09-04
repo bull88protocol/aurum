@@ -20,16 +20,17 @@ instrument (the Dollar / DXY via the HMAI engine). No backend; runs on-device. S
 > **not** sync. When working from a different computer (e.g. a Mac for the iOS build), this committed
 > file — plus the docs it points to — is the context. Keep it current.
 
-## ▶ Next up — v2.7.0 refresh-hang fixes, on `fix/refresh-timeouts`
-v2.6.0 is **live on Production (approved 2026-09-04)**, so nothing is in flight. The next release is
-**v2.7.0**, whose code is already written and committed on the branch **`fix/refresh-timeouts`**
-(`feb087d`) — five fixes for an unbounded refresh that left the app spinning forever, plus a Drive
-bug that minted duplicate sync spreadsheets on any transient Sheets failure. Not merged, not
-version-bumped: **`versionCode` is still 14 / 2.6.0 on `master`** — bump to 15 / 2.7.0 when merging.
+## ▶ Release in flight — v2.7.0 built and ready to upload to Production
+**v2.7.0 / versionCode 15** — the refresh-hang fixes. Code is merged to `master` and the signed AAB
+is built and verified (`app/build/outputs/bundle/release/app-release.aab`, 2026-09-04). **Not yet
+uploaded.** Start-here doc: **`release-2.7/RELEASE_NOTES.md`** (§ Play upload checklist).
 
-**Deliberately held until ~2026-09-11** so 2.6.0 gets a full week of Play vitals on its own. Shipping
-2.7.0 on top immediately would make it impossible to attribute any new crash/ANR signal to the right
-release. See `release-2.6/RELEASE_NOTES.md` follow-ups.
+Upload the **~4.4 MB `.aab`**, not the ~9 MB debug `.apk` — that mistake cost an attempt on 2.6.0
+and reads as a package-name error, *not* a versionCode one.
+
+**After rollout, watch ANR rate first.** This release changes network timeout and cancellation
+behaviour app-wide, and it ships days after 2.6.0 at the owner's direction, so the two overlap in
+Play vitals and a new signal cannot be cleanly attributed to one release.
 
 ## Platforms & status
 - **Android** — **live on Google Play production: v2.5.0 / versionCode 13** (approved 2026-08-20;
@@ -39,6 +40,12 @@ release. See `release-2.6/RELEASE_NOTES.md` follow-ups.
   shown the previous close), and the AI brief anchored to the app's own market data. Verified on
   device 2026-09-04 **after** release: Settings toolbar, "Navigate up" button and status-bar inset
   all render correctly. See `release-2.6/RELEASE_NOTES.md`.
+  **v2.7.0 / versionCode 15** (2026-09-04) — bounds an unbounded refresh that could spin forever:
+  `callTimeout` on all five HTTP clients, Yahoo retries 3→2, `fetchAll`'s pre-loop work guarded (the
+  Sheets sync runs only when signed in, which is why the hang looked login-specific), a 180s ceiling
+  on `refresh()`, and a Retry button. Also stops `fetchLiveQuotes` minting a duplicate Drive
+  spreadsheet on any transient failure. AAB built + verified, **upload pending**.
+  See `release-2.7/RELEASE_NOTES.md`.
   **v2.1.0 / versionCode 7** (Forward
   Signal v2 + conditions labels; carries the KMP `:shared` core) is on Play **internal testing**.
   v2.1.1 / versionCode 8 (Clear Cache also busts the 7-day CB feed cache) was never uploaded —
@@ -192,5 +199,6 @@ Feature-branch job (`api-37`); do not start it while a release is in review.
 ## Key docs
 - `ios/APPLE_RELEASE_PLAN.md` · `ios/APP_STORE_SUBMISSION_CHECKLIST.md` · `ios/MAC_SETUP.md`
 - `release-2.0/RESUME.md` (v2.0 handoff) · `release-2.0/CHANGELOG.md` · `release-2.0/NEXT_RELEASE_PLAN.md`
+- `release-2.7/RELEASE_NOTES.md` (current release) · `release-2.6/RELEASE_NOTES.md`
 - `api-37/API_37_UPGRADE_PLAN.md` (next forced Android work — AGP 9 / Gradle 9 / Kotlin 2)
 - `TESTING.md` (tester onboarding) · `README.md` · `PRIVACY.md` · `TERMS.md`
