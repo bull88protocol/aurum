@@ -177,8 +177,11 @@ sign-in to listed test users and expires refresh tokens after 7 days) but cannot
 JDK **17** · `minSdk` 26. Requires SDK `platforms;android-36` installed
 (`sdkmanager "platforms;android-36"`). AGP 8.10 is the *lowest* version supporting API 36 and it
 needs Gradle ≥ 8.11.1 — bumping targetSdk without bumping AGP only earns an "untested compileSdk"
-warning. AGP 8.10 tops out at API 36, so the next target bump (API 37) will need AGP ≥ 8.13/9.x
-and probably Kotlin 2.x — treat that as a feature-branch job.
+warning. AGP 8.10 tops out at API 36. The next target bump (API 37 / Android 17) was
+trial-run 2026-09-03 and needs **AGP ≥ 9.1.1 + Gradle ≥ 9.3.1 + Kotlin 2.x** — three major-version
+migrations, not a targetSdk edit. JDK 17 still suffices. No Play deadline published; the annual
+pattern points at **August 2027**. Full plan, with measured findings: **`api-37/API_37_UPGRADE_PLAN.md`**.
+Feature-branch job (`api-37`); do not start it while a release is in review.
 
 ## Conventions
 - **Commits are attributed to `aurum88p`. Do NOT add a `Co-Authored-By:` / Claude trailer.**
@@ -193,4 +196,5 @@ and probably Kotlin 2.x — treat that as a feature-branch job.
 ## Key docs
 - `ios/APPLE_RELEASE_PLAN.md` · `ios/APP_STORE_SUBMISSION_CHECKLIST.md` · `ios/MAC_SETUP.md`
 - `release-2.0/RESUME.md` (v2.0 handoff) · `release-2.0/CHANGELOG.md` · `release-2.0/NEXT_RELEASE_PLAN.md`
+- `api-37/API_37_UPGRADE_PLAN.md` (next forced Android work — AGP 9 / Gradle 9 / Kotlin 2)
 - `TESTING.md` (tester onboarding) · `README.md` · `PRIVACY.md` · `TERMS.md`
