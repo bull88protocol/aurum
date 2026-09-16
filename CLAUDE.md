@@ -53,17 +53,27 @@ week, at the owner's direction, so the two **overlap in Play vitals** — a new 
 fortnight cannot be cleanly attributed to one release. **Watch ANR rate first**: this release
 changes network timeout and cancellation behaviour app-wide.
 
+### Next release built, not uploaded — v2.8.0 / versionCode 16
+**Signed AAB built and verified 2026-09-16** from `79cb47c` on **`feat/20-day-drivers`** (not yet
+merged to `master`): the 20 Days tab replacing the Dollar tab, the report reading the hosted FRED
+feed, the FRED® notice. **Do not upload until all three gates hold:**
+1. 2.7.0 is approved (a newer release on the track replaces the one under review).
+2. The FRED feed is live (repo secret `FRED_API_KEY` + one manual run).
+3. An on-device pass; the tab has never been seen rendered.
+
+Start-here doc: **`release-2.8/RELEASE_NOTES.md`**, which has the checklist, the adb recipe and the
+paste-ready "What's new".
+
 ## Open items (nothing here is blocking; reviewed 2026-09-04)
 
 The maintained answer to "what is pending". Ordered by what actually matters. Keep it current —
 when an item is done, delete it rather than leaving it ticked.
 
-0. **Ship the 20 Days tab + hosted FRED feed** (app code committed on `feat/20-day-drivers`
-   2026-09-16, 64/64 tests; the feed workflow was pushed to `master` the same day and is active).
-   One-time owner step: add repo secret `FRED_API_KEY` (GitHub → Settings → Secrets and variables
-   → Actions). Until then every run skips with a warning. Then Actions → "FRED feed" → Run workflow
-   once and check the `fred-data` branch appears. The app part releases as v2.8.0 **after 2.7.0
-   clears review**. Also: store listing/screenshots don't mention the new tab.
+0. **Ship v2.8.0** (20 Days tab + hosted FRED feed): AAB built 2026-09-16, see the gates in
+   §Next release built above and `release-2.8/RELEASE_NOTES.md`. First owner step, doable now:
+   add repo secret `FRED_API_KEY` (GitHub → Settings → Secrets and variables → Actions); until
+   then every feed run skips with a warning. Then Actions → "FRED feed" → Run workflow and check
+   the `fred-data` branch appears. Store listing/screenshots don't mention the new tab.
 1. **Confirm v2.7.0 clears Play review**, then update the status block above and tick the checklist
    in `release-2.7/RELEASE_NOTES.md`. Submitted 2026-09-04; 2.6.0 took ~1 day, 2.5.0 took ~11.
 2. **Watch ANR rate once 2.7.0 rolls out** — see the caveat above about overlapping vitals. This is
@@ -105,6 +115,10 @@ when an item is done, delete it rather than leaving it ticked.
   on `refresh()`, and a Retry button. Also stops `fetchLiveQuotes` minting a duplicate Drive
   spreadsheet on any transient failure. Verified on a Pixel 8a: radios off → error + RETRY button
   instead of a spinner, recovers when tapped. See `release-2.7/RELEASE_NOTES.md`.
+  **v2.8.0 / versionCode 16** — **signed AAB built 2026-09-16, not uploaded** (gates: 2.7.0
+  approved, FRED feed live, on-device pass). The 20 Days tab replaces the Dollar tab (HMAI + VIX
+  deleted); the 6 PM report reads the hosted FRED feed so keyless users get every FRED row; FRED®
+  terms notice added. 64 tests. See `release-2.8/RELEASE_NOTES.md`.
   **v2.1.0 / versionCode 7** (Forward
   Signal v2 + conditions labels; carries the KMP `:shared` core) is on Play **internal testing**.
   v2.1.1 / versionCode 8 (Clear Cache also busts the 7-day CB feed cache) was never uploaded —
@@ -285,7 +299,7 @@ Feature-branch job (`api-37`); do not start it while a release is in review.
 ## Key docs
 - `ios/APPLE_RELEASE_PLAN.md` · `ios/APP_STORE_SUBMISSION_CHECKLIST.md` · `ios/MAC_SETUP.md`
 - `release-2.0/RESUME.md` (v2.0 handoff) · `release-2.0/CHANGELOG.md` · `release-2.0/NEXT_RELEASE_PLAN.md`
-- `release-2.7/RELEASE_NOTES.md` (current release) · `release-2.6/RELEASE_NOTES.md`
+- `release-2.8/RELEASE_NOTES.md` (next release, built) · `release-2.7/RELEASE_NOTES.md` (in review) · `release-2.6/RELEASE_NOTES.md`
 - `research/DRIVERS_20D_2026-09-16.md` (20 Days tab: why it is a nowcast, the shipped spec, parity)
 - `api-37/API_37_UPGRADE_PLAN.md` (next forced Android work — AGP 9 / Gradle 9 / Kotlin 2)
 - `TESTING.md` (tester onboarding) · `README.md` · `PRIVACY.md` · `TERMS.md`
