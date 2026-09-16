@@ -97,4 +97,7 @@ dependencies {
     implementation("androidx.biometric:biometric:1.1.0")
 
     testImplementation("junit:junit:4.13.2")
+    // The real org.json for JVM unit tests: android.jar's copy is a stub that throws, which kept
+    // every JSON parser in the app untestable.
+    testImplementation("org.json:json:20180813")
 }

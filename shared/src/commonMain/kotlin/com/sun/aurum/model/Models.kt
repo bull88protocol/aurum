@@ -31,25 +31,7 @@ data class QuoteData(
     val regularMarketPrice: Double = 0.0,      // last regular-session close (reference for pre/post)
 )
 
-// ── HMAI models ───────────────────────────────────────────────────────────────
-
-data class PillarResult(
-    val pillar: Int,
-    val name: String,
-    val score: Double,
-    val maxScore: Double,
-    val label: String,
-    val components: Map<String, Double>,
-    val details: String,
-)
-
-enum class CbAction { PASS_THROUGH, CAP_50, FORCE_20_30, FORCE_0_10 }
-
-data class CircuitBreakerResult(
-    val triggers: List<String>,
-    val action: CbAction,
-    val description: String,
-)
+// ── Gemini ───────────────────────────────────────────────────────────────────
 
 data class GeminiResult(
     val signal: String,           // BULLISH / NEUTRAL / BEARISH
@@ -72,24 +54,6 @@ data class NewsItem(
     val date: String = "",   // YYYY-MM-DD
 )
 
-data class HmaiReport(
-    val symbol: String,
-    val composite: Double,
-    val compositeLabel: String,
-    val pillars: List<PillarResult>,
-    val circuitBreaker: CircuitBreakerResult,
-    val rawComposite: Double,
-    val vixValue: Double?,
-    val geminiSignal: String?,
-    val geminiScore: Int?,
-    val geminiDescription: String?,
-    val geminiKeyFactors: List<String>,
-    val geminiYesterdayRecap: String? = null,
-    val geminiTodayOutlook: String? = null,
-    val lastSessionLabel: String? = null,  // e.g. "March 17"
-    val nextSessionLabel: String? = null,  // e.g. "March 18"
-)
-
 // ── Per-symbol UI state ───────────────────────────────────────────────────────
 
 data class SymbolState(
@@ -98,11 +62,11 @@ data class SymbolState(
     val error: String? = null,
     val quote: QuoteData? = null,
     val intradayPoints: List<IntradayPoint> = emptyList(),
-    val hmaiReport: HmaiReport? = null,
     val news: List<NewsItem> = emptyList(),
     val lastUpdated: Long = 0L,
     val usingGoogleData: Boolean = false,  // true = quote sourced from Google Finance via Sheets
     val goldIndexReport: GoldIndexReport? = null,
+    val driversReport: DriversReport? = null,
     val geminiSignal: String? = null,
     val geminiScore: Int? = null,
     val geminiDescription: String? = null,
@@ -136,7 +100,7 @@ data class GoldComponentScore(
 
 data class DailyIndexPoint(
     val dateMs: Long,
-    val score: Float,           // 0-100 composite
+    val score: Float,           // 0-100 Gold Index composite, or -100..+100 for the 20-day drivers
 )
 
 data class GoldIndexReport(
@@ -150,3 +114,32 @@ data class GoldIndexReport(
     val forwardLabel: String = "NEUTRAL",
     val forwardComponents: List<GoldComponentScore> = emptyList(),
 )
+
+// ── 20-Day Drivers ───────────────────────────────────────────────────────────
+
+/**
+ * One leg of the 20-day drivers read. [score] runs -100 (strong headwind for gold) to +100 (strong
+ * tailwind); [goldImpactPct] is the part of gold's own 20-day move this leg accounts for.
+ */
+data class DriverLeg(
+    val name: String,
+    val available: Boolean,
+    val keyRequired: Boolean = false,  // unavailable specifically for lack of FRED data (no key)
+    val level: Double = 0.0,           // latest value: DFII10 in %, or the DXY index
+    val change: Double = 0.0,          // 20-observation change: percentage points, or % for the dollar
+    val score: Float = 0f,
+    val goldImpactPct: Double = 0.0,
+    val asOf: String = "",             // yyyy-MM-dd of the observation used
+)
+
+/** What real yields and the dollar did to gold over the last 20 trading days. Explains; doesn't forecast. */
+data class DriversReport(
+    val score: Float,                  // -100..+100, mean of the available legs
+    val label: String,                 // STRONG TAILWIND / TAILWIND / MIXED / HEADWIND / STRONG HEADWIND
+    val legs: List<DriverLeg>,         // [real yields, dollar]
+    val goldChangePct: Double?,        // GLD's own 20-day move, %
+    val otherPct: Double?,             // the part of that move neither leg accounts for
+    val history: List<DailyIndexPoint>,// last ~year of [score], for the chart
+) {
+    val available: Boolean get() = legs.any { it.available }
+}

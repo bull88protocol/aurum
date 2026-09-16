@@ -39,7 +39,7 @@ class YahooFinanceClient {
         }
         .build()
 
-    /** Fetch ~2 years of daily OHLCV candles for HMAI computation */
+    /** Fetch ~2 years of daily OHLCV candles (the Gold Index and the 20-day drivers) */
     fun fetchDailyCandles(symbol: String): List<Candle> {
         val url = "https://query1.finance.yahoo.com/v8/finance/chart/$symbol" +
                 "?interval=1d&range=2y"
@@ -72,19 +72,6 @@ class YahooFinanceClient {
         val quote = parseQuote(json, symbol)
         val intraday = parseIntraday(json)
         return Pair(quote, intraday)
-    }
-
-    /** Fetch latest VIX value */
-    fun fetchVix(): Double? {
-        val url = "https://query1.finance.yahoo.com/v8/finance/chart/%5EVIX?interval=1d&range=5d"
-        val json = get(url) ?: return null
-        return try {
-            val meta = json.getJSONObject("chart")
-                .getJSONArray("result")
-                .getJSONObject(0)
-                .getJSONObject("meta")
-            meta.optDouble("regularMarketPrice").takeIf { !it.isNaN() }
-        } catch (e: Exception) { null }
     }
 
     /**

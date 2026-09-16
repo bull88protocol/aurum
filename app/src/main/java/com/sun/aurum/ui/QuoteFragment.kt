@@ -14,7 +14,6 @@ import com.sun.aurum.MainViewModel
 import com.sun.aurum.R
 import com.sun.aurum.databinding.FragmentQuoteBinding
 import com.sun.aurum.model.GoldComponentScore
-import com.sun.aurum.model.PillarResult
 import com.sun.aurum.model.SymbolState
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -127,14 +126,8 @@ class QuoteFragment : Fragment() {
             binding.tvLastUpdated.text = "$src · ${String.format("%d:%02d ET", cal.get(Calendar.HOUR_OF_DAY), cal.get(Calendar.MINUTE))}"
         }
 
-        // Gold Index (GLD only) vs HMAI (all others)
-        if (symbol == "GLD") {
-            binding.cardHmai.visibility = View.GONE
-            renderGoldIndex(state)
-        } else {
-            binding.cardGoldIndex.visibility = View.GONE
-            renderHmai(state)
-        }
+        // Gold Index (GLD)
+        if (symbol == "GLD") renderGoldIndex(state) else binding.cardGoldIndex.visibility = View.GONE
 
         // Market Brief and News now live in their own tabs (AiBriefFragment / NewsFragment).
     }
@@ -208,39 +201,6 @@ class QuoteFragment : Fragment() {
         // Download CSV button
         binding.btnDownloadGoldCsv.setOnClickListener {
             downloadGoldIndexCsv()
-        }
-    }
-
-    private fun renderHmai(state: SymbolState) {
-        val hmai = state.hmaiReport
-        if (hmai != null) {
-            binding.cardHmai.visibility = View.VISIBLE
-            val scoreColor = when (hmai.compositeLabel) {
-                "RISK ON"  -> Color.parseColor("#26A69A")
-                "CAUTION"  -> Color.parseColor("#FFA726")
-                else       -> Color.parseColor("#EF5350")
-            }
-            binding.tvComposite.text = "${String.format("%.0f", hmai.composite)} / 100"
-            binding.tvCompositeLabel.text = hmai.compositeLabel
-            binding.tvCompositeLabel.setTextColor(scoreColor)
-            binding.compositeBar.progress = hmai.composite.toInt()
-            binding.compositeBar.progressTintList = android.content.res.ColorStateList.valueOf(scoreColor)
-
-            // Circuit breaker
-            if (hmai.circuitBreaker.triggers.isNotEmpty()) {
-                binding.tvCbWarning.visibility = View.VISIBLE
-                binding.tvCbWarning.text = "⚠ ${hmai.circuitBreaker.description}: ${hmai.circuitBreaker.triggers.joinToString(", ")}"
-            } else {
-                binding.tvCbWarning.visibility = View.GONE
-            }
-
-            // Pillar breakdown
-            binding.llPillars.removeAllViews()
-            for (p in hmai.pillars) {
-                addPillarRow(p)
-            }
-        } else {
-            binding.cardHmai.visibility = View.GONE
         }
     }
 
@@ -327,55 +287,6 @@ class QuoteFragment : Fragment() {
                 Toast.makeText(requireContext(), "Export failed: ${e.message}", Toast.LENGTH_SHORT).show()
             }
         }
-    }
-
-    private fun addPillarRow(p: PillarResult) {
-        val ctx = requireContext()
-        val row = LinearLayout(ctx).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(0, (4 * resources.displayMetrics.density).toInt(), 0, (4 * resources.displayMetrics.density).toInt())
-        }
-
-        // Label row
-        val labelRow = LinearLayout(ctx).apply { orientation = LinearLayout.HORIZONTAL }
-        val tvName = TextView(ctx).apply {
-            text = "P${p.pillar}: ${p.name}"
-            textSize = 12f
-            setTextColor(ContextCompat.getColor(ctx, R.color.pillar_label))
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-        }
-        val tvScore = TextView(ctx).apply {
-            text = "${String.format("%.0f", p.score)}/${p.maxScore.toInt()}"
-            textSize = 12f
-            setTextColor(ContextCompat.getColor(ctx, R.color.text_primary))
-        }
-        val tvLabel = TextView(ctx).apply {
-            text = p.label
-            textSize = 10f
-            setTextColor(ContextCompat.getColor(ctx, R.color.pillar_sublabel))
-            val lp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT)
-            lp.marginStart = (8 * resources.displayMetrics.density).toInt()
-            layoutParams = lp
-        }
-        labelRow.addView(tvName); labelRow.addView(tvScore); labelRow.addView(tvLabel)
-
-        // Progress bar
-        val bar = ProgressBar(ctx, null, android.R.attr.progressBarStyleHorizontal).apply {
-            max = p.maxScore.toInt()
-            progress = p.score.toInt()
-            val pct = if (p.maxScore > 0) p.score / p.maxScore else 0.0
-            val barColor = when {
-                pct >= 0.7 -> Color.parseColor("#26A69A")
-                pct >= 0.4 -> Color.parseColor("#FFA726")
-                else       -> Color.parseColor("#EF5350")
-            }
-            progressTintList = android.content.res.ColorStateList.valueOf(barColor)
-            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (6 * resources.displayMetrics.density).toInt()).apply {
-                topMargin = (2 * resources.displayMetrics.density).toInt()
-            }
-        }
-        row.addView(labelRow); row.addView(bar)
-        binding.llPillars.addView(row)
     }
 
     override fun onDestroyView() {

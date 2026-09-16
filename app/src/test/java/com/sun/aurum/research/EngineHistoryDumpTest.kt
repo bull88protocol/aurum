@@ -1,5 +1,6 @@
 package com.sun.aurum.research
 
+import com.sun.aurum.domain.gold.GoldDriversEngine
 import com.sun.aurum.domain.gold.GoldIndexEngine
 import com.sun.aurum.model.Candle
 import com.sun.aurum.model.CbQuarter
@@ -117,5 +118,35 @@ class EngineHistoryDumpTest {
             }
         }
         println("EngineHistoryDump: ${rows.size} spot rows, ${monthEndIdx.size} forward month-ends -> $outDir")
+    }
+
+    /**
+     * C) The 20-day drivers read, replayed daily over the full history, for the parity check against
+     *    research/scripts/drivers-2026-09/drivers_replica.py (research/DRIVERS_20D_2026-09-16.md).
+     */
+    @Test
+    fun dumpDriversHistory() {
+        val research = findResearchDir()
+        assumeTrue("research data set not present - skipping dump", research != null)
+        val inputsDir = File(research!!, "cache/inputs")
+        val outDir = File(research, "cache/engine").apply { mkdirs() }
+
+        val rows = GoldDriversEngine.history(
+            GoldDriversEngine.Inputs(
+                gldCandles = readCandles(File(inputsDir, "gld.csv")),
+                dxyCandles = readCandles(File(inputsDir, "dxy.csv")),
+                realYield  = readFred(File(inputsDir, "dfii10.csv")),
+            )
+        )
+        File(outDir, "engine_drivers_daily.csv").bufferedWriter().use { w ->
+            w.appendLine("date,ry_s,usd_s,drivers")
+            for (r in rows) {
+                w.append(msToDate(r.dateMs)).append(',')
+                w.append(r.realYieldScore?.toString() ?: "").append(',')
+                w.append(r.dollarScore?.toString() ?: "").append(',')
+                w.appendLine(r.score?.toString() ?: "")
+            }
+        }
+        println("EngineHistoryDump: ${rows.size} drivers rows -> $outDir")
     }
 }

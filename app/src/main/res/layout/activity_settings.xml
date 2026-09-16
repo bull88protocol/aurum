@@ -196,7 +196,7 @@
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Enables the Real Yield and Inflation components of the Gold Index, plus the Real-Rate Regime and Fed Cycle drivers of the Forward Signal. The key is free and instant — no cost ever.\n\n1. Open the link below and create a free FRED account\n2. Request an API key (granted instantly)\n3. Copy it and paste it below\n\nhttps://fredaccount.stlouisfed.org/apikeys"
+                        android:text="Enables the Real Yield and Inflation components of the Gold Index, the Real-Rate Regime and Fed Cycle drivers of the Forward Signal, and the real-yield half of the 20 Days tab. The 6 PM daily report fills these in even without a key. The key is free and instant — no cost ever.\n\n1. Open the link below and create a free FRED account\n2. Request an API key (granted instantly)\n3. Copy it and paste it below\n\nhttps://fredaccount.stlouisfed.org/apikeys"
                         android:textSize="12sp"
                         android:textColor="@color/text_secondary"
                         android:lineSpacingExtra="2dp"
@@ -264,6 +264,17 @@
                             app:strokeColor="@color/accent" />
 
                     </LinearLayout>
+
+                    <!-- Required by the FRED API Terms of Use for apps used by others -->
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="This product uses the FRED® API but is not endorsed or certified by the Federal Reserve Bank of St. Louis. By using the app you agree to the FRED® API Terms of Use: https://fred.stlouisfed.org/docs/api/terms_of_use.html"
+                        android:textSize="11sp"
+                        android:textColor="@color/text_secondary"
+                        android:lineSpacingExtra="2dp"
+                        android:autoLink="web"
+                        android:layout_marginTop="12dp" />
 
                 </LinearLayout>
 

@@ -14,6 +14,7 @@ import com.sun.aurum.data.DataRepository
 import com.sun.aurum.data.GoogleAuthManager
 import com.sun.aurum.data.SecurePrefs
 import com.sun.aurum.model.SymbolState
+import com.sun.aurum.network.FredFeedClient
 import com.sun.aurum.report.GoldReportContent
 import com.sun.aurum.report.GoldReportPdf
 import com.sun.aurum.report.ReportActionActivity
@@ -30,12 +31,17 @@ class DailyRefreshWorker(ctx: Context, params: WorkerParameters) : CoroutineWork
 
         val states = mutableMapOf<String, SymbolState>()
         val accessToken    = googleAuth.getAccessToken()
+        // The report is the one place the hosted FRED feed is used: it scores the FRED components
+        // for every user, key or not. Everywhere else the app reads FRED with the user's own key.
+        // Null (feed down or stale) falls back to that key.
+        val fredFeed       = FredFeedClient().fetch()
         val updatedSheetId = repo.fetchAll(
             symbols      = MainViewModel.SYMBOLS,
             accessToken  = accessToken,
             sheetId      = prefs.googleSheetId.ifBlank { null },
             geminiKey    = prefs.geminiApiKey,
             fredKey      = prefs.fredApiKey,
+            fredFeed     = fredFeed,
             forceGemini  = true,   // new day — always get fresh briefing
         ) { state -> states[state.symbol] = state }
 
@@ -50,7 +56,8 @@ class DailyRefreshWorker(ctx: Context, params: WorkerParameters) : CoroutineWork
         val report = GoldReportPdf.generate(
             context      = applicationContext,
             states       = states,
-            hasFredKey   = prefs.fredApiKey.isNotBlank(),
+            // With the feed in hand, a missing FRED component is a load failure, not a missing key.
+            hasFredKey   = prefs.fredApiKey.isNotBlank() || !fredFeed.isNullOrEmpty(),
             hasGeminiKey = prefs.geminiApiKey.isNotBlank(),
         )
         showNotification(report, states[GoldReportContent.GOLD])

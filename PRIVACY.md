@@ -1,6 +1,6 @@
 # Privacy Policy — Aurum88 Protocol
 
-**Last updated: 2026-06-13**
+**Last updated: 2026-09-16**
 
 This Privacy Policy explains how the **Aurum88 Protocol** application ("the App"),
 a product of **CoinTranscend** ("we", "us"), handles your data. The App is designed to keep
@@ -46,7 +46,12 @@ device to these services. We are not a party to these connections:
   is an anonymous one-way download of public data: **no key and nothing about you is
   sent** — only an HTTPS request for the file. No key required.
 - **FRED API** (St. Louis Fed) — macroeconomic series (real yields `DFII10`,
-  inflation expectations `T10YIE`), under **your own** FRED key.
+  inflation expectations `T10YIE`, the 2-year Treasury yield `DGS2`), under **your own**
+  FRED key.
+- **Aurum FRED data file** (GitHub) — the daily 6 PM report downloads a small **public**
+  file of those same FRED series, which we refresh from FRED each weekday, so the report
+  is complete even without a key. Like the central-bank file, this is an anonymous
+  one-way download: **no key and nothing about you is sent**.
 - **Google Gemini API** — the symbol/topic analyzed (e.g., central-bank and gold
   sentiment), sent under **your own** Gemini key.
 - **Google Sheets API** — if you enable sync, your market data is written to

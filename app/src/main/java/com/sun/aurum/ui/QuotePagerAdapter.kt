@@ -6,8 +6,9 @@ import androidx.viewpager2.adapter.FragmentStateAdapter
 import com.sun.aurum.MainViewModel
 
 /**
- * Gold is the hero, split into three section tabs (Gold Index · AI Brief · News). A fourth tab
- * surfaces a second instrument — the US Dollar Index (DXY) — through the HMAI engine.
+ * Gold, split into four section tabs: Gold Index · AI Brief · News · 20 Days. The last is the 20-day
+ * drivers read (what real yields and the dollar did to gold over the last 20 trading days). It
+ * replaced the Dollar (DXY) tab.
  */
 class QuotePagerAdapter(activity: FragmentActivity) : FragmentStateAdapter(activity) {
     override fun getItemCount() = TAB_TITLES.size
@@ -15,10 +16,10 @@ class QuotePagerAdapter(activity: FragmentActivity) : FragmentStateAdapter(activ
         0    -> QuoteFragment.newInstance(MainViewModel.SYMBOLS[0])   // GLD — Gold Index card
         1    -> AiBriefFragment()
         2    -> NewsFragment()
-        else -> QuoteFragment.newInstance(MainViewModel.SYMBOLS[1])   // DX-Y.NYB — HMAI card
+        else -> DriversFragment()
     }
 
     companion object {
-        val TAB_TITLES = listOf("Gold", "AI Brief", "News", "Dollar")
+        val TAB_TITLES = listOf("Gold", "AI Brief", "News", "20 Days")
     }
 }

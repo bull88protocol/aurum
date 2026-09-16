@@ -1,8 +1,9 @@
 # Aurum88 Protocol — project context for Claude Code
 
 A bring-your-own-keys **gold-macro app**: a single 0–100 Gold Index (real yields, USD, central-bank
-demand, inflation, technicals) + a forward signal, history chart, AI brief, news, and a second
-instrument (the Dollar / DXY via the HMAI engine). No backend; runs on-device. Since v2.5.0 the
+demand, inflation, technicals) + a forward signal, history chart, AI brief, news, and a **20 Days**
+tab (what real yields and the dollar did to gold over the last 20 trading days; it replaced the
+Dollar / DXY HMAI tab, see below). No backend; runs on-device. Since v2.5.0 the
 6 PM ET weekday report is delivered as a **PDF straight from the notification** — see `app/report/`.
 
 > **Forward Signal v2 (2026-07, ships in v2.1.0):** the 3-6M outlook was rebuilt after a full
@@ -15,6 +16,21 @@ instrument (the Dollar / DXY via the HMAI engine). No backend; runs on-device. S
 > reproduced, no math changes; v2.2.0 ships the audit's two adjustments (CB 2025 fallback 863 t,
 > spot-HOT caution chip). See **`research/VALIDATION_2026-07-10.md`** (incl. live watch-item:
 > v2 stayed BULLISH through the 2026 −24% crash).
+
+> **20-Day Drivers + hosted FRED feed (2026-09-16; app code on `feat/20-day-drivers`, ships as v2.8.0;
+> the feed workflow is already live on `master`):**
+> an outside "Core Gold Signal" (20-day change in real yields + the dollar) was backtested as
+> written: same-window +0.56, next 20 days +0.04, next 3M -0.02, i.e. a nowcast, not a signal.
+> It ships as the descriptive **20 Days** tab (`GoldDriversEngine`: tailwind/headwind read, 1y
+> chart, gold's 20-day move broken down into real yields / dollar / everything else) and
+> **replaces the Dollar tab; the HMAI engine and the VIX fetch are deleted.** The Gold Index and
+> Forward Signal math are untouched. The same branch adds the **hosted FRED feed**: a GitHub
+> Action fetches DFII10/T10YIE/DGS2 with the owner's key (repo secret) and publishes
+> `fred_daily.json` to the `fred-data` branch. Only the 6 PM **report** reads it, so reports are
+> complete for keyless users; everything interactive still uses the user's own key (owner's
+> decision). It also adds the FRED® notice FRED's API terms require (Settings, 20 Days tab,
+> TERMS.md, PRIVACY.md) — the app had never shown it. Research: **`research/DRIVERS_20D_2026-09-16.md`**.
+> Feed operations: §Hosted FRED feed below.
 
 > **This file is the cross-machine source of truth.** Claude Code's memory is per-machine and does
 > **not** sync. When working from a different computer (e.g. a Mac for the iOS build), this committed
@@ -42,6 +58,12 @@ changes network timeout and cancellation behaviour app-wide.
 The maintained answer to "what is pending". Ordered by what actually matters. Keep it current —
 when an item is done, delete it rather than leaving it ticked.
 
+0. **Ship the 20 Days tab + hosted FRED feed** (app code committed on `feat/20-day-drivers`
+   2026-09-16, 64/64 tests; the feed workflow was pushed to `master` the same day and is active).
+   One-time owner step: add repo secret `FRED_API_KEY` (GitHub → Settings → Secrets and variables
+   → Actions). Until then every run skips with a warning. Then Actions → "FRED feed" → Run workflow
+   once and check the `fred-data` branch appears. The app part releases as v2.8.0 **after 2.7.0
+   clears review**. Also: store listing/screenshots don't mention the new tab.
 1. **Confirm v2.7.0 clears Play review**, then update the status block above and tick the checklist
    in `release-2.7/RELEASE_NOTES.md`. Submitted 2026-09-04; 2.6.0 took ~1 day, 2.5.0 took ~11.
 2. **Watch ANR rate once 2.7.0 rolls out** — see the caveat above about overlapping vitals. This is
@@ -52,9 +74,10 @@ when an item is done, delete it rather than leaving it ticked.
    day's range. One look, next time gold gaps.
 4. **Duplicate "Aurum Market Data" spreadsheets in Drive.** v2.7.0 stops new ones; it does **not**
    clean up existing ones. Delete strays by hand.
-5. **`resolveOpen` and the refresh-timeout paths have no unit tests** — `org.json` is stubbed in
-   Android unit tests and `MainViewModel` needs a context. Moving the pure logic into `:shared`
-   fixes both; folded into `api-37/API_37_UPGRADE_PLAN.md` §4.
+5. **`resolveOpen` and the refresh-timeout paths have no unit tests** — `MainViewModel` needs a
+   context. (The other blocker, `org.json` being a throwing stub in unit tests, is fixed on
+   `feat/20-day-drivers` by `testImplementation("org.json:json:20180813")`.) Moving the pure logic
+   into `:shared` still fixes both; folded into `api-37/API_37_UPGRADE_PLAN.md` §4.
 6. **API 37 / Android 17** — the next *forced* work, and the only item with a deadline. Needs
    AGP 9.1.1 + Gradle 9.3.1 + Kotlin 2.x (three major migrations; JDK 17 still fine). No Play
    deadline published; the annual pattern points at **August 2027**. Revisit Q1-Q2 2027.
@@ -131,6 +154,7 @@ when an item is done, delete it rather than leaving it ticked.
   Decision: **Kotlin Multiplatform shared core + native SwiftUI**. Needs a Mac (Xcode is macOS-only).
   **Phase 1 code is on `master`** (rode the v2.1.0 merge): `:shared` KMP module with **the entire
   domain — `model` + both engines (`GoldIndexEngine` + HMAI) — in `commonMain`**; 29/29 tests green.
+  (`feat/20-day-drivers` deletes HMAI and adds `GoldDriversEngine`, also pure `commonMain`.)
   When iOS resumes: network clients → Ktor, storage/biometric → expect/actual, tests → commonTest,
   then iOS targets + SwiftUI on the Mac (Phase 2).
 
@@ -142,8 +166,10 @@ when an item is done, delete it rather than leaving it ticked.
   `ReportDelivery.kt` opens / shares / saves-to-Downloads, `ReportActionActivity.kt` is the
   invisible notification trampoline.
 - `shared/` — KMP module (added on `ios-port`). `commonMain` now has the **full domain** (`model/`,
-  `domain/gold/` + `domain/hmai/`) and `util/formatDecimals` (expect/actual); deps: kotlinx-datetime.
+  `domain/gold/` — `GoldIndexEngine` + `GoldDriversEngine`; `domain/hmai/` was deleted with the
+  Dollar tab) and `util/formatDecimals` (expect/actual); deps: kotlinx-datetime.
   `androidTarget` only for now; iOS targets get enabled on the Mac (Phase 2). The app depends on `:shared`.
+- `.github/workflows/fred-feed.yml` + `.github/fred-feed/build_feed.py` (hosted FRED feed, see below)
 - `data/cb_quarterly.json` (hosted CB feed) · `release-2.0/` (v2.0 docs) · `ios/` (Apple plan) ·
   `release-2.0/cb-data/` (CB feed tool) · `research/` (Gold Index backtest: scripts + results; `cache/` gitignored,
   regenerate via `research/README.md`).
@@ -153,7 +179,7 @@ when an item is done, delete it rather than leaving it ticked.
 ## Build / test the shared module
 ```bash
 ./gradlew :shared:assembleDebug          # build the KMP android artifact
-./gradlew :app:testDebugUnitTest         # 55 tests (still run from :app for now)
+./gradlew :app:testDebugUnitTest         # 64 tests (still run from :app for now)
 ```
 
 ## Branch model
@@ -168,7 +194,7 @@ when an item is done, delete it rather than leaving it ticked.
 ```bash
 source /home/sun/option_android/android_env.sh   # this Linux box only
 ./gradlew :app:assembleDebug                      # debug build
-./gradlew :app:testDebugUnitTest                  # 55 tests (Gold Index 19 + HMAI 10 + report 17 + schedule 8 + 1)
+./gradlew :app:testDebugUnitTest                  # 64 tests (Gold Index 19 + drivers 12 + FRED feed 6 + report 17 + schedule 8 + research dumps 2)
 ./gradlew :app:bundleRelease                       # signed Play AAB (needs keystore.properties)
 ```
 
@@ -190,6 +216,29 @@ adb pull /sdcard/Android/data/com.sun.aurum.debug/files/reports/   # the generat
 # seed synthetic state (e.g. Gemini brief + news without a key) — app must be force-stopped first
 adb shell run-as com.sun.aurum.debug cat files/symbol_cache.json
 ```
+
+### Hosted FRED feed (GitHub Action → `fred-data` branch)
+Why: the 6 PM report scores the FRED components for every user without shipping the owner's key
+(FRED's terms make the key holder "solely responsible" for all use, and every install's worker fires
+at 18:00 ET: ~40 phones × 3 calls hits the ~120 req/min per-key limit). Interactive refreshes keep
+using each user's own key — the owner's call, 2026-09-16.
+- **Runs by itself** on GitHub: weekdays every 20 min 20:10–22:50 UTC (covers the 4:15 PM ET H.15
+  post → 6 PM report in both EDT and EST) + 12:30 UTC. Publishes only when data changed; each
+  publish force-pushes a single orphan commit (`fred_daily.json` + README) to `fred-data`.
+  App URL: `https://raw.githubusercontent.com/bull88protocol/aurum/fred-data/fred_daily.json`.
+- **Secret:** `FRED_API_KEY` (repo Settings → Secrets and variables → Actions). Never in the app,
+  never in the repo. The builder never prints request URLs (they carry the key).
+- **Failure = safe:** bad key / FRED down / short, stale or out-of-range data → the run fails,
+  nothing is published, GitHub emails the owner. The app drops any series older than 10 days and
+  falls back to the user's key.
+- **Watch:** GitHub auto-disables scheduled workflows in public repos after 60 days with no repository
+  activity (unclear whether the bot's pushes count). If the feed goes stale, check Actions → "FRED
+  feed" → Enable / Run workflow.
+- **Required notice** (FRED API ToU, applies with or without a key): "This product uses the FRED® API
+  but is not endorsed or certified by the Federal Reserve Bank of St. Louis." + a link to the ToU and
+  users agreeing to it. Lives in Settings (FRED card), the 20 Days tab, TERMS.md §3a, PRIVACY.md §3.
+- Local test without a key: `FRED_API_BASE=http://127.0.0.1:PORT FRED_API_KEY=x python3
+  .github/fred-feed/build_feed.py --out /tmp/f.json` against a mock (see research log for how it was done).
 
 ### Google Sign-In / OAuth (Cloud Console — the SHA-1 trap)
 Sign-In powers only the **optional** Sheets sync (`GoogleAuthManager`, scope `drive.file`); quotes
@@ -237,5 +286,6 @@ Feature-branch job (`api-37`); do not start it while a release is in review.
 - `ios/APPLE_RELEASE_PLAN.md` · `ios/APP_STORE_SUBMISSION_CHECKLIST.md` · `ios/MAC_SETUP.md`
 - `release-2.0/RESUME.md` (v2.0 handoff) · `release-2.0/CHANGELOG.md` · `release-2.0/NEXT_RELEASE_PLAN.md`
 - `release-2.7/RELEASE_NOTES.md` (current release) · `release-2.6/RELEASE_NOTES.md`
+- `research/DRIVERS_20D_2026-09-16.md` (20 Days tab: why it is a nowcast, the shipped spec, parity)
 - `api-37/API_37_UPGRADE_PLAN.md` (next forced Android work — AGP 9 / Gradle 9 / Kotlin 2)
 - `TESTING.md` (tester onboarding) · `README.md` · `PRIVACY.md` · `TERMS.md`

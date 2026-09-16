@@ -242,7 +242,7 @@ class MainActivity : AppCompatActivity() {
             Syncs your market data to your own Google Sheet. Quotes always use live Yahoo Finance.
 
             Without the keys:
-            The app still runs: the Gold Index uses 3 of its 5 components — USD, Central Bank Demand (built in), and Technicals — and the AI analysis and news sections stay hidden.
+            The app still runs: the Gold Index uses 3 of its 5 components — USD, Central Bank Demand (built in), and Technicals — and the AI analysis and news sections stay hidden. The 6 PM daily report still scores all five.
 
             Tip: pull down on any tab to refresh. Step-by-step links to grab both keys are in Settings.
         """.trimIndent()

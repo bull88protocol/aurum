@@ -44,14 +44,13 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         const val REFRESH_TIMEOUT_MSG =
             "Couldn't reach the market data providers. Check your connection and try again."
 
-        // Gold is the hero (GLD → the Gold Index). DX-Y.NYB (the US Dollar Index) is surfaced as a
-        // second instrument through the HMAI engine — the dollar is gold's key inverse driver.
-        val SYMBOLS = listOf("GLD", "DX-Y.NYB")
+        // Gold is the only instrument. All four tabs read GLD's state; the 20 Days tab's drivers
+        // report is computed in the same fetch from GLD, DXY and FRED DFII10.
+        val SYMBOLS = listOf("GLD")
 
         fun displayName(symbol: String): String = when (symbol) {
-            "GLD"      -> "Gold"
-            "DX-Y.NYB" -> "Dollar (DXY)"
-            else       -> symbol
+            "GLD" -> "Gold"
+            else  -> symbol
         }
     }
 
@@ -74,8 +73,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     val hasFredKey: Boolean   get() = prefs.fredApiKey.isNotBlank()
 
     init {
-        // Load cached data instantly (e.g. from 9 AM background fetch)
-        repo.loadCache()?.let { _states.value = it }
+        // Load cached data instantly (e.g. from the 6 PM background fetch). Keep only current
+        // symbols: a cache written before the Dollar tab was retired still holds DX-Y.NYB, and a
+        // leftover entry would be marked loading by refresh() and never cleared, an endless spinner.
+        repo.loadCache()?.filterKeys { it in SYMBOLS }?.let { _states.value = _states.value + it }
     }
 
     /** Refresh a single symbol — used when the user taps refresh on a specific tab. */

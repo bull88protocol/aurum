@@ -44,9 +44,10 @@ It distills the gold macro picture into one number and a clear read, across four
   next-session outlook, and the key factors moving gold *(needs a free Gemini key)*.
 - **News** — the day's most relevant gold headlines, with source links
   *(needs a free Gemini key)*.
-- **Dollar** — the US Dollar Index (DXY), gold's key inverse driver, read through a
-  6-pillar technical engine (trend, momentum, probability, sentiment, valuation,
-  coherence) with a market-stress circuit breaker. No key needed.
+- **20 Days** — what real yields and the dollar did to gold over the last 20 trading
+  days: a tailwind/headwind read, a one-year history, and gold's own 20-day move broken
+  down into real yields, the dollar and everything else. It explains the move; it is not
+  a forecast. The dollar half needs no key; real yields use your FRED key.
 
 **Pull down on any tab to refresh.** Data is cached for instant open and auto-refreshes
 each morning; adding a key in Settings refreshes the relevant tabs automatically.

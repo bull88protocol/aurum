@@ -1,9 +1,11 @@
 package com.sun.aurum.data
 
 import android.content.Context
+import com.sun.aurum.domain.gold.GoldDriversEngine
 import com.sun.aurum.domain.gold.GoldIndexEngine
-import com.sun.aurum.domain.hmai.HmaiEngine
-import com.sun.aurum.model.Candle
+import com.sun.aurum.model.DriversReport
+import com.sun.aurum.model.FredObs
+import com.sun.aurum.model.GoldIndexReport
 import com.sun.aurum.model.QuoteData
 import com.sun.aurum.model.SymbolState
 import com.sun.aurum.network.CentralBankClient
@@ -25,6 +27,8 @@ class DataRepository(private val context: Context) {
      * Fetches all data for [symbols], calling [onState] for each symbol as it completes.
      * Returns the (possibly updated) Google Sheet ID, or null if not using Google.
      * [forceGemini] bypasses the 8-hour Gemini cache (used by the 9 AM worker for a new day).
+     * [fredFeed] is the hosted FRED feed (FredFeedClient). Only the daily report worker passes it;
+     * any series it lacks, and every series when it is null, comes from FRED with [fredKey].
      */
     suspend fun fetchAll(
         symbols: List<String>,
@@ -32,6 +36,7 @@ class DataRepository(private val context: Context) {
         sheetId: String?,
         geminiKey: String,
         fredKey: String = "",
+        fredFeed: Map<String, List<FredObs>>? = null,
         forceGemini: Boolean = false,
         onState: (SymbolState) -> Unit,
     ): String? = withContext(Dispatchers.IO) {
@@ -50,19 +55,10 @@ class DataRepository(private val context: Context) {
                 if (result.sheetId != sheetId) updatedSheetId = result.sheetId
             } catch (e: Exception) { /* sync is best-effort — keep the saved id and carry on */ }
         }
-        val vix: Double? = try { yahoo.fetchVix() } catch (e: Exception) { null }
-
-        // DX-Y.NYB daily candles feed both the Dollar tab's HMAI (its own series) and GLD's Gold
-        // Index (the USD component) — fetch once here and share across both symbols so a batch
-        // refresh hits Yahoo for the dollar history a single time.
-        val sharedDxyCandles: List<Candle>? =
-            if ("DX-Y.NYB" in symbols || "GLD" in symbols)
-                try { yahoo.fetchDailyCandles("DX-Y.NYB") } catch (e: Exception) { null }
-            else null
 
         for (symbol in symbols) {
             try {
-                onState(buildSymbolState(symbol, geminiKey, fredKey, vix, forceGemini, sharedDxyCandles))
+                onState(buildSymbolState(symbol, geminiKey, fredKey, fredFeed, forceGemini))
             } catch (e: Exception) {
                 onState(SymbolState(symbol = symbol, loading = false, error = e.message ?: "Error"))
             }
@@ -73,33 +69,27 @@ class DataRepository(private val context: Context) {
     /** Fetches a single symbol using Yahoo Finance + Gemini brief (cache or fresh). */
     suspend fun fetchSymbol(symbol: String, geminiKey: String, fredKey: String = ""): SymbolState =
         withContext(Dispatchers.IO) {
-            buildSymbolState(symbol, geminiKey, fredKey, vix = yahoo.fetchVix(), forceGemini = false)
+            buildSymbolState(symbol, geminiKey, fredKey, fredFeed = null, forceGemini = false)
         }
 
     /**
-     * Fetches one symbol from Yahoo (quote + intraday + daily candles), runs the appropriate engine
-     * (the Gold Index for GLD, HMAI for the other instruments), and assembles its [SymbolState].
-     * Shared by [fetchAll] (batch refresh, reusing one [vix] fetch across symbols) and [fetchSymbol]
-     * (single-tab refresh). [vix] feeds HMAI's market-stress read; [forceGemini] bypasses the Gemini
-     * cache so a new day gets a fresh briefing. [sharedDxyCandles], when supplied by a batch refresh,
-     * is reused as the Dollar tab's own series and as GLD's Gold-Index USD component so DX-Y.NYB is
-     * only fetched once per batch.
+     * Fetches one symbol from Yahoo (quote + intraday + daily candles), runs the gold engines when it
+     * is GLD (the Gold Index and the 20-day drivers), and assembles its [SymbolState]. Shared by
+     * [fetchAll] (batch refresh) and [fetchSymbol] (single-tab refresh). [forceGemini] bypasses the
+     * Gemini cache so a new day gets a fresh briefing. [fredFeed] is the hosted FRED feed, passed only
+     * by the report worker.
      */
     private suspend fun buildSymbolState(
         symbol: String,
         geminiKey: String,
         fredKey: String,
-        vix: Double?,
+        fredFeed: Map<String, List<FredObs>>?,
         forceGemini: Boolean,
-        sharedDxyCandles: List<Candle>? = null,
     ): SymbolState {
         val (yahooQuote, intraday) = yahoo.fetchIntraday(symbol)
-        val candles = if (symbol == "DX-Y.NYB" && sharedDxyCandles != null) sharedDxyCandles
-                      else yahoo.fetchDailyCandles(symbol)
+        val candles = yahoo.fetchDailyCandles(symbol)
 
-        // Gemini brief/news is gold-only (the AI Brief & News tabs are about gold). The second
-        // instrument (DXY) runs HMAI without it — no wasted AI call, no ticker like "DX-Y.NYB"
-        // sent to the model.
+        // Gemini brief/news is gold-only (the AI Brief & News tabs are about gold).
         val geminiResult = if (symbol == "GLD" && geminiKey.isNotBlank()) {
             val cached = if (!forceGemini) GeminiCache.load(context, symbol) else null
             cached ?: gemini.fetchAnalysisAndNews(symbol, geminiKey, yahooQuote)?.also { fresh ->
@@ -107,23 +97,28 @@ class DataRepository(private val context: Context) {
             }
         } else null
 
-        val hmai = if (symbol != "GLD" && candles.size >= 50)
-            HmaiEngine.compute(symbol, candles, vix, geminiResult)
-        else null
-
-        val goldIndexReport = if (symbol == "GLD") {
-            val dxyCandles = sharedDxyCandles ?: yahoo.fetchDailyCandles("DX-Y.NYB")
+        var goldIndexReport: GoldIndexReport? = null
+        var driversReport: DriversReport? = null
+        if (symbol == "GLD") {
+            // DXY feeds the Gold Index's USD component and the drivers' dollar leg. A failure here
+            // only blanks those two reads, never the whole gold state.
+            val dxyCandles = try { yahoo.fetchDailyCandles("DX-Y.NYB") } catch (e: Exception) { emptyList() }
             fun yearsAgo(n: Int): String {
                 val cal = java.util.Calendar.getInstance()
                 cal.add(java.util.Calendar.YEAR, -n)
                 return java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(cal.time)
             }
-            val threeYearsAgo = yearsAgo(3)
+            // The hosted feed (report worker only) wins when it has the series; otherwise FRED with
+            // the user's own key. The feed carries the same windows fetched here.
+            fun fredSeries(id: String, years: Int, limit: Int = 1000): List<FredObs> =
+                fredFeed?.get(id)?.takeIf { it.isNotEmpty() }
+                    ?: if (fredKey.isNotBlank()) fred.fetchSeries(id, fredKey, startDate = yearsAgo(years), limit = limit)
+                       else emptyList()
             // DFII10 needs >= 5y so the forward signal's rolling 5y percentile has a full window
             // (~250 obs/yr; the default fetch limit of 1000 would silently cap it at ~4y).
-            val realYield = if (fredKey.isNotBlank()) fred.fetchSeries("DFII10", fredKey, startDate = yearsAgo(6), limit = 2000) else emptyList()
-            val inflation = if (fredKey.isNotBlank()) fred.fetchSeries("T10YIE", fredKey, startDate = threeYearsAgo) else emptyList()
-            val dgs2 = if (fredKey.isNotBlank()) fred.fetchSeries("DGS2", fredKey, startDate = threeYearsAgo) else emptyList()
+            val realYield = fredSeries("DFII10", years = 6, limit = 2000)
+            val inflation = fredSeries("T10YIE", years = 3)
+            val dgs2 = fredSeries("DGS2", years = 3)
             val cbQuarterly = CentralBankClient.loadCached(context)
             val inputs = GoldIndexEngine.Inputs(
                 gldCandles        = candles,
@@ -133,8 +128,9 @@ class DataRepository(private val context: Context) {
                 cbQuarterly       = cbQuarterly,
                 dgs2              = dgs2,
             )
-            GoldIndexEngine.compute(inputs)
-        } else null
+            goldIndexReport = GoldIndexEngine.compute(inputs)
+            driversReport = GoldDriversEngine.compute(GoldDriversEngine.Inputs(candles, dxyCandles, realYield))
+        }
 
         return SymbolState(
             symbol               = symbol,
@@ -142,11 +138,11 @@ class DataRepository(private val context: Context) {
             error                = if (yahooQuote == null && candles.isEmpty()) "Failed to fetch data" else null,
             quote                = yahooQuote,
             intradayPoints       = intraday,
-            hmaiReport           = hmai,
             news                 = geminiResult?.news ?: emptyList(),
             lastUpdated          = System.currentTimeMillis(),
             usingGoogleData      = false,   // quote is always Yahoo now; sign-in is sync-only
             goldIndexReport      = goldIndexReport,
+            driversReport        = driversReport,
             geminiSignal         = geminiResult?.signal,
             geminiScore          = geminiResult?.score,
             geminiDescription    = geminiResult?.description,

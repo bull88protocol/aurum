@@ -1,6 +1,6 @@
 # Terms of Use / End-User License Agreement (EULA) — Aurum88 Protocol (Beta)
 
-**Last updated: 2026-06-13**
+**Last updated: 2026-09-16**
 
 These Terms of Use ("Terms") govern your use of the **Aurum88 Protocol** beta
 application ("the App"), a product of **CoinTranscend** ("we", "us"). **By downloading,
@@ -33,6 +33,13 @@ complying with the terms of any third-party services you connect (including
 Yahoo Finance, Google Gemini, FRED, and Google), for the security of your API
 keys and credentials, and for all activity conducted through your accounts. We do
 not provide, control, or have access to your keys.
+
+## 3a. FRED® data
+This product uses the FRED® API but is not endorsed or certified by the Federal
+Reserve Bank of St. Louis. By using the App you agree to be bound by the
+[FRED® API Terms of Use](https://fred.stlouisfed.org/docs/api/terms_of_use.html).
+The App's daily report reads FRED series from a public data file we refresh from
+FRED each weekday; no key of ours is included in the App.
 
 ## 4. As-is; no warranty
 THE APP IS PROVIDED **"AS IS" AND "AS AVAILABLE," WITHOUT WARRANTY OF ANY KIND,**
