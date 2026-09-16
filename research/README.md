@@ -7,6 +7,12 @@
 > (WGC actual) and a spot-HOT caution chip near the Forward Signal. Scripts:
 > `scripts/validation-2026-07/`.
 
+> **20-Day Drivers (2026-09-16): `DRIVERS_20D_2026-09-16.md`.** An outside "Core Gold Signal"
+> (20-day change in real yields + the dollar) was backtested as written: same-window +0.56, next
+> 20 days +0.04, next 3 months -0.02. It explains, it doesn't forecast. It shipped as the
+> descriptive 20 Days tab, replacing the Dollar tab; the index math is untouched. Scripts:
+> `scripts/drivers-2026-09/`.
+
 Question asked: *do the Gold Index component weights/components need adjusting, and can the
 3-month outlook actually be predicted?* Everything below is measured on real downloaded
 history — no synthetic data, no full-sample fitting, train/test discipline throughout.
