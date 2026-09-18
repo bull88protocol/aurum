@@ -12,10 +12,12 @@ key. It also adds the notice FRED's API terms require, which the app had never s
 
 **The Gold Index and the Forward Signal are unchanged.** Not one line of `GoldIndexEngine` changed.
 
-> **Status 2026-09-16:** signed AAB built and verified (below). **Not uploaded, and must not be
-> until the three gates in the upload checklist are met:** 2.7.0 approved, the FRED feed live, and
-> an on-device pass. versionCode 16 is not claimed until upload, so the AAB can still be rebuilt
-> if anything changes.
+> **Status 2026-09-17:** signed AAB **rebuilt** and verified (below) from `2b9b7df`, after the fix
+> that puts a user's own FRED key ahead of the hosted feed in the report; the 2026-09-16 build is
+> superseded. The branch is pushed to `origin`. **Not uploaded, and must not be until the three
+> gates in the upload checklist are met:** 2.7.0 approved, the FRED feed live (checked 2026-09-17:
+> the `FRED_API_KEY` secret is still not set, so every run skips), and an on-device pass.
+> versionCode 16 is not claimed until upload, so the AAB can still be rebuilt if anything changes.
 
 ## What changed
 
@@ -23,6 +25,7 @@ key. It also adds the notice FRED's API terms require, which the app had never s
 |---|---|---|
 | Fourth tab | **Dollar**: DXY through the HMAI 6-pillar engine (RISK ON / CAUTION / RISK OFF) | **20 Days**: what real yields and the dollar did to gold over the last 20 trading days |
 | 6 PM report, user without a FRED key | Real Yield, Inflation, Real-Rate Regime, Fed Cycle all "add a FRED key" | all scored, from the hosted FRED feed |
+| 6 PM report, user with a FRED key | their own key | their own key first; the feed only for a series that fetch fails to return |
 | FRED data for interactive refreshes | the user's own key | the user's own key (unchanged, owner's decision) |
 | FRED API terms notice | missing | Settings, the 20 Days tab, TERMS.md §3a, PRIVACY.md §3 |
 | Yahoo calls per refresh | 5 (GLD ×2, DXY intraday, DXY daily, VIX) | 3 (GLD ×2, DXY daily) |
@@ -70,8 +73,14 @@ the endless spinner 2.7.0 fixed.
   publishes only when the data changed.
 - **Who reads it.** Only `DailyRefreshWorker`, through `FredFeedClient`, from
   `https://raw.githubusercontent.com/bull88protocol/aurum/fred-data/fred_daily.json`.
-- **Fallbacks.** Any series the feed lacks, or whose latest print is over 10 days old, falls back to
-  the user's key.
+- **Order.** In the report each series comes from the user's own key first, as in 2.7.0, and from
+  the feed only when that fetch comes back empty: no key, or it failed. The feed drops any series
+  whose latest print is over 10 days old.
+- **Why the key comes first** (fixed 2026-09-17 in `2b9b7df`; the first build had the feed first).
+  The feed is only as fresh as the last GitHub run, and GitHub delays or skips scheduled runs. On
+  the workflow's first full weekday, 2026-09-17, it ran 2 of the 10 slots, at 1:09 PM and 6:49 PM
+  ET, neither between the 4:15 PM post and the 6 PM report. With the feed first, users with a key
+  would have got the previous day's yields in the report.
 - **Failure is safe.** Until the secret exists, runs skip with a warning. With a bad key, FRED
   down, or short, stale or out-of-range data, the run fails, publishes nothing, and GitHub emails
   the owner. The key is never printed.
@@ -87,7 +96,7 @@ the endless spinner 2.7.0 fixed.
 | `shared/…/model/Models.kt` | `DriverLeg`, `DriversReport`, `SymbolState.driversReport`; HMAI models removed |
 | `shared/…/domain/hmai/*` (9 files) | **deleted** |
 | `app/…/network/FredFeedClient.kt` | **new**: fetch, parse and freshness rules for the hosted feed |
-| `app/…/data/DataRepository.kt` | computes the drivers report; `fredFeed` param; VIX and shared-DXY pre-fetch removed |
+| `app/…/data/DataRepository.kt` | computes the drivers report; `fredFeed` param, a fallback behind the user's key; VIX and shared-DXY pre-fetch removed |
 | `app/…/worker/DailyRefreshWorker.kt` | fetches the feed for the report; `hasFredKey` counts the feed |
 | `app/…/MainViewModel.kt` | `SYMBOLS = ["GLD"]`; filters retired cache entries |
 | `app/…/ui/DriversFragment.kt` · `DriversChartView.kt` · `layout/fragment_drivers.xml` | **new**: the tab |
@@ -106,7 +115,8 @@ the endless spinner 2.7.0 fixed.
 
 - **Unit tests.** `:app:testDebugUnitTest` ran **64 tests, 0 failures**: Gold Index 19, drivers 12,
   FRED feed 6, report 17, schedule 8, research dumps 2. The feed-parser tests run on the real
-  org.json; android.jar's copy is a throwing stub.
+  org.json; android.jar's copy is a throwing stub. Re-run 2026-09-17 after the precedence fix:
+  64, 0 failures.
 - **Engine parity.** `GoldDriversEngine` replayed over the full research history
   (`EngineHistoryDumpTest.dumpDriversHistory`) against the Python replica the backtest used:
   **5,438 days, max |diff| 1.1e-5, 0 availability mismatches**.
@@ -123,15 +133,18 @@ the endless spinner 2.7.0 fixed.
   force-replaces it (still one commit), and the workflow's read-back step reads it.
 - **GitHub.** The workflow is registered and `active` (checked via the API, 2026-09-16). The
   missing-secret skip was verified locally only.
-- **Release builds.** `:app:assembleRelease` and `:app:bundleRelease` are clean, with R8 full mode
-  and lint vital.
-- **Signature.** `jarsigner -verify` → **jar verified**, `CN=Bull88 Protocol, O=CoinTranscend,
-  C=US`, SHA-1 `51:24:2A:…:C4:B8:F3`, the upload key.
-- **AAB manifest** (aapt2 on the proto manifest): **`com.sun.aurum` · versionCode 16 ·
-  versionName 2.8.0** · minSdk 26 · targetSdk and compileSdk 36. No debug suffix.
-- **The AAB file.** `app/build/outputs/bundle/release/app-release.aab`, 4,419,817 bytes, sha256
-  `328de905e6b19307f427da80abfda284a62dcc22c033d023be5c956d71433f6c`, built from **`79cb47c`** on
-  `feat/20-day-drivers`.
+- **Release builds.** `:app:assembleRelease` and `:app:bundleRelease` were clean on 2026-09-16,
+  with R8 full mode and lint vital. The 2026-09-17 rebuild ran `:app:bundleRelease` again: clean,
+  lint vital included.
+- **Signature** (2026-09-17 rebuild). `jarsigner -verify` → **jar verified**, `CN=Bull88 Protocol,
+  O=CoinTranscend, C=US`, SHA-1 `51:24:2A:…:C4:B8:F3`, the upload key.
+- **AAB manifest.** aapt2 can't open an .aab, so the proto manifest is zipped with
+  `base/resources.pb` and dumped: **`com.sun.aurum` · versionCode 16 · versionName 2.8.0** ·
+  minSdk 26 · targetSdk and compileSdk 36. No debug suffix.
+- **The AAB file.** `app/build/outputs/bundle/release/app-release.aab`, 4,419,744 bytes, sha256
+  `98646d07656749e3a32c5646e84e76db12d03742e4f6dd5566dc3223c892b255`, built 2026-09-17 from
+  **`2b9b7df`** on `feat/20-day-drivers`, clean tree. It supersedes the 2026-09-16 build from
+  `79cb47c` (sha256 `328de905…`), which put the feed ahead of the user's key.
 
 **Not verified:**
 - **On a device.** None was connected. The tab has never been seen rendered: layout, chart,
@@ -150,15 +163,18 @@ once the feed is live (gate 2).
 
 ## Play upload checklist
 
-1. ~~`./gradlew :app:bundleRelease`~~ — **done 2026-09-16**, verified above.
+1. ~~`./gradlew :app:bundleRelease`~~ — **rebuilt 2026-09-17** from `2b9b7df`, verified above.
 2. ~~`jarsigner -verify`~~ — **done**, jar verified with the Bull88 upload key.
 3. **[gate] v2.7.0 approved.** It was submitted 2026-09-04 and CLAUDE.md still shows it in review.
    A newer release on the same track replaces the one under review and restarts the wait, so check
    the Play Console first.
-4. **[gate] FRED feed live.**
-   - Add the repo secret `FRED_API_KEY` under GitHub → Settings → Secrets and variables → Actions.
-   - Go to Actions → "FRED feed" → **Run workflow**. The run should end with "Published FRED feed
-     through <date>".
+4. **[gate] FRED feed live.** Not done as of 2026-09-17: the secret is missing and every run skips.
+   - Add the repo secret `FRED_API_KEY` at
+     https://github.com/bull88protocol/aurum/settings/secrets/actions → **New repository secret**.
+     It must be an Actions *repository* secret, not an environment secret. Your existing FRED key
+     works; a separate one from https://fredaccount.stlouisfed.org/apikeys can be revoked on its own.
+   - Go to https://github.com/bull88protocol/aurum/actions/workflows/fred-feed.yml → **Run
+     workflow** on `master`. The run should end with "Published FRED feed through <date>".
    - Open the raw URL above and check the dates are current.
    - If this is skipped, keyless users' reports stay incomplete, and the Settings copy, the welcome
      dialog and the "What's new" all say otherwise.
@@ -199,3 +215,7 @@ adb pull /sdcard/Android/data/com.sun.aurum.debug/files/reports/
   Actions → "FRED feed".
 - **A keyless user sees full FRED rows after opening the app on the report's cached data**, and "needs
   a FRED key" again after pulling to refresh. That is the reports-only decision working as designed.
+- **Keyless reports depend on GitHub's schedule.** On the feed's first full weekday GitHub ran 2 of 10
+  slots, neither in the 4:15-6 PM ET window. If that persists, keyless users' reports carry the
+  previous day's FRED print, still better than the "add a FRED key" rows they had before. Once the
+  secret is in, check a week of `gh run list --workflow fred-feed.yml`.

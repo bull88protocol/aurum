@@ -28,7 +28,7 @@ Dollar / DXY HMAI tab, see below). No backend; runs on-device. Since v2.5.0 the
 > Action fetches DFII10/T10YIE/DGS2 with the owner's key (repo secret) and publishes
 > `fred_daily.json` to the `fred-data` branch. Only the 6 PM **report** reads it, so reports are
 > complete for keyless users; everything interactive still uses the user's own key (owner's
-> decision). It also adds the FRED® notice FRED's API terms require (Settings, 20 Days tab,
+> decision), and in the report a user's own key comes first, the feed only filling in (2026-09-17). It also adds the FRED® notice FRED's API terms require (Settings, 20 Days tab,
 > TERMS.md, PRIVACY.md) — the app had never shown it. Research: **`research/DRIVERS_20D_2026-09-16.md`**.
 > Feed operations: §Hosted FRED feed below.
 
@@ -54,11 +54,13 @@ fortnight cannot be cleanly attributed to one release. **Watch ANR rate first**:
 changes network timeout and cancellation behaviour app-wide.
 
 ### Next release built, not uploaded — v2.8.0 / versionCode 16
-**Signed AAB built and verified 2026-09-16** from `79cb47c` on **`feat/20-day-drivers`** (not yet
-merged to `master`): the 20 Days tab replacing the Dollar tab, the report reading the hosted FRED
-feed, the FRED® notice. **Do not upload until all three gates hold:**
+**Signed AAB rebuilt and verified 2026-09-17** from `2b9b7df` on **`feat/20-day-drivers`** (pushed
+to `origin` 2026-09-17, not yet merged to `master`): the 20 Days tab replacing the Dollar tab, the
+report reading the hosted FRED feed (as a fallback behind the user's own key), the FRED® notice.
+**Do not upload until all three gates hold:**
 1. 2.7.0 is approved (a newer release on the track replaces the one under review).
-2. The FRED feed is live (repo secret `FRED_API_KEY` + one manual run).
+2. The FRED feed is live (repo secret `FRED_API_KEY` + one manual run). Checked 2026-09-17: the
+   secret is not set, so every scheduled run skips (and still shows green).
 3. An on-device pass; the tab has never been seen rendered.
 
 Start-here doc: **`release-2.8/RELEASE_NOTES.md`**, which has the checklist, the adb recipe and the
@@ -69,7 +71,7 @@ paste-ready "What's new".
 The maintained answer to "what is pending". Ordered by what actually matters. Keep it current —
 when an item is done, delete it rather than leaving it ticked.
 
-0. **Ship v2.8.0** (20 Days tab + hosted FRED feed): AAB built 2026-09-16, see the gates in
+0. **Ship v2.8.0** (20 Days tab + hosted FRED feed): AAB rebuilt 2026-09-17, see the gates in
    §Next release built above and `release-2.8/RELEASE_NOTES.md`. First owner step, doable now:
    add repo secret `FRED_API_KEY` (GitHub → Settings → Secrets and variables → Actions); until
    then every feed run skips with a warning. Then Actions → "FRED feed" → Run workflow and check
@@ -115,10 +117,11 @@ when an item is done, delete it rather than leaving it ticked.
   on `refresh()`, and a Retry button. Also stops `fetchLiveQuotes` minting a duplicate Drive
   spreadsheet on any transient failure. Verified on a Pixel 8a: radios off → error + RETRY button
   instead of a spinner, recovers when tapped. See `release-2.7/RELEASE_NOTES.md`.
-  **v2.8.0 / versionCode 16** — **signed AAB built 2026-09-16, not uploaded** (gates: 2.7.0
+  **v2.8.0 / versionCode 16** — **signed AAB rebuilt 2026-09-17, not uploaded** (gates: 2.7.0
   approved, FRED feed live, on-device pass). The 20 Days tab replaces the Dollar tab (HMAI + VIX
-  deleted); the 6 PM report reads the hosted FRED feed so keyless users get every FRED row; FRED®
-  terms notice added. 64 tests. See `release-2.8/RELEASE_NOTES.md`.
+  deleted); the 6 PM report reads the hosted FRED feed so keyless users get every FRED row (a
+  user's own key still comes first); FRED® terms notice added. 64 tests. See
+  `release-2.8/RELEASE_NOTES.md`.
   **v2.1.0 / versionCode 7** (Forward
   Signal v2 + conditions labels; carries the KMP `:shared` core) is on Play **internal testing**.
   v2.1.1 / versionCode 8 (Clear Cache also busts the 7-day CB feed cache) was never uploaded —
@@ -242,9 +245,13 @@ using each user's own key — the owner's call, 2026-09-16.
   App URL: `https://raw.githubusercontent.com/bull88protocol/aurum/fred-data/fred_daily.json`.
 - **Secret:** `FRED_API_KEY` (repo Settings → Secrets and variables → Actions). Never in the app,
   never in the repo. The builder never prints request URLs (they carry the key).
+- **Order in the report:** the user's own key first, the feed only when that fetch comes back empty
+  (no key, or it failed). The first build had the feed first; fixed 2026-09-17 (`2b9b7df`) because
+  GitHub delays or skips scheduled runs. On the feed's first full weekday it ran 2 of 10 slots,
+  neither between the 4:15 PM post and the 6 PM report, so keyed users would have got the previous
+  day's yields. Keyless users still depend on the schedule; check whether it settles.
 - **Failure = safe:** bad key / FRED down / short, stale or out-of-range data → the run fails,
-  nothing is published, GitHub emails the owner. The app drops any series older than 10 days and
-  falls back to the user's key.
+  nothing is published, GitHub emails the owner. The app drops any series older than 10 days.
 - **Watch:** GitHub auto-disables scheduled workflows in public repos after 60 days with no repository
   activity (unclear whether the bot's pushes count). If the feed goes stale, check Actions → "FRED
   feed" → Enable / Run workflow.
