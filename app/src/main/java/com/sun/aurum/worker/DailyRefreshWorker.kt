@@ -31,9 +31,10 @@ class DailyRefreshWorker(ctx: Context, params: WorkerParameters) : CoroutineWork
 
         val states = mutableMapOf<String, SymbolState>()
         val accessToken    = googleAuth.getAccessToken()
-        // The report is the one place the hosted FRED feed is used: it scores the FRED components
-        // for every user, key or not. Everywhere else the app reads FRED with the user's own key.
-        // Null (feed down or stale) falls back to that key.
+        // The report is the one place the hosted FRED feed is used, so the PDF scores the FRED
+        // components for users without a key. A user's own key still comes first (a fetch now has
+        // the latest print); the feed only fills in where that fetch comes back empty. Everywhere
+        // else the app reads FRED with the user's own key alone.
         val fredFeed       = FredFeedClient().fetch()
         val updatedSheetId = repo.fetchAll(
             symbols      = MainViewModel.SYMBOLS,

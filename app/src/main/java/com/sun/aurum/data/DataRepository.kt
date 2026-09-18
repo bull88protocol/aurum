@@ -27,8 +27,9 @@ class DataRepository(private val context: Context) {
      * Fetches all data for [symbols], calling [onState] for each symbol as it completes.
      * Returns the (possibly updated) Google Sheet ID, or null if not using Google.
      * [forceGemini] bypasses the 8-hour Gemini cache (used by the 9 AM worker for a new day).
-     * [fredFeed] is the hosted FRED feed (FredFeedClient). Only the daily report worker passes it;
-     * any series it lacks, and every series when it is null, comes from FRED with [fredKey].
+     * [fredFeed] is the hosted FRED feed (FredFeedClient). Only the daily report worker passes it,
+     * as a fallback: each series comes from FRED with [fredKey] first, and from the feed only when
+     * that fetch comes back empty (no key, or it failed).
      */
     suspend fun fetchAll(
         symbols: List<String>,
@@ -77,7 +78,7 @@ class DataRepository(private val context: Context) {
      * is GLD (the Gold Index and the 20-day drivers), and assembles its [SymbolState]. Shared by
      * [fetchAll] (batch refresh) and [fetchSymbol] (single-tab refresh). [forceGemini] bypasses the
      * Gemini cache so a new day gets a fresh briefing. [fredFeed] is the hosted FRED feed, passed only
-     * by the report worker.
+     * by the report worker, as a fallback to [fredKey].
      */
     private suspend fun buildSymbolState(
         symbol: String,
@@ -108,12 +109,13 @@ class DataRepository(private val context: Context) {
                 cal.add(java.util.Calendar.YEAR, -n)
                 return java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(cal.time)
             }
-            // The hosted feed (report worker only) wins when it has the series; otherwise FRED with
-            // the user's own key. The feed carries the same windows fetched here.
+            // The user's own key first: a fetch now has FRED's latest print, while the hosted feed is
+            // only as fresh as the last GitHub run, and GitHub delays or skips scheduled runs. The
+            // feed (report worker only) covers users with no key and any fetch that fails, with the
+            // same windows fetched here. fetchSeries returns empty for a blank key or a failure.
             fun fredSeries(id: String, years: Int, limit: Int = 1000): List<FredObs> =
-                fredFeed?.get(id)?.takeIf { it.isNotEmpty() }
-                    ?: if (fredKey.isNotBlank()) fred.fetchSeries(id, fredKey, startDate = yearsAgo(years), limit = limit)
-                       else emptyList()
+                fred.fetchSeries(id, fredKey, startDate = yearsAgo(years), limit = limit)
+                    .ifEmpty { fredFeed?.get(id).orEmpty() }
             // DFII10 needs >= 5y so the forward signal's rolling 5y percentile has a full window
             // (~250 obs/yr; the default fetch limit of 1000 would silently cap it at ~4y).
             val realYield = fredSeries("DFII10", years = 6, limit = 2000)

@@ -3,13 +3,14 @@
 # Fetches the three FRED series the Gold Index reads (DFII10, T10YIE, DGS2) with the maintainer's
 # FRED key, stored as the repository secret FRED_API_KEY and never shipped in the app, and publishes
 # them as one JSON file on the `fred-data` branch. Every install's report worker downloads that file
-# from raw.githubusercontent.com, so FRED sees a handful of requests a day however many users there
-# are. Interactive refreshes in the app keep using each user's own key.
+# from raw.githubusercontent.com, so the maintainer's key makes a handful of requests a day however
+# many users there are. The report uses the feed only for users without a key of their own, or when
+# their fetch fails; a user's own key always comes first, and interactive refreshes use nothing else.
 #
 # Runs by itself on GitHub's servers, nothing to do by hand. To force a refresh: Actions tab >
 # "FRED feed" > Run workflow. A failed run (bad key, FRED down, suspicious data) publishes nothing
-# and GitHub emails the owner; the app then falls back to the user's own key. Until the secret
-# exists, runs skip with a warning instead of failing. See CLAUDE.md.
+# and GitHub emails the owner; the last good feed stays up, and the app ignores any series in it
+# older than 10 days. Until the secret exists, runs skip with a warning instead of failing. See CLAUDE.md.
 name: FRED feed
 
 on:

@@ -12,14 +12,16 @@ import java.util.concurrent.TimeUnit
  * (.github/workflows/fred-feed.yml) refetches every weekday evening with the maintainer's FRED key.
  * That key lives in a repository secret and never ships in the app.
  *
- * Only the 6 PM report worker reads the feed, so the daily PDF is complete for every user. The rest
- * of the app reads FRED with the user's own key. Like the CB feed, this is an anonymous download of
+ * Only the 6 PM report worker reads the feed, so the daily PDF is complete for users without a FRED
+ * key. It is a fallback: in the report a user's own key still comes first, because a fetch at report
+ * time has FRED's latest print and the feed is only as fresh as the last GitHub run. The rest of the
+ * app reads FRED with the user's own key alone. Like the CB feed, this is an anonymous download of
  * a public file and sends nothing about the user.
  *
  * The feed's windows mirror DataRepository's keyed fetch (DFII10 6y, T10YIE and DGS2 3y), so the
  * engines score the same from either source. A series whose latest observation is older than
  * [MAX_STALE_DAYS] is dropped rather than served: if the Action ever stops, the report must not go
- * on quietly scoring last month's yields. The caller then falls back to the user's key.
+ * on quietly scoring last month's yields. A dropped series counts as missing, as if the feed were down.
  *
  * Feed JSON shape (schema 1):
  *   { "schema": 1, "generated_utc": "...", "notice": "...",
