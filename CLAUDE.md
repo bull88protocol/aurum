@@ -59,8 +59,8 @@ to `origin` 2026-09-17, not yet merged to `master`): the 20 Days tab replacing t
 report reading the hosted FRED feed (as a fallback behind the user's own key), the FRED® notice.
 **Do not upload until all three gates hold:**
 1. 2.7.0 is approved (a newer release on the track replaces the one under review).
-2. The FRED feed is live (repo secret `FRED_API_KEY` + one manual run). Checked 2026-09-17: the
-   secret is not set, so every scheduled run skips (and still shows green).
+2. ~~The FRED feed is live~~ — **done 2026-09-17**: secret added, the first manual run published
+   `fred-data` (feed through 2026-09-17).
 3. An on-device pass; the tab has never been seen rendered.
 
 Start-here doc: **`release-2.8/RELEASE_NOTES.md`**, which has the checklist, the adb recipe and the
@@ -72,10 +72,9 @@ The maintained answer to "what is pending". Ordered by what actually matters. Ke
 when an item is done, delete it rather than leaving it ticked.
 
 0. **Ship v2.8.0** (20 Days tab + hosted FRED feed): AAB rebuilt 2026-09-17, see the gates in
-   §Next release built above and `release-2.8/RELEASE_NOTES.md`. First owner step, doable now:
-   add repo secret `FRED_API_KEY` (GitHub → Settings → Secrets and variables → Actions); until
-   then every feed run skips with a warning. Then Actions → "FRED feed" → Run workflow and check
-   the `fred-data` branch appears. Store listing/screenshots don't mention the new tab.
+   §Next release built above and `release-2.8/RELEASE_NOTES.md`. The FRED feed went live
+   2026-09-17; what's left is 2.7.0's approval and an on-device pass (plug in the Pixel 8a).
+   Store listing/screenshots don't mention the new tab.
 1. **Confirm v2.7.0 clears Play review**, then update the status block above and tick the checklist
    in `release-2.7/RELEASE_NOTES.md`. Submitted 2026-09-04; 2.6.0 took ~1 day, 2.5.0 took ~11.
 2. **Watch ANR rate once 2.7.0 rolls out** — see the caveat above about overlapping vitals. This is
@@ -117,8 +116,8 @@ when an item is done, delete it rather than leaving it ticked.
   on `refresh()`, and a Retry button. Also stops `fetchLiveQuotes` minting a duplicate Drive
   spreadsheet on any transient failure. Verified on a Pixel 8a: radios off → error + RETRY button
   instead of a spinner, recovers when tapped. See `release-2.7/RELEASE_NOTES.md`.
-  **v2.8.0 / versionCode 16** — **signed AAB rebuilt 2026-09-17, not uploaded** (gates: 2.7.0
-  approved, FRED feed live, on-device pass). The 20 Days tab replaces the Dollar tab (HMAI + VIX
+  **v2.8.0 / versionCode 16** — **signed AAB rebuilt 2026-09-17, not uploaded** (gates left: 2.7.0
+  approved, on-device pass; the FRED feed went live 2026-09-17). The 20 Days tab replaces the Dollar tab (HMAI + VIX
   deleted); the 6 PM report reads the hosted FRED feed so keyless users get every FRED row (a
   user's own key still comes first); FRED® terms notice added. 64 tests. See
   `release-2.8/RELEASE_NOTES.md`.
@@ -244,7 +243,12 @@ using each user's own key — the owner's call, 2026-09-16.
   publish force-pushes a single orphan commit (`fred_daily.json` + README) to `fred-data`.
   App URL: `https://raw.githubusercontent.com/bull88protocol/aurum/fred-data/fred_daily.json`.
 - **Secret:** `FRED_API_KEY` (repo Settings → Secrets and variables → Actions). Never in the app,
-  never in the repo. The builder never prints request URLs (they carry the key).
+  never in the repo. The builder never prints request URLs (they carry the key). **Set 2026-09-17**
+  by the owner signed in as `bull88protocol`. The `gh` CLI on the Linux box is logged in as
+  `CoinTranscend`, which has read access only: it can read runs and the branch but can't manage
+  secrets or start runs. Git pushes go over SSH and work.
+- **Live since 2026-09-17** (first run 20:42 ET). At that hour DFII10 and DGS2 reached the previous
+  business day and T10YIE the same day; the "FRED feed through <date>" commit shows the latest.
 - **Order in the report:** the user's own key first, the feed only when that fetch comes back empty
   (no key, or it failed). The first build had the feed first; fixed 2026-09-17 (`2b9b7df`) because
   GitHub delays or skips scheduled runs. On the feed's first full weekday it ran 2 of 10 slots,

@@ -14,10 +14,10 @@ key. It also adds the notice FRED's API terms require, which the app had never s
 
 > **Status 2026-09-17:** signed AAB **rebuilt** and verified (below) from `2b9b7df`, after the fix
 > that puts a user's own FRED key ahead of the hosted feed in the report; the 2026-09-16 build is
-> superseded. The branch is pushed to `origin`. **Not uploaded, and must not be until the three
-> gates in the upload checklist are met:** 2.7.0 approved, the FRED feed live (checked 2026-09-17:
-> the `FRED_API_KEY` secret is still not set, so every run skips), and an on-device pass.
-> versionCode 16 is not claimed until upload, so the AAB can still be rebuilt if anything changes.
+> superseded. The branch is pushed to `origin`. **The FRED feed is live** (secret added, first run
+> published 2026-09-17 20:42 ET). **Not uploaded, and must not be until the other two gates are
+> met:** 2.7.0 approved, and an on-device pass. versionCode 16 is not claimed until upload, so the
+> AAB can still be rebuilt if anything changes.
 
 ## What changed
 
@@ -149,13 +149,14 @@ the endless spinner 2.7.0 fixed.
 **Not verified:**
 - **On a device.** None was connected. The tab has never been seen rendered: layout, chart,
   colours, the no-key state.
-- **A real run of the workflow.** It needs the secret. Nor has the app read the real raw URL.
+- **The app reading the live feed.** The workflow now runs for real (upload checklist step 4), but
+  no build of the app has fetched the live raw URL yet. The on-device pass covers it.
 - **The keyless 6 PM report on a phone.**
 
 ## What's new (Play "What's new" copy)
 
-Paste-ready, 386 characters — within Play's 500-character limit. The second bullet is only true
-once the feed is live (gate 2).
+Paste-ready, 386 characters — within Play's 500-character limit. The second bullet depends on the
+feed, live since 2026-09-17.
 
 > What's new in 2.8:
 > • New 20 Days tab, replacing the Dollar tab: see what real yields and the US dollar did to gold over the last 20 trading days, with a one-year chart and gold's move broken down into rates, the dollar and everything else. It explains recent moves; it is not a forecast.
@@ -168,16 +169,20 @@ once the feed is live (gate 2).
 3. **[gate] v2.7.0 approved.** It was submitted 2026-09-04 and CLAUDE.md still shows it in review.
    A newer release on the same track replaces the one under review and restarts the wait, so check
    the Play Console first.
-4. **[gate] FRED feed live.** Not done as of 2026-09-17: the secret is missing and every run skips.
-   - Add the repo secret `FRED_API_KEY` at
-     https://github.com/bull88protocol/aurum/settings/secrets/actions → **New repository secret**.
-     It must be an Actions *repository* secret, not an environment secret. Your existing FRED key
-     works; a separate one from https://fredaccount.stlouisfed.org/apikeys can be revoked on its own.
-   - Go to https://github.com/bull88protocol/aurum/actions/workflows/fred-feed.yml → **Run
-     workflow** on `master`. The run should end with "Published FRED feed through <date>".
-   - Open the raw URL above and check the dates are current.
-   - If this is skipped, keyless users' reports stay incomplete, and the Settings copy, the welcome
-     dialog and the "What's new" all say otherwise.
+4. ~~**[gate] FRED feed live.**~~ — **done 2026-09-17.** The owner added the secret, signed in as
+   `bull88protocol` (the CLI's `CoinTranscend` login has read access only), and ran the workflow
+   by hand. Run `35292290091` published `fred-data` @ `e7f26bb`, "FRED feed through 2026-09-17",
+   at 20:42 ET. The raw URL returns HTTP 200, 54,454 bytes, schema 1, and every series passes
+   `FredFeedClient`'s rules (same-length arrays, finite, strictly ascending, latest within 10 days):
+   - DFII10: 1,498 obs, 2020-09-18 to 2026-09-16
+   - T10YIE: 750 obs, 2023-09-18 to 2026-09-17
+   - DGS2: 749 obs, 2023-09-18 to 2026-09-16
+
+   At 8:42 PM ET, DFII10 and DGS2 reached the previous business day and T10YIE the same day. The
+   commit's "through" date is the latest of the three (`max` in `build_feed.py`).
+   For reference, the setup: an Actions *repository* secret `FRED_API_KEY` at
+   https://github.com/bull88protocol/aurum/settings/secrets/actions, then **Run workflow** at
+   https://github.com/bull88protocol/aurum/actions/workflows/fred-feed.yml.
 5. **[gate] On-device pass.** The debug variant installs alongside the Play build; the recipe is
    below. Check:
    - the 20 Days tab renders with and without a FRED key;
