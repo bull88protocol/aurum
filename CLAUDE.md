@@ -20,6 +20,13 @@ instrument (the Dollar / DXY via the HMAI engine). No backend; runs on-device. S
 > **not** sync. When working from a different computer (e.g. a Mac for the iOS build), this committed
 > file — plus the docs it points to — is the context. Keep it current.
 
+> **⚠️ The next release is on a branch, not here (note added 2026-09-18).** v2.8.0 — the 20 Days
+> tab replacing the Dollar tab, the 6 PM report reading the hosted FRED feed, the FRED® notice —
+> lives on **`feat/20-day-drivers`** (pushed; signed AAB built; the FRED feed on `fred-data` is
+> already live). Until it merges, this file is behind: for release status or "what is pending",
+> read that branch's copy (`git fetch && git show origin/feat/20-day-drivers:CLAUDE.md`) and its
+> **`release-2.8/RELEASE_NOTES.md`**, or check the branch out. Delete this block in the merge.
+
 ## ▶ "What is pending?" — answer from the Open items list below
 If the user asks **"what is pending"** / "what's left" / "where were we", read **§Open items** below
 and show them **all** of it, most-actionable first, with a one-line status on the release in flight.
