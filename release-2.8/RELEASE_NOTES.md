@@ -15,9 +15,10 @@ key. It also adds the notice FRED's API terms require, which the app had never s
 > **Status 2026-09-18, paused here:** signed AAB **rebuilt** and verified (below) from `2b9b7df`,
 > after the fix that puts a user's own FRED key ahead of the hosted feed in the report; the
 > 2026-09-16 build is superseded. Everything is committed and pushed to `origin`. **The FRED feed is
-> live** (secret added, first run published 2026-09-17 20:42 ET). **Not uploaded, and must not be
-> until the other two gates are met:** 2.7.0 approved (step 3) and an on-device pass (step 5).
-> versionCode 16 is not claimed until upload, so the AAB can still be rebuilt if anything changes.
+> live** (secret added, first run published 2026-09-17 20:42 ET), and **2.7.0 is live on
+> Production** (confirmed 2026-09-18). **Not uploaded, and must not be until the last gate is met:
+> an on-device pass (step 5).** versionCode 16 is not claimed until upload, so the AAB can still be
+> rebuilt if anything changes.
 
 ## What changed
 
@@ -167,9 +168,8 @@ feed, live since 2026-09-17.
 
 1. ~~`./gradlew :app:bundleRelease`~~ — **rebuilt 2026-09-17** from `2b9b7df`, verified above.
 2. ~~`jarsigner -verify`~~ — **done**, jar verified with the Bull88 upload key.
-3. **[gate] v2.7.0 approved.** It was submitted 2026-09-04 and CLAUDE.md still shows it in review.
-   A newer release on the same track replaces the one under review and restarts the wait, so check
-   the Play Console first.
+3. ~~**[gate] v2.7.0 approved.**~~ — **done**: live on Production, confirmed 2026-09-18 (Play
+   Console: "Active", latest release 15 (2.7.0), 177 countries / regions, 9 installs).
 4. ~~**[gate] FRED feed live.**~~ — **done 2026-09-17.** The owner added the secret, signed in as
    `bull88protocol` (the CLI's `CoinTranscend` login has read access only), and ran the workflow
    by hand. Run `35292290091` published `fred-data` @ `e7f26bb`, "FRED feed through 2026-09-17",

@@ -109,14 +109,14 @@ Paste-ready, 352 characters — within Play's 500-character limit.
 2. ~~`jarsigner -verify`~~ — **done**, jar verified with the Bull88 upload key.
 3. ~~Play Console → Production → Create new release~~ — **done 2026-09-04.** Uploaded as
    "15 (2.7.0)".
-4. ~~Paste the "What's new" copy, roll out~~ — **done: submitted 2026-09-04, rolling out to 100%,
-   awaiting Play review.**
+4. ~~Paste the "What's new" copy, roll out~~ — **done: submitted 2026-09-04, rolling out to 100%.**
 5. **[open] After rollout, watch ANR rate first.** This release changes network timeout and
    cancellation behaviour on every screen, and ANR is the shape a regression here would take.
    Compounded by shipping days after 2.6.0: the two overlap in vitals, so a new signal cannot be
    cleanly attributed to one release.
-6. **[open] Confirm approval**, then update `CLAUDE.md`'s status block. 2.6.0 cleared review in
-   ~1 day; 2.5.0 took ~11.
+6. ~~Confirm approval~~ — **done: live on Production**, confirmed 2026-09-18. The Play Console
+   showed Production "Active", latest release 15 (2.7.0), 177 countries / regions, 9 installs. The
+   exact approval date wasn't recorded (submitted 2026-09-04). `CLAUDE.md` updated.
 
 ## Follow-ups (not blocking)
 

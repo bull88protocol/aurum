@@ -43,37 +43,35 @@ and show them **all** of it, most-actionable first, with a one-line status on th
 Do not improvise a list from git log — that section is the maintained answer. Verify anything
 time-sensitive (Play status, whether a build is stale) before repeating it.
 
-## ▶ Release in flight — v2.7.0 submitted to Production, awaiting review
-**v2.7.0 / versionCode 15 was uploaded to Google Play Production on 2026-09-04, rolling out to
-100%, and is in review.** Code merged to `master`, tagged **`v2.7.0`**, pushed. Do not rebuild, do
-not bump the version, do not re-upload — **15 is claimed**. Start-here doc:
-**`release-2.7/RELEASE_NOTES.md`**.
+## ▶ Release in flight — v2.8.0 built, one gate left; v2.7.0 is live
+**v2.7.0 / versionCode 15 is live on Google Play Production.** On 2026-09-18 the owner's Play
+Console showed Production "Active", latest release 15 (2.7.0), 177 countries / regions, 9 installs
+(submitted 2026-09-04; the exact approval date wasn't recorded). Code on `master`, tagged
+**`v2.7.0`**; **15 is claimed**. Notes: **`release-2.7/RELEASE_NOTES.md`**.
 
-It fixes the refresh hang reported the same day. It ships days after 2.6.0 rather than after a soak
-week, at the owner's direction, so the two **overlap in Play vitals** — a new signal in the next
-fortnight cannot be cleanly attributed to one release. **Watch ANR rate first**: this release
-changes network timeout and cancellation behaviour app-wide.
+It fixes the refresh hang reported the same day. It shipped days after 2.6.0 rather than after a
+soak week, at the owner's direction, so the two **overlap in Play vitals** — a new signal cannot be
+cleanly attributed to one release. **Watch ANR rate first**: this release changes network timeout
+and cancellation behaviour app-wide.
 
 ### Next release built, not uploaded — v2.8.0 / versionCode 16
 **Signed AAB rebuilt and verified 2026-09-17** from `2b9b7df` on **`feat/20-day-drivers`** (pushed
 to `origin` 2026-09-17, not yet merged to `master`): the 20 Days tab replacing the Dollar tab, the
 report reading the hosted FRED feed (as a fallback behind the user's own key), the FRED® notice.
 **Do not upload until all three gates hold:**
-1. 2.7.0 is approved (a newer release on the track replaces the one under review).
+1. ~~2.7.0 is approved~~ — **done**: live on Production, confirmed 2026-09-18.
 2. ~~The FRED feed is live~~ — **done 2026-09-17**: secret added, the first manual run published
    `fred-data` (feed through 2026-09-17).
-3. An on-device pass; the tab has never been seen rendered.
+3. **An on-device pass — the only gate left.** The tab has never been seen rendered.
 
 Start-here doc: **`release-2.8/RELEASE_NOTES.md`**, which has the checklist, the adb recipe and the
 paste-ready "What's new".
 
 **▶ Pick up here (paused 2026-09-18).** Everything is committed and pushed; nothing is half-done.
-1. Ask the owner whether 2.7.0 cleared review (Play Console). If so, update §Release in flight
-   and tick `release-2.7/RELEASE_NOTES.md`.
-2. On-device pass: needs the Pixel 8a plugged in with USB debugging (`adb devices` was empty on
-   2026-09-17). Checklist and adb recipe: `release-2.8/RELEASE_NOTES.md` step 5. It is also the
-   first time the app reads the live feed.
-3. Both done → steps 6-8 there: merge, tag `v2.8.0`, push, upload. Check the AAB's sha256 first.
+1. On-device pass, the only gate left: needs the Pixel 8a plugged in with USB debugging (`adb
+   devices` was empty on 2026-09-18). Checklist and adb recipe: `release-2.8/RELEASE_NOTES.md`
+   step 5. It is also the first time the app reads the live feed.
+2. Then steps 6-8 there: merge, tag `v2.8.0`, push, upload. Check the AAB's sha256 first.
    `master`'s CLAUDE.md has a pointer block to this branch (added 2026-09-18); delete it in the merge.
 
 ## Open items (nothing here is blocking; reviewed 2026-09-18)
@@ -83,61 +81,61 @@ when an item is done, delete it rather than leaving it ticked.
 
 0. **Ship v2.8.0** (20 Days tab + hosted FRED feed): AAB rebuilt 2026-09-17, see the gates in
    §Next release built above and `release-2.8/RELEASE_NOTES.md`. The FRED feed went live
-   2026-09-17; what's left is 2.7.0's approval and an on-device pass (plug in the Pixel 8a).
-   Store listing/screenshots don't mention the new tab.
-1. **Confirm v2.7.0 clears Play review**, then update the status block above and tick the checklist
-   in `release-2.7/RELEASE_NOTES.md`. Submitted 2026-09-04; 2.6.0 took ~1 day, 2.5.0 took ~11.
-2. **Watch ANR rate once 2.7.0 rolls out** — see the caveat above about overlapping vitals. This is
-   the highest-value thing to look at, and the reason is specific: the fix changed cancellation and
-   timeout behaviour on every screen.
-3. **Does GitHub's schedule hit the report window?** The FRED feed has run with the secret since
+   2026-09-17 and 2.7.0 is live (confirmed 2026-09-18); what's left is an on-device pass (plug in
+   the Pixel 8a). Store listing/screenshots don't mention the new tab.
+1. **Watch ANR rate now that 2.7.0 is live** (confirmed 2026-09-18) — see the caveat above about
+   overlapping vitals. This is the highest-value thing to look at, and the reason is specific: the
+   fix changed cancellation and timeout behaviour on every screen.
+2. **Does GitHub's schedule hit the report window?** The FRED feed has run with the secret since
    2026-09-17. From about 2026-09-25, check a week of `gh run list --workflow fred-feed.yml
    --limit 60`: do weekday runs land between 4:15 and 6 PM ET (20:15-22:00 UTC in EDT, 21:15-23:00
    in EST)? On the first day 2 of 10 slots ran, neither in that window. Users with a key are
    unaffected (their key comes first); keyless users' reports carry the previous FRED print when
    no run lands in time. If that is common, more cron slots are the cheap fix.
-4. **PDF "Open" tile on a gap day.** The one v2.6.0 fix never confirmed in the wild — the old bug
+3. **PDF "Open" tile on a gap day.** The one v2.6.0 fix never confirmed in the wild — the old bug
    (previous close shown as the open) was only visible when the previous close fell outside the
    day's range. One look, next time gold gaps.
-5. **Duplicate "Aurum Market Data" spreadsheets in Drive.** v2.7.0 stops new ones; it does **not**
+4. **Duplicate "Aurum Market Data" spreadsheets in Drive.** v2.7.0 stops new ones; it does **not**
    clean up existing ones. Delete strays by hand.
-6. **`resolveOpen` and the refresh-timeout paths have no unit tests** — `MainViewModel` needs a
+5. **`resolveOpen` and the refresh-timeout paths have no unit tests** — `MainViewModel` needs a
    context. (The other blocker, `org.json` being a throwing stub in unit tests, is fixed on
    `feat/20-day-drivers` by `testImplementation("org.json:json:20180813")`.) Moving the pure logic
    into `:shared` still fixes both; folded into `api-37/API_37_UPGRADE_PLAN.md` §4.
-7. **API 37 / Android 17** — the next *forced* work, and the only item with a deadline. Needs
+6. **API 37 / Android 17** — the next *forced* work, and the only item with a deadline. Needs
    AGP 9.1.1 + Gradle 9.3.1 + Kotlin 2.x (three major migrations; JDK 17 still fine). No Play
    deadline published; the annual pattern points at **August 2027**. Revisit Q1-Q2 2027.
    Plan, with a trial run behind it: `api-37/API_37_UPGRADE_PLAN.md`.
-8. **Store polish — consciously skipped 2026-09-04, not forgotten.** No screenshot shows the PDF
+7. **Store polish — consciously skipped 2026-09-04, not forgotten.** No screenshot shows the PDF
    report; `store/screenshots/02_*.png` still pictures the v1 forward card (stale since 2.2); the
    live full description was never confirmed against `store/STORE_LISTING.md`; the Play R8
    recommendation card was never read (the build already runs R8 full mode, so it is almost
    certainly generic). All store-side, no release needed, can land any time.
-9. **`actions/checkout@v4` → `@v7` in `.github/workflows/fred-feed.yml`** (on `master`). Every run
+8. **`actions/checkout@v4` → `@v7` in `.github/workflows/fred-feed.yml`** (on `master`). Every run
    warns that v4 targets Node 20 and GitHub forces it onto Node 24. Harmless today; v7.0.1 is the
    current release and runs on Node 24. One line; offered 2026-09-17, not done.
-10. **iOS Phase 2** — parked, needs a Mac. `ios/APPLE_RELEASE_PLAN.md`. Do **not** run it in
+9. **iOS Phase 2** — parked, needs a Mac. `ios/APPLE_RELEASE_PLAN.md`. Do **not** run it in
    parallel with the API 37 work; both touch `shared/build.gradle.kts` and the Kotlin version.
 
 ## Platforms & status
-- **Android** — **live on Google Play production: v2.5.0 / versionCode 13** (approved 2026-08-20;
-  previous production build was v2.0.0 / versionCode 6, so upgrading users jump five releases).
+- **Android** — **live on Google Play production: v2.7.0 / versionCode 15** (confirmed 2026-09-18).
+  History: **v2.5.0 / versionCode 13** approved 2026-08-20 (the previous production build was
+  v2.0.0 / versionCode 6, so upgrading users jumped five releases).
   **v2.6.0 / versionCode 14 — approved and live on Production 2026-09-04** (submitted 09-03).
   Edge-to-edge fixes + a real Settings toolbar, the GLD open mapping (the "Open" tile had always
   shown the previous close), and the AI brief anchored to the app's own market data. Verified on
   device 2026-09-04 **after** release: Settings toolbar, "Navigate up" button and status-bar inset
   all render correctly. See `release-2.6/RELEASE_NOTES.md`.
-  **v2.7.0 / versionCode 15** — **submitted to Production 2026-09-04, rolling out to 100%, awaiting
-  review.** Bounds an unbounded refresh that could spin forever:
+  **v2.7.0 / versionCode 15** — **live on Production** (submitted 2026-09-04, rolled out to 100%;
+  confirmed live 2026-09-18: 177 countries / regions, 9 installs). Bounds an unbounded refresh that
+  could spin forever:
   `callTimeout` on all five HTTP clients, Yahoo retries 3→2, `fetchAll`'s pre-loop work guarded (the
   Sheets sync runs only when signed in, which is why the hang looked login-specific), a 180s ceiling
   on `refresh()`, and a Retry button. Also stops `fetchLiveQuotes` minting a duplicate Drive
   spreadsheet on any transient failure. Verified on a Pixel 8a: radios off → error + RETRY button
   instead of a spinner, recovers when tapped. See `release-2.7/RELEASE_NOTES.md`.
-  **v2.8.0 / versionCode 16** — **signed AAB rebuilt 2026-09-17, not uploaded** (gates left: 2.7.0
-  approved, on-device pass; the FRED feed went live 2026-09-17). The 20 Days tab replaces the Dollar tab (HMAI + VIX
-  deleted); the 6 PM report reads the hosted FRED feed so keyless users get every FRED row (a
+  **v2.8.0 / versionCode 16** — **signed AAB rebuilt 2026-09-17, not uploaded** (gate left: an
+  on-device pass; 2.7.0 and the FRED feed are both live). The 20 Days tab replaces the Dollar tab
+  (HMAI + VIX deleted); the 6 PM report reads the hosted FRED feed so keyless users get every FRED row (a
   user's own key still comes first); FRED® terms notice added. 64 tests. See
   `release-2.8/RELEASE_NOTES.md`.
   **v2.1.0 / versionCode 7** (Forward
@@ -332,7 +330,7 @@ Feature-branch job (`api-37`); do not start it while a release is in review.
 ## Key docs
 - `ios/APPLE_RELEASE_PLAN.md` · `ios/APP_STORE_SUBMISSION_CHECKLIST.md` · `ios/MAC_SETUP.md`
 - `release-2.0/RESUME.md` (v2.0 handoff) · `release-2.0/CHANGELOG.md` · `release-2.0/NEXT_RELEASE_PLAN.md`
-- `release-2.8/RELEASE_NOTES.md` (next release, built) · `release-2.7/RELEASE_NOTES.md` (in review) · `release-2.6/RELEASE_NOTES.md`
+- `release-2.8/RELEASE_NOTES.md` (next release, built) · `release-2.7/RELEASE_NOTES.md` (live) · `release-2.6/RELEASE_NOTES.md`
 - `research/DRIVERS_20D_2026-09-16.md` (20 Days tab: why it is a nowcast, the shipped spec, parity)
 - `api-37/API_37_UPGRADE_PLAN.md` (next forced Android work — AGP 9 / Gradle 9 / Kotlin 2)
 - `TESTING.md` (tester onboarding) · `README.md` · `PRIVACY.md` · `TERMS.md`
