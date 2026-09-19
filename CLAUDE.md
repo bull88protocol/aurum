@@ -18,7 +18,7 @@ Dollar / DXY HMAI tab, see below). No backend; runs on-device. Since v2.5.0 the
 > v2 stayed BULLISH through the 2026 −24% crash).
 
 > **20-Day Drivers + hosted FRED feed (2026-09-16; app code on `feat/20-day-drivers`, ships as v2.8.0;
-> the feed workflow is already live on `master`):**
+> the feed workflow is live on `master` and publishing since 2026-09-17):**
 > an outside "Core Gold Signal" (20-day change in real yields + the dollar) was backtested as
 > written: same-window +0.56, next 20 days +0.04, next 3M -0.02, i.e. a nowcast, not a signal.
 > It ships as the descriptive **20 Days** tab (`GoldDriversEngine`: tailwind/headwind read, 1y
@@ -28,8 +28,9 @@ Dollar / DXY HMAI tab, see below). No backend; runs on-device. Since v2.5.0 the
 > Action fetches DFII10/T10YIE/DGS2 with the owner's key (repo secret) and publishes
 > `fred_daily.json` to the `fred-data` branch. Only the 6 PM **report** reads it, so reports are
 > complete for keyless users; everything interactive still uses the user's own key (owner's
-> decision), and in the report a user's own key comes first, the feed only filling in (2026-09-17). It also adds the FRED® notice FRED's API terms require (Settings, 20 Days tab,
-> TERMS.md, PRIVACY.md) — the app had never shown it. Research: **`research/DRIVERS_20D_2026-09-16.md`**.
+> decision), and in the report a user's own key comes first, the feed only filling in (2026-09-17).
+> It also adds the FRED® notice FRED's API terms require (Settings, 20 Days tab, TERMS.md,
+> PRIVACY.md) — the app had never shown it. Research: **`research/DRIVERS_20D_2026-09-16.md`**.
 > Feed operations: §Hosted FRED feed below.
 
 > **This file is the cross-machine source of truth.** Claude Code's memory is per-machine and does
@@ -66,7 +67,16 @@ report reading the hosted FRED feed (as a fallback behind the user's own key), t
 Start-here doc: **`release-2.8/RELEASE_NOTES.md`**, which has the checklist, the adb recipe and the
 paste-ready "What's new".
 
-## Open items (nothing here is blocking; reviewed 2026-09-04)
+**▶ Pick up here (paused 2026-09-18).** Everything is committed and pushed; nothing is half-done.
+1. Ask the owner whether 2.7.0 cleared review (Play Console). If so, update §Release in flight
+   and tick `release-2.7/RELEASE_NOTES.md`.
+2. On-device pass: needs the Pixel 8a plugged in with USB debugging (`adb devices` was empty on
+   2026-09-17). Checklist and adb recipe: `release-2.8/RELEASE_NOTES.md` step 5. It is also the
+   first time the app reads the live feed.
+3. Both done → steps 6-8 there: merge, tag `v2.8.0`, push, upload. Check the AAB's sha256 first.
+   `master`'s CLAUDE.md has a pointer block to this branch (added 2026-09-18); delete it in the merge.
+
+## Open items (nothing here is blocking; reviewed 2026-09-18)
 
 The maintained answer to "what is pending". Ordered by what actually matters. Keep it current —
 when an item is done, delete it rather than leaving it ticked.
@@ -80,25 +90,34 @@ when an item is done, delete it rather than leaving it ticked.
 2. **Watch ANR rate once 2.7.0 rolls out** — see the caveat above about overlapping vitals. This is
    the highest-value thing to look at, and the reason is specific: the fix changed cancellation and
    timeout behaviour on every screen.
-3. **PDF "Open" tile on a gap day.** The one v2.6.0 fix never confirmed in the wild — the old bug
+3. **Does GitHub's schedule hit the report window?** The FRED feed has run with the secret since
+   2026-09-17. From about 2026-09-25, check a week of `gh run list --workflow fred-feed.yml
+   --limit 60`: do weekday runs land between 4:15 and 6 PM ET (20:15-22:00 UTC in EDT, 21:15-23:00
+   in EST)? On the first day 2 of 10 slots ran, neither in that window. Users with a key are
+   unaffected (their key comes first); keyless users' reports carry the previous FRED print when
+   no run lands in time. If that is common, more cron slots are the cheap fix.
+4. **PDF "Open" tile on a gap day.** The one v2.6.0 fix never confirmed in the wild — the old bug
    (previous close shown as the open) was only visible when the previous close fell outside the
    day's range. One look, next time gold gaps.
-4. **Duplicate "Aurum Market Data" spreadsheets in Drive.** v2.7.0 stops new ones; it does **not**
+5. **Duplicate "Aurum Market Data" spreadsheets in Drive.** v2.7.0 stops new ones; it does **not**
    clean up existing ones. Delete strays by hand.
-5. **`resolveOpen` and the refresh-timeout paths have no unit tests** — `MainViewModel` needs a
+6. **`resolveOpen` and the refresh-timeout paths have no unit tests** — `MainViewModel` needs a
    context. (The other blocker, `org.json` being a throwing stub in unit tests, is fixed on
    `feat/20-day-drivers` by `testImplementation("org.json:json:20180813")`.) Moving the pure logic
    into `:shared` still fixes both; folded into `api-37/API_37_UPGRADE_PLAN.md` §4.
-6. **API 37 / Android 17** — the next *forced* work, and the only item with a deadline. Needs
+7. **API 37 / Android 17** — the next *forced* work, and the only item with a deadline. Needs
    AGP 9.1.1 + Gradle 9.3.1 + Kotlin 2.x (three major migrations; JDK 17 still fine). No Play
    deadline published; the annual pattern points at **August 2027**. Revisit Q1-Q2 2027.
    Plan, with a trial run behind it: `api-37/API_37_UPGRADE_PLAN.md`.
-7. **Store polish — consciously skipped 2026-09-04, not forgotten.** No screenshot shows the PDF
+8. **Store polish — consciously skipped 2026-09-04, not forgotten.** No screenshot shows the PDF
    report; `store/screenshots/02_*.png` still pictures the v1 forward card (stale since 2.2); the
    live full description was never confirmed against `store/STORE_LISTING.md`; the Play R8
    recommendation card was never read (the build already runs R8 full mode, so it is almost
    certainly generic). All store-side, no release needed, can land any time.
-8. **iOS Phase 2** — parked, needs a Mac. `ios/APPLE_RELEASE_PLAN.md`. Do **not** run it in
+9. **`actions/checkout@v4` → `@v7` in `.github/workflows/fred-feed.yml`** (on `master`). Every run
+   warns that v4 targets Node 20 and GitHub forces it onto Node 24. Harmless today; v7.0.1 is the
+   current release and runs on Node 24. One line; offered 2026-09-17, not done.
+10. **iOS Phase 2** — parked, needs a Mac. `ios/APPLE_RELEASE_PLAN.md`. Do **not** run it in
    parallel with the API 37 work; both touch `shared/build.gradle.kts` and the Kotlin version.
 
 ## Platforms & status
@@ -256,6 +275,9 @@ using each user's own key — the owner's call, 2026-09-16.
   day's yields. Keyless users still depend on the schedule; check whether it settles.
 - **Failure = safe:** bad key / FRED down / short, stale or out-of-range data → the run fails,
   nothing is published, GitHub emails the owner. The app drops any series older than 10 days.
+- **Run-page notices (2026-09-17), both harmless:** `actions/checkout@v4` targets Node 20 (GitHub
+  forces Node 24; bump to `@v7`, see Open items), and `ubuntu-latest` moves to Ubuntu 26 from
+  2026-10-19 (nothing to do: `build_feed.py` uses only the Python standard library).
 - **Watch:** GitHub auto-disables scheduled workflows in public repos after 60 days with no repository
   activity (unclear whether the bot's pushes count). If the feed goes stale, check Actions → "FRED
   feed" → Enable / Run workflow.

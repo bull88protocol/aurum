@@ -12,12 +12,12 @@ key. It also adds the notice FRED's API terms require, which the app had never s
 
 **The Gold Index and the Forward Signal are unchanged.** Not one line of `GoldIndexEngine` changed.
 
-> **Status 2026-09-17:** signed AAB **rebuilt** and verified (below) from `2b9b7df`, after the fix
-> that puts a user's own FRED key ahead of the hosted feed in the report; the 2026-09-16 build is
-> superseded. The branch is pushed to `origin`. **The FRED feed is live** (secret added, first run
-> published 2026-09-17 20:42 ET). **Not uploaded, and must not be until the other two gates are
-> met:** 2.7.0 approved, and an on-device pass. versionCode 16 is not claimed until upload, so the
-> AAB can still be rebuilt if anything changes.
+> **Status 2026-09-18, paused here:** signed AAB **rebuilt** and verified (below) from `2b9b7df`,
+> after the fix that puts a user's own FRED key ahead of the hosted feed in the report; the
+> 2026-09-16 build is superseded. Everything is committed and pushed to `origin`. **The FRED feed is
+> live** (secret added, first run published 2026-09-17 20:42 ET). **Not uploaded, and must not be
+> until the other two gates are met:** 2.7.0 approved (step 3) and an on-device pass (step 5).
+> versionCode 16 is not claimed until upload, so the AAB can still be rebuilt if anything changes.
 
 ## What changed
 
@@ -81,9 +81,9 @@ the endless spinner 2.7.0 fixed.
   the workflow's first full weekday, 2026-09-17, it ran 2 of the 10 slots, at 1:09 PM and 6:49 PM
   ET, neither between the 4:15 PM post and the 6 PM report. With the feed first, users with a key
   would have got the previous day's yields in the report.
-- **Failure is safe.** Until the secret exists, runs skip with a warning. With a bad key, FRED
-  down, or short, stale or out-of-range data, the run fails, publishes nothing, and GitHub emails
-  the owner. The key is never printed.
+- **Failure is safe.** Without the secret, runs skip with a warning and still show green; that was
+  the case until 2026-09-17. With a bad key, FRED down, or short, stale or out-of-range data, the
+  run fails, publishes nothing, and GitHub emails the owner. The key is never printed.
 - **Why not ship the owner's key in the app.** A key in an APK can be extracted. FRED makes the
   key holder "solely responsible" for all use. Every install fires the report at 18:00 ET, so
   about 40 phones × 3 calls would hit the ~120 requests/minute per-key limit.
@@ -132,7 +132,8 @@ the endless spinner 2.7.0 fixed.
 - **Publish step.** Replayed against a local bare repo: the first run creates `fred-data`, the second
   force-replaces it (still one commit), and the workflow's read-back step reads it.
 - **GitHub.** The workflow is registered and `active` (checked via the API, 2026-09-16). The
-  missing-secret skip was verified locally only.
+  missing-secret skip was then seen on GitHub: both scheduled runs on 2026-09-17 ended green with
+  the warning. The first real publish is upload checklist step 4.
 - **Release builds.** `:app:assembleRelease` and `:app:bundleRelease` were clean on 2026-09-16,
   with R8 full mode and lint vital. The 2026-09-17 rebuild ran `:app:bundleRelease` again: clean,
   lint vital included.
@@ -189,11 +190,17 @@ feed, live since 2026-09-17.
    - pull to refresh works;
    - a force-run worker with **no key** in the debug app produces a PDF whose Real Yield,
      Inflation, Real-Rate Regime and Fed Cycle rows are scored.
-6. **Merge and tag.** Merge `feat/20-day-drivers` into `master`, tag **`v2.8.0`**, push.
-7. **Upload.** Play Console → Production → Create new release → upload **`app-release.aab`
-   (~4.4 MB)**, never the ~9 MB debug APK, which fails as a package-name error. It should show as
-   "16 (2.8.0)". Paste the "What's new" copy and roll out. The upload claims versionCode 16 for
-   good.
+6. **Merge and tag.** Merge `feat/20-day-drivers` into `master`, tag **`v2.8.0`**, push. `master`'s
+   CLAUDE.md has a "⚠️ The next release is on a branch" pointer block, added 2026-09-18 so a
+   session starting on `master` finds this branch. **Delete it in the merge**, since the branch's
+   CLAUDE.md supersedes it. It sits in lines the branch doesn't touch, so the merge itself is clean
+   (trial merge, 2026-09-18).
+7. **Upload.** Play Console → Production → Create new release → upload
+   **`app/build/outputs/bundle/release/app-release.aab` (~4.4 MB)**, never the ~9 MB debug APK,
+   which fails as a package-name error. First, `sha256sum` it: it must be `98646d07…b255` (above).
+   If it is missing (a `gradle clean`) or differs, rebuild with `:app:bundleRelease` and re-verify
+   as above; 16 is unclaimed until upload. It should show as "16 (2.8.0)". Paste the "What's new"
+   copy and roll out. The upload claims versionCode 16 for good.
 8. **After rollout.** Check the crash rate on the new tab, and that a keyless install's first 6 PM
    report has the FRED rows scored.
 
@@ -222,5 +229,10 @@ adb pull /sdcard/Android/data/com.sun.aurum.debug/files/reports/
   a FRED key" again after pulling to refresh. That is the reports-only decision working as designed.
 - **Keyless reports depend on GitHub's schedule.** On the feed's first full weekday GitHub ran 2 of 10
   slots, neither in the 4:15-6 PM ET window. If that persists, keyless users' reports carry the
-  previous day's FRED print, still better than the "add a FRED key" rows they had before. Once the
-  secret is in, check a week of `gh run list --workflow fred-feed.yml`.
+  previous day's FRED print, still better than the "add a FRED key" rows they had before. The
+  secret went in 2026-09-17; from about 2026-09-25, check a week of
+  `gh run list --workflow fred-feed.yml --limit 60`. More cron slots are the cheap fix.
+- **`actions/checkout@v4` → `@v7`** in the workflow, on `master`. Every run warns that v4 targets
+  Node 20 and GitHub forces it onto Node 24. Harmless; v7.0.1 is current and runs on Node 24.
+- **`ubuntu-latest` moves to Ubuntu 26 from 2026-10-19** (a notice on every run). Nothing to do:
+  `build_feed.py` uses only the Python standard library.
