@@ -2,8 +2,18 @@
 
 ## v2.9.0 (versionCode 17)
 
-**Status: code complete on `feat/hosted-brief`, 85 tests green. Not built, not uploaded.**
-Depends on v2.8.0 shipping first — see the gate list in `release-2.8/RELEASE_NOTES.md`.
+**Status: signed AAB built and verified 2026-09-24. Ready to upload.**
+
+**v2.8.0 / versionCode 16 is SKIPPED, superseded by this release** (decision 2026-09-24), the same
+way v2.1.1 and v2.2.0 were. v2.9.0 is a strict superset: it carries the 20 Days tab, the report's
+hosted FRED feed and the FRED® notice, *and* fixes a bug live in production that v2.8.0 does not —
+the app asks Gemini for `gemini-2.5-flash`, which Google has retired, so every user who creates a
+Gemini key today gets a permanently empty AI Brief tab. Shipping 2.8.0 first would have meant two
+Play reviews, the first of them knowingly broken. **Do not upload versionCode 16.**
+
+    AAB    app/build/outputs/bundle/release/app-release.aab
+    sha256 2c9c499aa50ce89393569e2c9789dda4111a34138b1fbd75400d0b09386f6202
+    manifest verified: com.sun.aurum, versionCode 17, versionName 2.9.0
 
 The app stopped waiting on Gemini. The AI brief now arrives from a hosted feed in about 200ms
 instead of a 15-60 second grounded call, it no longer blocks the rest of the screen, and it works
@@ -160,6 +170,15 @@ Changed:
   the committed fixture, which is genuine `build_brief.py` output.
 
 **Not yet verified: anything on a device.** The 20 Days tab from v2.8.0 is also still unseen.
+
+## What's new (Play "What's new" copy)
+
+Paste-ready, 492 characters — within Play's 500 limit. Covers both releases, since 2.8 is skipped.
+
+> What's new in 2.9:
+> • No API keys needed any more. The Gold Index, the Forward Signal and the daily AI brief now work out of the box, reading shared data feeds we keep updated. Add your own free FRED or Gemini key if you want them refreshed live instead.
+> • New 20 Days tab, replacing the Dollar tab: what real yields and the dollar did to gold over the last 20 trading days, with gold's move broken down into rates, the dollar and everything else.
+> • Much faster loading.
 
 ## Before uploading
 

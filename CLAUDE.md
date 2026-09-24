@@ -52,89 +52,57 @@ Dollar / DXY HMAI tab, see below). No backend; runs on-device. Since v2.5.0 the
 > **not** sync. When working from a different computer (e.g. a Mac for the iOS build), this committed
 > file — plus the docs it points to — is the context. Keep it current.
 
-> **⚠️ The next release is on a branch, not here (note added 2026-09-18).** v2.8.0 — the 20 Days
-> tab replacing the Dollar tab, the 6 PM report reading the hosted FRED feed, the FRED® notice —
-> lives on **`feat/20-day-drivers`** (pushed; signed AAB built; the FRED feed on `fred-data` is
-> already live). Until it merges, this file is behind: for release status or "what is pending",
-> read that branch's copy (`git fetch && git show origin/feat/20-day-drivers:CLAUDE.md`) and its
-> **`release-2.8/RELEASE_NOTES.md`**, or check the branch out. Delete this block in the merge.
->
-> **Both feed workflows are live on THIS branch (`master`) and nowhere else** — GitHub runs
-> scheduled workflows from the default branch alone, so `.github/workflows/fred-feed.yml` and
-> `.github/workflows/brief-feed.yml` have to sit here even while the app code that reads them
-> waits on a feature branch. Added 2026-09-24. The AI brief feed (`brief-data` branch, hourly) is
-> read by the v2.9.0 app on **`feat/hosted-brief`**; the FRED feed (`fred-data`, weekday evenings)
-> is read today by the shipped report and, from v2.9.0, by the whole app. Operations for both are
-> documented on `feat/hosted-brief`'s copy of this file.
-
 ## ▶ "What is pending?" — answer from the Open items list below
 If the user asks **"what is pending"** / "what's left" / "where were we", read **§Open items** below
 and show them **all** of it, most-actionable first, with a one-line status on the release in flight.
 Do not improvise a list from git log — that section is the maintained answer. Verify anything
 time-sensitive (Play status, whether a build is stale) before repeating it.
 
-## ▶ Release in flight — v2.8.0 built, one gate left; v2.9.0 stacked behind it; v2.7.0 is live
-**v2.7.0 / versionCode 15 is live on Google Play Production.** On 2026-09-18 the owner's Play
-Console showed Production "Active", latest release 15 (2.7.0), 177 countries / regions, 9 installs
-(submitted 2026-09-04; the exact approval date wasn't recorded). Code on `master`, tagged
-**`v2.7.0`**; **15 is claimed**. Notes: **`release-2.7/RELEASE_NOTES.md`**.
+## ▶ Release in flight — v2.9.0 AAB built and ready to upload; v2.8.0 is skipped
+**v2.7.0 / versionCode 15 is live on Google Play Production** (confirmed 2026-09-18: 177 countries
+/ regions, 9 installs). Code on `master`, tagged **`v2.7.0`**; **15 is claimed**. Notes:
+**`release-2.7/RELEASE_NOTES.md`**.
 
-It fixes the refresh hang reported the same day. It shipped days after 2.6.0 rather than after a
-soak week, at the owner's direction, so the two **overlap in Play vitals** — a new signal cannot be
-cleanly attributed to one release. **Watch ANR rate first**: this release changes network timeout
-and cancellation behaviour app-wide.
+### v2.8.0 / versionCode 16 — SKIPPED, superseded by v2.9.0 (decision 2026-09-24)
+Its AAB was built and all three gates were met, including the on-device pass on 2026-09-24. It was
+skipped anyway, the same way v2.1.1 and v2.2.0 were, because **v2.9.0 is a strict superset and
+v2.8.0 is not**: 2.8.0 still asks Gemini for the retired `gemini-2.5-flash`, so shipping it would
+have meant two Play reviews with the first one knowingly broken for every new user. Its content —
+the 20 Days tab, the report's hosted FRED feed, the FRED® notice — all rides in 2.9.0.
+**Do not upload versionCode 16.**
 
-### Next release built, not uploaded — v2.8.0 / versionCode 16
-**Signed AAB rebuilt and verified 2026-09-17** from `2b9b7df` on **`feat/20-day-drivers`** (pushed
-to `origin` 2026-09-17, not yet merged to `master`): the 20 Days tab replacing the Dollar tab, the
-report reading the hosted FRED feed (as a fallback behind the user's own key), the FRED® notice.
-**Do not upload until all three gates hold:**
-1. ~~2.7.0 is approved~~ — **done**: live on Production, confirmed 2026-09-18.
-2. ~~The FRED feed is live~~ — **done 2026-09-17**: secret added, the first manual run published
-   `fred-data` (feed through 2026-09-17).
-3. ~~An on-device pass~~ — **done 2026-09-24**: the 20 Days tab rendered for the first time on a
-   **Pixel 11** (`67220DLKY00817`), from a `feat/hosted-brief` debug build. STRONG HEADWIND -94,
-   both driver legs populated (real yields 2.63% +25bp/20d, DXY 101.25 +2.36%/20d), the -7.0%
-   move split -1.7 / -1.8 / -3.6, FRED® notice present. **All three gates now hold.**
+### Ready to upload — v2.9.0 / versionCode 17
+**Signed AAB built and verified 2026-09-24** from `feat/hosted-brief`:
 
-Start-here doc: **`release-2.8/RELEASE_NOTES.md`**, which has the checklist, the adb recipe and the
-paste-ready "What's new".
+    sha256 2c9c499aa50ce89393569e2c9789dda4111a34138b1fbd75400d0b09386f6202
+    manifest: com.sun.aurum, versionCode 17, versionName 2.9.0
 
-### Stacked behind it — v2.9.0 / versionCode 17, code complete, not built
-**`feat/hosted-brief`**, branched off `feat/20-day-drivers` on 2026-09-23: the hosted AI brief
-feed, the parallel market/brief refresh that takes the 15-60s Gemini call off the critical path,
-the collapsed key section in Settings, and the FRED cron respread. 85 tests green, debug build
-clean, **nothing device-tested**. Start-here doc: **`release-2.9/RELEASE_NOTES.md`**.
+It carries everything from v2.8.0 plus: the AI brief off the refresh critical path and onto a
+hosted feed, the hosted FRED feed extended from the report to the whole app (so a keyless Gold
+Index scores all five components), the collapsed key section in Settings, and the
+`gemini-flash-latest` fix for the retired model. 85 tests. Start-here doc:
+**`release-2.9/RELEASE_NOTES.md`** — checklist and paste-ready "What's new".
 
-**▶ Pick up here (2026-09-23).** Everything is committed; nothing is half-done.
-1. ~~On-device pass for v2.8.0~~ — **done 2026-09-24** on a Pixel 11 (`67220DLKY00817`; the older
-   notes say Pixel 8a). The 20 Days tab renders, and the Gold Index scored all five components
-   **with no FRED key**, off the hosted feed — the v2.9.0 claim, confirmed on the same run.
-2. Then steps 6-8 there: merge, tag `v2.8.0`, push, upload. Check the AAB's sha256 first.
-   `master`'s CLAUDE.md has a pointer block to `feat/20-day-drivers` (added 2026-09-18); delete it
-   in the merge.
-3. Only then v2.9.0's app code: rebase `feat/hosted-brief` onto the merged `master` (Phase A's
-   `.github/` commit is already there, so those files drop out as duplicates) and follow
-   `release-2.9/RELEASE_NOTES.md` §Before uploading. **The feeds themselves are already done** —
-   both workflows went to `master` on 2026-09-24 (`3f1684b`) and the `GEMINI_API_KEY` secret was
-   added the same day; they run whether or not this app code has shipped.
+**Device pass done 2026-09-24** on a **Pixel 11** (`67220DLKY00817`; older notes say Pixel 8a),
+from a debug build: 20 Days tab renders (STRONG HEADWIND -94, both legs populated); Gold Index
+scored all five components and all three Forward Signal drivers **with no FRED key**, off the
+hosted feed; Settings showed the DATA SOURCES card collapsed with the FRED® notice outside it, and
+expanded correctly. **Not verified: the AI Brief filling from the brief feed** — see Open items,
+the Lambda is not publishing yet. The app degrades correctly without it (honest empty state).
+
+**▶ Pick up here (2026-09-24).**
+1. Upload the AAB to Play. Internal testing first is the safer route — a release build runs R8 full
+   mode and only the debug variant has been on a device. Then promote.
+2. Fix the brief feed Lambda (Open items) — it is server-side and needs no app release.
 
 ## Open items (nothing here is blocking; reviewed 2026-09-23)
 
 The maintained answer to "what is pending". Ordered by what actually matters. Keep it current —
 when an item is done, delete it rather than leaving it ticked.
 
-0. **Ship v2.8.0 — all three gates now hold.** AAB built 2026-09-17 from `2b9b7df`; the on-device
-   pass was done 2026-09-24 (see §Next release built). Nothing blocks the upload but doing it:
-   merge, tag `v2.8.0`, check the AAB's sha256, upload. Store listing/screenshots still don't
-   mention the new tab.
-
-   **Then v2.9.0** (hosted AI brief + the slow-load fix), code complete on `feat/hosted-brief`,
-   85 tests green, **not built**. It is stacked on v2.8.0, so it ships after it. Its *feeds* are
-   already live — both workflows went to `master` 2026-09-24 (`3f1684b`) with the secret set the
-   same day, since GitHub only schedules from the default branch. Checklist:
-   **`release-2.9/RELEASE_NOTES.md`** §Before uploading. Its on-device pass covers the AI Brief
-   tab *with no Gemini key saved*, which is the whole point of the release.
+0. **Upload v2.9.0** — AAB built and verified 2026-09-24, see §Ready to upload above. v2.8.0 is
+   skipped; **do not upload versionCode 16**. Internal testing first, then promote. Store
+   listing/screenshots still don't mention the 20 Days tab or the keyless data feeds.
 1. **LIVE BUG: the shipped app asks Gemini for a retired model.** v2.7.0 (production) calls
    `gemini-2.5-flash`, which Google retired on/before 2026-09-24 to *"no longer available to new
    users"*. A key created **after** that date answers **404**, `fetchAnalysisAndNews` swallows it
