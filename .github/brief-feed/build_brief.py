@@ -49,6 +49,12 @@ MIN_AGE_MINUTES = 50
 SCHEMA = 1
 
 
+class BriefError(Exception):
+    """A reason not to publish. The CLI turns it into a non-zero exit (which fails the GitHub run
+    and emails the owner); the Lambda turns it into a failed invocation (which alarms). Either way
+    nothing is published and the last good brief stays up."""
+
+
 # ── Trading sessions ──────────────────────────────────────────────────────────
 # Mirrors GeminiClient.getTradingSessionDates: the brief always covers the last closed session
 # and the next open one, so it reads the same whether it came from here or from a user's key.
@@ -196,7 +202,7 @@ def generate(prompt, key):
         except (urllib.error.URLError, TimeoutError, OSError, ValueError) as e:
             last_error = type(e).__name__
         time.sleep(20 * (attempt + 1))
-    sys.exit(f"Gemini request failed ({last_error})")
+    raise BriefError(f"Gemini request failed ({last_error})")
 
 
 def extract_json(text):
@@ -267,7 +273,7 @@ def validate(brief):
     if any(not n["url"].startswith("http") or not n["h"].strip() for n in brief["news"]):
         problems.append("a news item has no headline or no real URL")
     if problems:
-        sys.exit("refusing to publish: " + "; ".join(problems))
+        raise BriefError("refusing to publish: " + "; ".join(problems))
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
@@ -285,6 +291,47 @@ def published_age_minutes(path, now_utc):
     return (now_utc - generated).total_seconds() / 60.0
 
 
+def build_feed(key, now_utc=None):
+    """Generates one brief and returns the feed dict, or raises [BriefError].
+
+    The whole job minus where the answer goes: the GitHub workflow writes it to a file and pushes,
+    the Lambda commits it through the GitHub API. Keeping this one function is what stops the two
+    front ends drifting into two different briefs.
+    """
+    now_utc = now_utc or dt.datetime.now(dt.timezone.utc)
+    now_et = now_utc.astimezone(ET)
+    (last_short, last_long), (next_short, next_long) = session_dates(now_et)
+
+    quote = fetch_quote()
+    if quote:
+        print(f"anchored to {SYMBOL} ${quote['price']:,.2f} ({quote['changePct']:+.2f}%, {quote['marketState']})")
+    else:
+        print("no Yahoo quote — the brief will be generated unanchored")
+
+    raw_response = generate(build_prompt(last_long, next_long, facts_block(quote)), key)
+    try:
+        text = raw_response["candidates"][0]["content"]["parts"][0]["text"]
+    except (KeyError, IndexError, TypeError):
+        raise BriefError("Gemini returned no candidate text")
+    parsed = extract_json(text)
+    if parsed is None:
+        raise BriefError("Gemini returned no parseable JSON object")
+
+    brief = to_brief(parsed, last_short, next_short, now_et.date())
+    validate(brief)
+
+    print(f"{brief['sig']} {brief['score']}/100 · {len(brief['news'])} news items · sessions "
+          f"{brief['lsl']} → {brief['nsl']}")
+    return {
+        "schema": SCHEMA,
+        "generated_utc": now_utc.isoformat(timespec="seconds").replace("+00:00", "Z"),
+        "model": MODEL,
+        "symbol": SYMBOL,
+        "quote_at_generation": quote,   # what the brief's numbers were written against
+        "brief": brief,
+    }
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", required=True)
@@ -299,48 +346,23 @@ def main():
     now_utc = dt.datetime.now(dt.timezone.utc)
     age = published_age_minutes(args.previous, now_utc)
     if age is not None and age < MIN_AGE_MINUTES and not args.force:
-        # GitHub fires late and in bursts; without this a burst would spend several grounded
-        # calls to republish the same hour. Exit 0 so the run is a success, not a failure.
+        # A burst of late runs would otherwise spend several grounded calls republishing the same
+        # hour. Exit 0 so the run is a success, not a failure.
         print(f"published brief is {age:.0f} min old (< {MIN_AGE_MINUTES}) — nothing to do")
         if os.environ.get("GITHUB_OUTPUT"):
             with open(os.environ["GITHUB_OUTPUT"], "a") as f:
                 f.write("changed=false\n")
         return
 
-    now_et = now_utc.astimezone(ET)
-    (last_short, last_long), (next_short, next_long) = session_dates(now_et)
-    quote = fetch_quote()
-    if quote:
-        print(f"anchored to {SYMBOL} ${quote['price']:,.2f} ({quote['changePct']:+.2f}%, {quote['marketState']})")
-    else:
-        print("no Yahoo quote — the brief will be generated unanchored")
-
-    raw_response = generate(build_prompt(last_long, next_long, facts_block(quote)), key)
     try:
-        text = raw_response["candidates"][0]["content"]["parts"][0]["text"]
-    except (KeyError, IndexError, TypeError):
-        sys.exit("Gemini returned no candidate text")
-    parsed = extract_json(text)
-    if parsed is None:
-        sys.exit("Gemini returned no parseable JSON object")
+        feed = build_feed(key, now_utc)
+    except BriefError as e:
+        sys.exit(str(e))
 
-    brief = to_brief(parsed, last_short, next_short, now_et.date())
-    validate(brief)
-
-    generated = now_utc.isoformat(timespec="seconds").replace("+00:00", "Z")
-    feed = {
-        "schema": SCHEMA,
-        "generated_utc": generated,
-        "model": MODEL,
-        "symbol": SYMBOL,
-        "quote_at_generation": quote,   # what the brief's numbers were written against
-        "brief": brief,
-    }
+    generated = feed["generated_utc"]
     os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
     with open(args.out, "w") as f:
         json.dump(feed, f, separators=(",", ":"), ensure_ascii=False)
-    print(f"{brief['sig']} {brief['score']}/100 · {len(brief['news'])} news items · sessions "
-          f"{brief['lsl']} → {brief['nsl']}")
 
     if os.environ.get("GITHUB_OUTPUT"):
         with open(os.environ["GITHUB_OUTPUT"], "a") as f:

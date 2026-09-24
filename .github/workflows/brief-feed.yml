@@ -10,8 +10,13 @@
 # a ~200ms download. A user who adds their own Gemini key still gets their own fresh call — the
 # app shows this brief immediately and swaps in theirs when it arrives.
 #
-# Runs by itself on GitHub. To force a refresh: Actions tab > "AI brief feed" > Run workflow
-# (that path passes --force, so it ignores the freshness guard).
+# THE SCHEDULE LIVES IN AWS, NOT HERE. GitHub's shared scheduler gives this repo about two
+# dispatches a day with 15-18h overnight gaps, and gave this workflow zero in six hours across two
+# cron variants (2026-09-24) while fred-feed.yml kept getting its two. The hourly trigger is an
+# EventBridge rule invoking the aurum-brief-feed Lambda, which packages this same generator --
+# see aws/brief-feed/README.md. This file stays as the manual escape hatch: Actions tab >
+# "AI brief feed" > Run workflow publishes exactly what the Lambda would, and always passes
+# --force since a human asking for a run means now.
 #
 # A failed run (bad key, Gemini down, a brief that fails validation) publishes nothing and GitHub
 # emails the owner; the last good brief stays up, and the app ignores a brief older than 12 hours.
@@ -19,22 +24,6 @@
 name: AI brief feed
 
 on:
-  schedule:
-    # Twice an hour, at :17 and :47. GitHub delays scheduled runs heavily and drops most of a
-    # bunched window — measured on this repo's FRED feed, 2 of 10 slots a day, the 12:30 slot
-    # landing 4-5h late. So this is an upper bound, not a promise: ask often and let
-    # build_brief.py's 50-minute freshness guard decide, which is what actually caps the grounded
-    # calls at ~24/day whatever GitHub fires. A skipped run costs nothing — it exits before the
-    # Gemini call — so extra slots buy reliability for free.
-    #
-    # Deliberately odd minutes, 30 apart. This started as `5 * * * *` and got NOTHING in two
-    # hours (2026-09-24, slots 05:05 and 06:05, workflow active, zero runs recorded). Round
-    # minutes near the top of the hour are the most contended on GitHub's shared scheduler and
-    # the first to be dropped under load; :17/:47 are not. Whether that is the whole story is
-    # unproven — see CLAUDE.md §Hosted AI brief feed.
-    #
-    # Every day, not just weekdays: gold trades Sunday evening ET and the brief covers sessions.
-    - cron: "17,47 * * * *"
   workflow_dispatch:
 
 permissions:
@@ -85,7 +74,7 @@ jobs:
           python3 .github/brief-feed/build_brief.py
           --out "$RUNNER_TEMP/feed/brief_daily.json"
           --previous "$RUNNER_TEMP/published.json"
-          ${{ github.event_name == 'workflow_dispatch' && '--force' || '' }}
+          --force
 
       - name: Publish to the brief-data branch
         if: steps.key.outputs.configured == 'true' && steps.build.outputs.changed == 'true'
