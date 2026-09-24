@@ -344,19 +344,26 @@ a user whose own key works never fetches it. Revert by dropping the `fromFeed` f
 Why: the grounded Gemini call takes 15-60s, which made it the slowest thing in the app, and without
 a key the AI Brief and News tabs were simply empty. The Action generates the brief centrally with
 the owner's key so every install reads a ~200ms static file instead.
-- **Runs by itself** on GitHub: **:17 and :47 every hour, every day** (gold trades Sunday evening
-  ET). The cron is an upper bound, not a promise — `build_brief.py` skips any run that finds a
-  published brief younger than **50 minutes** (`MIN_AGE_MINUTES`) and exits 0 before the Gemini
-  call. That guard, not the cron, is what caps spend at ~24 grounded calls a day however often
-  GitHub fires, which is also why twice-hourly slots cost nothing. Each publish force-pushes a
-  single orphan commit (`brief_daily.json` + README) to `brief-data`.
-- **It started at `5 * * * *` and got nothing.** Two hours after going live on `master`
-  (2026-09-24 04:10 UTC), with the workflow showing `active`, GitHub had recorded **zero** runs —
-  not even a skipped one — across the 05:05 and 06:05 slots. Moved to `17,47 * * * *` on the
-  reading that round minutes near the top of the hour are the most contended on GitHub's shared
-  scheduler and the first dropped under load. **Unproven.** If the odd minutes also produce
-  nothing over a day, the problem is not minute choice and the trigger has to leave GitHub's
-  scheduler — see [[aurum-github-cron-unreliable]] and the Lambda option deferred 2026-09-23.
+- **The schedule is in AWS, not GitHub** (decided 2026-09-24, after the evidence below). An
+  EventBridge rule fires the `aurum-brief-feed` Lambda at **:17 every hour**; the Lambda packages
+  `.github/brief-feed/build_brief.py` **verbatim**, so there is one prompt, one validator and one
+  output shape whichever side runs. It publishes the same single orphan commit (`brief_daily.json`
+  + README) to `brief-data`, through the Git Data API (blob → tree → parentless commit → forced
+  ref update) because Lambda has no git. Setup, cost and key handling: **`aws/brief-feed/README.md`**.
+  The GitHub workflow keeps `workflow_dispatch` as a manual escape hatch and has **no schedule**.
+- **Why it left GitHub.** `brief-feed.yml` went live on `master` at 2026-09-24 04:10 UTC and got
+  **zero** dispatches in six hours across two cron variants (`5 * * * *`, then `17,47 * * * *`) —
+  not a failed run, not a skipped one, with the workflow showing `active` — while `fred-feed.yml`
+  kept getting its usual two a day. That matches the wider pattern: ~2 dispatches a day for this
+  repo, clustered near 17:00 and 22:50 UTC, with **15-18 hour overnight gaps**. An hourly brief
+  cannot live with that, and neither could the app's 12-hour staleness limit. See
+  [[aurum-github-cron-unreliable]].
+- **Spend did not change** — `build_brief.py` still skips any run that finds a published brief
+  younger than **50 minutes** (`MIN_AGE_MINUTES`), so the cap is ~24 grounded calls a day whatever
+  the trigger. The Lambda is inside the always-free tier (~730 requests, ~11k GB-seconds a month
+  against 1M and 400k).
+- **Likeliest silent failure: the GitHub PAT expiring.** Fine-grained, Contents read/write on this
+  repo only. Nothing warns you; the feed just stops and the app ages the brief out.
   App URL: `https://raw.githubusercontent.com/bull88protocol/aurum/brief-data/brief_daily.json`.
 - **Secret:** `GEMINI_API_KEY` (repo Settings → Secrets and variables → Actions). Never in the app,
   never in the repo. The key travels in the `x-goog-api-key` **header**, never in a URL, so it
