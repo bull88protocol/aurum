@@ -229,23 +229,22 @@ class MainActivity : AppCompatActivity() {
 
     private fun showGettingStartedDialog() {
         val message = """
-            Aurum88 Protocol works the moment you open it — live gold price, intraday chart, and a Gold Index built from market data.
+            Aurum88 Protocol works the moment you open it, with nothing to set up — live gold price, intraday chart, the full five-component Gold Index, the 3-6 month Forward Signal, the 20-day driver breakdown, and a daily AI market brief with news.
 
-            To unlock the full macro picture, add two free keys in Settings:
+            Everything above reads from shared data feeds we keep up to date, so no API key is required.
+
+            Optional, if you want it fresher:
 
             🔑  FRED key  (free, instant)
-            Adds the Real Yield and Inflation drivers — two of the biggest inputs to the Gold Index.
+            The Gold Index's real-yield and inflation components come straight from FRED on every refresh, instead of from the feed's last update.
 
-            🔑  Gemini key  (free tier, no card)
-            Adds AI market analysis and daily news.
+            🔑  Gemini key  (free tier)
+            The AI brief is written against the live gold price each time you refresh, instead of the shared brief written earlier.
 
-            🔓  Optional — Sign in with Google
+            🔓  Sign in with Google
             Syncs your market data to your own Google Sheet. Quotes always use live Yahoo Finance.
 
-            Without the keys:
-            Neither is required: without them the Gold Index and the AI brief read the app's shared data feeds instead. Your own keys make both current to the moment you refresh, rather than to the last feed update.
-
-            Tip: pull down on any tab to refresh. Step-by-step links to grab both keys are in Settings.
+            Tip: pull down on any tab to refresh. Step-by-step links for both keys are in Settings, under "Use your own API keys".
         """.trimIndent()
 
         androidx.appcompat.app.AlertDialog.Builder(this)
