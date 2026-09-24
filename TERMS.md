@@ -28,18 +28,31 @@ decisions.** Trading and investing involve substantial risk of loss and are not
 suitable for every investor.
 
 ## 3. Your accounts, keys, and credentials
-The App is **"bring your own keys."** You are responsible for obtaining and
-complying with the terms of any third-party services you connect (including
-Yahoo Finance, Google Gemini, FRED, and Google), for the security of your API
-keys and credentials, and for all activity conducted through your accounts. We do
-not provide, control, or have access to your keys.
+The App works without any keys of your own: economic series and the daily AI brief
+are read from small public data files we maintain (see §3a and §3b). You may
+optionally add your own API keys for fresher data, and the App is then **"bring your
+own keys"**: you are responsible for obtaining and complying with the terms of any
+third-party services you connect (including Yahoo Finance, Google Gemini, FRED, and
+Google), for the security of your API keys and credentials, and for all activity
+conducted through your accounts. We do not provide, control, or have access to your
+keys.
 
 ## 3a. FRED® data
 This product uses the FRED® API but is not endorsed or certified by the Federal
 Reserve Bank of St. Louis. By using the App you agree to be bound by the
 [FRED® API Terms of Use](https://fred.stlouisfed.org/docs/api/terms_of_use.html).
-The App's daily report reads FRED series from a public data file we refresh from
-FRED each weekday; no key of ours is included in the App.
+The App reads FRED series from a public data file we refresh from FRED each weekday,
+so it works without a key of your own; no key of ours is included in the App.
+
+## 3b. AI-generated market commentary
+The AI Brief and News tabs show commentary written by a large language model
+(Google Gemini), either from a public file we regenerate about hourly or, if you add
+a Gemini key of your own, from a request made under your key. **It is generated
+text: it can be inaccurate, out of date, or wrong about prices, levels and events,
+and it is not investment advice.** A brief from the shared file is written against
+the gold price at the time it was generated, which may differ from the price the App
+is showing; the tab states when it was written. Headlines link to third-party
+articles we neither control nor endorse. See also §4 and §5.
 
 ## 4. As-is; no warranty
 THE APP IS PROVIDED **"AS IS" AND "AS AVAILABLE," WITHOUT WARRANTY OF ANY KIND,**

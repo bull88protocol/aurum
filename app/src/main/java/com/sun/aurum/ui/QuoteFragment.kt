@@ -140,14 +140,15 @@ class QuoteFragment : Fragment() {
         }
         binding.cardGoldIndex.visibility = View.VISIBLE
 
-        // Status banner — keep "needs a key" distinct from "couldn't load" so a transient data
-        // failure (e.g. a dropped DXY fetch) no longer masquerades as a missing-key/config problem.
+        // Status banner. The two branches used to be "needs a key" vs "couldn't load"; since the
+        // hosted feed backs the app (v2.9.0) a missing FRED series is a load failure either way,
+        // so both lines say retry and only the FRED one still mentions a key, as the fallback.
         val unavailable = report.components.filter { !it.available }
         fun names(list: List<GoldComponentScore>) = list.joinToString(" · ") { it.name.substringBefore(" (") }
         val needKey = names(unavailable.filter { it.keyRequired })
         val noData  = names(unavailable.filterNot { it.keyRequired })
         val banner = buildList {
-            if (needKey.isNotEmpty()) add("Add a FRED key for: $needKey")
+            if (needKey.isNotEmpty()) add("No FRED data for: $needKey — pull to refresh, or add a FRED key in Settings")
             if (noData.isNotEmpty())  add("Couldn't load (pull to refresh): $noData")
         }.joinToString("\n")
         if (banner.isNotEmpty()) {

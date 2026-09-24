@@ -75,6 +75,54 @@ data class SymbolState(
     val geminiTodayOutlook: String? = null,
     val lastSessionLabel: String? = null,
     val nextSessionLabel: String? = null,
+    /** True while the AI brief is still being fetched, after the market data has already landed. */
+    val briefLoading: Boolean = false,
+    /** When a feed brief was generated (ISO-8601 UTC). Null for a brief from the user's own key. */
+    val briefGeneratedUtc: String? = null,
+    /** True when the brief on show came from the hosted feed rather than the user's own key. */
+    val briefFromFeed: Boolean = false,
+)
+
+// The AI brief is fetched separately from the market data — a grounded Gemini call takes 15-60s and
+// must never hold up the Gold Index, the chart or the 20 Days tab. That means two writers updating
+// one SymbolState, so each needs to leave the other's fields alone. These two do that.
+
+/** This state's own market data, carrying over the brief fields already on [previous]. */
+fun SymbolState.carryingBriefFrom(previous: SymbolState?): SymbolState =
+    if (previous == null) this else copy(
+        news                 = previous.news,
+        geminiSignal         = previous.geminiSignal,
+        geminiScore          = previous.geminiScore,
+        geminiDescription    = previous.geminiDescription,
+        geminiKeyFactors     = previous.geminiKeyFactors,
+        geminiYesterdayRecap = previous.geminiYesterdayRecap,
+        geminiTodayOutlook   = previous.geminiTodayOutlook,
+        lastSessionLabel     = previous.lastSessionLabel,
+        nextSessionLabel     = previous.nextSessionLabel,
+        briefLoading         = previous.briefLoading,
+        briefGeneratedUtc    = previous.briefGeneratedUtc,
+        briefFromFeed        = previous.briefFromFeed,
+    )
+
+/** This state with [brief] laid over its brief fields, leaving the market data alone. */
+fun SymbolState.withBrief(
+    brief: GeminiResult?,
+    fromFeed: Boolean = false,
+    generatedUtc: String? = null,
+    loading: Boolean = false,
+): SymbolState = copy(
+    news                 = brief?.news ?: emptyList(),
+    geminiSignal         = brief?.signal,
+    geminiScore          = brief?.score,
+    geminiDescription    = brief?.description,
+    geminiKeyFactors     = brief?.keyFactors ?: emptyList(),
+    geminiYesterdayRecap = brief?.yesterdayRecap,
+    geminiTodayOutlook   = brief?.todayOutlook,
+    lastSessionLabel     = brief?.lastSessionLabel,
+    nextSessionLabel     = brief?.nextSessionLabel,
+    briefLoading         = loading,
+    briefGeneratedUtc    = generatedUtc.takeIf { brief != null },
+    briefFromFeed        = fromFeed && brief != null,
 )
 
 // ── Gold Index ────────────────────────────────────────────────────────────
@@ -95,7 +143,10 @@ data class GoldComponentScore(
     val label: String,          // BULLISH / NEUTRAL / BEARISH
     val detail: String,
     val available: Boolean = true,
-    val keyRequired: Boolean = false,  // unavailable specifically for lack of a FRED key (vs a data/network failure)
+    // Unavailable because no FRED observations arrived. Since v2.9.0 that means BOTH the
+    // user's key (if any) and the hosted feed came back empty, so it is a data/network
+    // failure far more often than a missing key — the UI copy reflects that.
+    val keyRequired: Boolean = false,
 )
 
 data class DailyIndexPoint(
@@ -124,7 +175,7 @@ data class GoldIndexReport(
 data class DriverLeg(
     val name: String,
     val available: Boolean,
-    val keyRequired: Boolean = false,  // unavailable specifically for lack of FRED data (no key)
+    val keyRequired: Boolean = false,  // no FRED observations: neither the user's key nor the feed
     val level: Double = 0.0,           // latest value: DFII10 in %, or the DXY index
     val change: Double = 0.0,          // 20-observation change: percentage points, or % for the dollar
     val score: Float = 0f,

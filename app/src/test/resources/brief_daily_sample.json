@@ -1,0 +1,52 @@
+{
+  "schema": 1,
+  "generated_utc": "2026-09-23T22:54:58Z",
+  "model": "gemini-2.5-flash",
+  "symbol": "GLD",
+  "quote_at_generation": {
+    "marketState": "REGULAR",
+    "price": 398.47,
+    "change": 8.810000000000002,
+    "changePct": 2.260945439614023,
+    "previousClose": 389.66,
+    "high": 399.1,
+    "low": 392.0
+  },
+  "brief": {
+    "sig": "BULLISH",
+    "score": 72,
+    "desc": "Gold is supported by falling real yields and a softer dollar as the market prices a faster easing path into year-end.",
+    "yr": "Gold rose 2.26% to settle near $398.47 on the GLD ETF as a soft core PCE print pulled the 10-year real yield lower and knocked the dollar index down half a percent. Buying was broad, with ETF inflows turning positive. Risk sentiment was mixed, with equities flat.",
+    "to": "Attention turns to jobless claims and two Fed speakers, either of which could reprice the front end and with it gold's real-yield tailwind. A sustained move below 2.60% on the 10-year TIPS would open room toward the prior high, while resistance sits near $399.10 and reclaimed support around $392.00.",
+    "lsl": "September 23",
+    "nsl": "September 24",
+    "kf": [
+      "10y TIPS yield down 12bp on the week",
+      "DXY off 0.6%",
+      "Central-bank buying steady"
+    ],
+    "news": [
+      {
+        "h": "Gold jumps as soft inflation data lifts rate-cut bets",
+        "s": "Bullion climbed after core PCE undershot forecasts.",
+        "src": "Reuters",
+        "url": "https://example.com/a",
+        "dt": "2026-09-23"
+      },
+      {
+        "h": "Central banks add to reserves for a fourth quarter",
+        "s": "WGC data shows steady official-sector demand.",
+        "src": "Bloomberg",
+        "url": "https://example.com/b",
+        "dt": "2026-09-22"
+      },
+      {
+        "h": "Dollar slips as easing bets build",
+        "s": "DXY fell 0.6% on the session.",
+        "src": "FT",
+        "url": "https://example.com/c",
+        "dt": "2026-09-22"
+      }
+    ]
+  }
+}

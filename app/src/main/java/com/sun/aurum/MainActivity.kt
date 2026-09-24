@@ -134,8 +134,9 @@ class MainActivity : AppCompatActivity() {
             activity  = this,
             onSuccess = {
                 hideLockOverlay()
-                // Force-flush Gemini cache and fetch all fresh data on authentication
-                vm.refresh(forceGemini = true)
+                // Fetch fresh data on authentication. The brief comes along on its own job and no
+                // longer holds this up; a recent own-key brief is reused rather than re-billed.
+                vm.refresh()
                 onUnlocked()
             },
             onError = { errorCode ->
@@ -242,7 +243,7 @@ class MainActivity : AppCompatActivity() {
             Syncs your market data to your own Google Sheet. Quotes always use live Yahoo Finance.
 
             Without the keys:
-            The app still runs: the Gold Index uses 3 of its 5 components — USD, Central Bank Demand (built in), and Technicals — and the AI analysis and news sections stay hidden. The 6 PM daily report still scores all five.
+            Neither is required: without them the Gold Index and the AI brief read the app's shared data feeds instead. Your own keys make both current to the moment you refresh, rather than to the last feed update.
 
             Tip: pull down on any tab to refresh. Step-by-step links to grab both keys are in Settings.
         """.trimIndent()

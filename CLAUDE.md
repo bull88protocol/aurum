@@ -26,12 +26,27 @@ Dollar / DXY HMAI tab, see below). No backend; runs on-device. Since v2.5.0 the
 > **replaces the Dollar tab; the HMAI engine and the VIX fetch are deleted.** The Gold Index and
 > Forward Signal math are untouched. The same branch adds the **hosted FRED feed**: a GitHub
 > Action fetches DFII10/T10YIE/DGS2 with the owner's key (repo secret) and publishes
-> `fred_daily.json` to the `fred-data` branch. Only the 6 PM **report** reads it, so reports are
-> complete for keyless users; everything interactive still uses the user's own key (owner's
-> decision), and in the report a user's own key comes first, the feed only filling in (2026-09-17).
+> `fred_daily.json` to the `fred-data` branch. As shipped in v2.8.0 only the 6 PM **report** read
+> it (owner's decision) — **v2.9.0 extends it to the whole app**, so a keyless user's Gold Index
+> works too; a user's own key comes first either way, the feed only filling in (2026-09-17).
 > It also adds the FRED® notice FRED's API terms require (Settings, 20 Days tab, TERMS.md,
 > PRIVACY.md) — the app had never shown it. Research: **`research/DRIVERS_20D_2026-09-16.md`**.
 > Feed operations: §Hosted FRED feed below.
+
+> **Hosted AI brief + the slow-load fix (2026-09-23; on `feat/hosted-brief`, ships as v2.9.0):**
+> the AI brief was the slowest thing in the app for two reasons, and only one was Gemini's fault.
+> The grounded `generateContent` call takes 15-60s, *and* it ran inside `DataRepository`'s
+> per-symbol loop, so the Gold Index, the chart and the 20 Days tab — none of which use it — all
+> waited on it. Now: a GitHub Action regenerates the brief about hourly with the owner's Gemini key
+> (repo secret `GEMINI_API_KEY`) and publishes `brief_daily.json` to the `brief-data` branch, which
+> the app reads in ~200ms; and `MainViewModel.refresh()` runs the market fetch and the brief fetch
+> as two parallel jobs, with only the market job driving the spinner. **The feed is the default
+> source and a user's own key is the upgrade — the opposite order to the FRED feed**, because here
+> the user's key is the *slow* path, not the fresher one; their own brief replaces the feed's when
+> it arrives. The AI Brief and News tabs now work with no key at all, and the key fields moved
+> behind a collapsed "Use your own API keys" section in Settings. Index and Forward Signal math
+> untouched. 85 tests. Notes: **`release-2.9/RELEASE_NOTES.md`**. Feed operations: §Hosted AI brief
+> feed below.
 
 > **This file is the cross-machine source of truth.** Claude Code's memory is per-machine and does
 > **not** sync. When working from a different computer (e.g. a Mac for the iOS build), this committed
@@ -43,7 +58,7 @@ and show them **all** of it, most-actionable first, with a one-line status on th
 Do not improvise a list from git log — that section is the maintained answer. Verify anything
 time-sensitive (Play status, whether a build is stale) before repeating it.
 
-## ▶ Release in flight — v2.8.0 built, one gate left; v2.7.0 is live
+## ▶ Release in flight — v2.8.0 built, one gate left; v2.9.0 stacked behind it; v2.7.0 is live
 **v2.7.0 / versionCode 15 is live on Google Play Production.** On 2026-09-18 the owner's Play
 Console showed Production "Active", latest release 15 (2.7.0), 177 countries / regions, 9 installs
 (submitted 2026-09-04; the exact approval date wasn't recorded). Code on `master`, tagged
@@ -67,14 +82,24 @@ report reading the hosted FRED feed (as a fallback behind the user's own key), t
 Start-here doc: **`release-2.8/RELEASE_NOTES.md`**, which has the checklist, the adb recipe and the
 paste-ready "What's new".
 
-**▶ Pick up here (paused 2026-09-18).** Everything is committed and pushed; nothing is half-done.
-1. On-device pass, the only gate left: needs the Pixel 8a plugged in with USB debugging (`adb
-   devices` was empty on 2026-09-18). Checklist and adb recipe: `release-2.8/RELEASE_NOTES.md`
-   step 5. It is also the first time the app reads the live feed.
-2. Then steps 6-8 there: merge, tag `v2.8.0`, push, upload. Check the AAB's sha256 first.
-   `master`'s CLAUDE.md has a pointer block to this branch (added 2026-09-18); delete it in the merge.
+### Stacked behind it — v2.9.0 / versionCode 17, code complete, not built
+**`feat/hosted-brief`**, branched off `feat/20-day-drivers` on 2026-09-23: the hosted AI brief
+feed, the parallel market/brief refresh that takes the 15-60s Gemini call off the critical path,
+the collapsed key section in Settings, and the FRED cron respread. 85 tests green, debug build
+clean, **nothing device-tested**. Start-here doc: **`release-2.9/RELEASE_NOTES.md`**.
 
-## Open items (nothing here is blocking; reviewed 2026-09-18)
+**▶ Pick up here (2026-09-23).** Everything is committed; nothing is half-done.
+1. On-device pass for v2.8.0, its only gate: needs the Pixel 8a plugged in with USB debugging
+   (`adb devices` was empty on 2026-09-18). Checklist and adb recipe:
+   `release-2.8/RELEASE_NOTES.md` step 5. It is also the first time the app reads the live feed.
+2. Then steps 6-8 there: merge, tag `v2.8.0`, push, upload. Check the AAB's sha256 first.
+   `master`'s CLAUDE.md has a pointer block to `feat/20-day-drivers` (added 2026-09-18); delete it
+   in the merge.
+3. Only then v2.9.0: add the `GEMINI_API_KEY` repo secret, run the "AI brief feed" workflow by
+   hand once, confirm `brief-data` appears, then rebase `feat/hosted-brief` onto the merged
+   `master` and follow `release-2.9/RELEASE_NOTES.md` §Before uploading.
+
+## Open items (nothing here is blocking; reviewed 2026-09-23)
 
 The maintained answer to "what is pending". Ordered by what actually matters. Keep it current —
 when an item is done, delete it rather than leaving it ticked.
@@ -83,15 +108,24 @@ when an item is done, delete it rather than leaving it ticked.
    §Next release built above and `release-2.8/RELEASE_NOTES.md`. The FRED feed went live
    2026-09-17 and 2.7.0 is live (confirmed 2026-09-18); what's left is an on-device pass (plug in
    the Pixel 8a). Store listing/screenshots don't mention the new tab.
+
+   **Then v2.9.0** (hosted AI brief + the slow-load fix), code complete on `feat/hosted-brief`,
+   85 tests green, **not built**. It is stacked on v2.8.0, so it ships after it. Needs the
+   `GEMINI_API_KEY` repo secret and one manual workflow run before it can be verified end to end.
+   Checklist: **`release-2.9/RELEASE_NOTES.md`** §Before uploading. Its on-device pass covers the
+   AI Brief tab *with no Gemini key saved*, which is the whole point of the release.
 1. **Watch ANR rate now that 2.7.0 is live** (confirmed 2026-09-18) — see the caveat above about
    overlapping vitals. This is the highest-value thing to look at, and the reason is specific: the
    fix changed cancellation and timeout behaviour on every screen.
-2. **Does GitHub's schedule hit the report window?** The FRED feed has run with the secret since
-   2026-09-17. From about 2026-09-25, check a week of `gh run list --workflow fred-feed.yml
-   --limit 60`: do weekday runs land between 4:15 and 6 PM ET (20:15-22:00 UTC in EDT, 21:15-23:00
-   in EST)? On the first day 2 of 10 slots ran, neither in that window. Users with a key are
-   unaffected (their key comes first); keyless users' reports carry the previous FRED print when
-   no run lands in time. If that is common, more cron slots are the cheap fix.
+2. **Did the FRED cron respread work?** The old question is **answered, and the answer was no**:
+   six days of runs (2026-09-17..23) showed 2 of 10 slots a day, the 12:30 UTC slot firing 4-5¾h
+   late and the nine bunched evening slots collapsing into one run at ~22:5x UTC — *after* the
+   22:00 UTC report, every weekday. Keyless users' reports carried the previous publish the whole
+   time. Reading: GitHub coalesces a burst into one run. v2.9.0 respreads the cron to four slots an
+   hour apart (`15 20-23 * * 1-5`). **Now check whether an evening run lands before 22:00 UTC**
+   (`gh run list --workflow fred-feed.yml --limit 60`). If not, the trigger has to leave GitHub's
+   scheduler. Softening it: at that hour DFII10 and DGS2 only reach the previous business day
+   anyway, so T10YIE is what's actually missed — the real loss is redundancy.
 3. **PDF "Open" tile on a gap day.** The one v2.6.0 fix never confirmed in the wild — the old bug
    (previous close shown as the open) was only visible when the previous close fell outside the
    day's range. One look, next time gold gaps.
@@ -110,9 +144,9 @@ when an item is done, delete it rather than leaving it ticked.
    live full description was never confirmed against `store/STORE_LISTING.md`; the Play R8
    recommendation card was never read (the build already runs R8 full mode, so it is almost
    certainly generic). All store-side, no release needed, can land any time.
-8. **`actions/checkout@v4` → `@v7` in `.github/workflows/fred-feed.yml`** (on `master`). Every run
-   warns that v4 targets Node 20 and GitHub forces it onto Node 24. Harmless today; v7.0.1 is the
-   current release and runs on Node 24. One line; offered 2026-09-17, not done.
+8. **Gemini free-tier grounding allowance vs the brief feed's ~24 calls a day.** Worth checking
+   once against the account before the `GEMINI_API_KEY` secret goes in. `MIN_AGE_MINUTES` in
+   `.github/brief-feed/build_brief.py` is the single constant that bounds it.
 9. **iOS Phase 2** — parked, needs a Mac. `ios/APPLE_RELEASE_PLAN.md`. Do **not** run it in
    parallel with the API 37 work; both touch `shared/build.gradle.kts` and the Kotlin version.
 
@@ -133,6 +167,16 @@ when an item is done, delete it rather than leaving it ticked.
   on `refresh()`, and a Retry button. Also stops `fetchLiveQuotes` minting a duplicate Drive
   spreadsheet on any transient failure. Verified on a Pixel 8a: radios off → error + RETRY button
   instead of a spinner, recovers when tapped. See `release-2.7/RELEASE_NOTES.md`.
+  **v2.9.0 / versionCode 17** — **code complete on `feat/hosted-brief`, not built** (2026-09-23).
+  The AI brief moves to a hosted hourly feed and off the critical path: `refresh()` now runs the
+  market fetch and the brief fetch as two parallel jobs, so the Gold Index and charts no longer
+  wait on a 15-60s grounded Gemini call, and the AI Brief and News tabs work with no key at all.
+  The key fields are collapsed behind "Use your own API keys" in Settings under a new DATA SOURCES
+  card. **The hosted FRED feed also stops being report-only** — the app reads it too, so a keyless
+  Gold Index works, which is what makes "no API keys needed" true. Also respreads the FRED cron
+  after six days of runs showed GitHub firing 2 of 10 slots and never before the 6 PM report, and
+  bumps `checkout@v4` → `@v7`. 85 tests. Stacked on v2.8.0.
+  See `release-2.9/RELEASE_NOTES.md`.
   **v2.8.0 / versionCode 16** — **signed AAB rebuilt 2026-09-17, not uploaded** (gate left: an
   on-device pass; 2.7.0 and the FRED feed are both live). The 20 Days tab replaces the Dollar tab
   (HMAI + VIX deleted); the 6 PM report reads the hosted FRED feed so keyless users get every FRED row (a
@@ -203,6 +247,8 @@ when an item is done, delete it rather than leaving it ticked.
   Dollar tab) and `util/formatDecimals` (expect/actual); deps: kotlinx-datetime.
   `androidTarget` only for now; iOS targets get enabled on the Mac (Phase 2). The app depends on `:shared`.
 - `.github/workflows/fred-feed.yml` + `.github/fred-feed/build_feed.py` (hosted FRED feed, see below)
+- `.github/workflows/brief-feed.yml` + `.github/brief-feed/` (hosted AI brief: `build_brief.py`
+  and `mock_server.py`, a local stand-in for Yahoo + Gemini so it runs without a key)
 - `data/cb_quarterly.json` (hosted CB feed) · `release-2.0/` (v2.0 docs) · `ios/` (Apple plan) ·
   `release-2.0/cb-data/` (CB feed tool) · `research/` (Gold Index backtest: scripts + results; `cache/` gitignored,
   regenerate via `research/README.md`).
@@ -212,7 +258,7 @@ when an item is done, delete it rather than leaving it ticked.
 ## Build / test the shared module
 ```bash
 ./gradlew :shared:assembleDebug          # build the KMP android artifact
-./gradlew :app:testDebugUnitTest         # 64 tests (still run from :app for now)
+./gradlew :app:testDebugUnitTest         # 85 tests (still run from :app for now)
 ```
 
 ## Branch model
@@ -227,7 +273,7 @@ when an item is done, delete it rather than leaving it ticked.
 ```bash
 source /home/sun/option_android/android_env.sh   # this Linux box only
 ./gradlew :app:assembleDebug                      # debug build
-./gradlew :app:testDebugUnitTest                  # 64 tests (Gold Index 19 + drivers 12 + FRED feed 6 + report 17 + schedule 8 + research dumps 2)
+./gradlew :app:testDebugUnitTest                  # 85 tests (Gold Index 19 + drivers 12 + FRED feed 6 + brief feed 10 + brief JSON 5 + brief merge 6 + report 17 + schedule 8 + research dumps 2)
 ./gradlew :app:bundleRelease                       # signed Play AAB (needs keystore.properties)
 ```
 
@@ -251,10 +297,14 @@ adb shell run-as com.sun.aurum.debug cat files/symbol_cache.json
 ```
 
 ### Hosted FRED feed (GitHub Action → `fred-data` branch)
-Why: the 6 PM report scores the FRED components for every user without shipping the owner's key
-(FRED's terms make the key holder "solely responsible" for all use, and every install's worker fires
-at 18:00 ET: ~40 phones × 3 calls hits the ~120 req/min per-key limit). Interactive refreshes keep
-using each user's own key — the owner's call, 2026-09-16.
+Why: the app scores the FRED components for every user without shipping the owner's key (FRED's
+terms make the key holder "solely responsible" for all use, and every install's worker fires at
+18:00 ET: ~40 phones × 3 calls hits the ~120 req/min per-key limit). The feed is a static file on
+GitHub, not an API call, so serving it to everyone costs FRED nothing.
+**Scope changed in v2.9.0:** it was report-only (the owner's call, 2026-09-16), which left a keyless
+user's Gold Index blank everywhere except the PDF. `DataRepository` now downloads it too, lazily —
+a user whose own key works never fetches it. Revert by dropping the `fromFeed` fallback in
+`buildSymbolState`.
 - **Runs by itself** on GitHub: weekdays every 20 min 20:10–22:50 UTC (covers the 4:15 PM ET H.15
   post → 6 PM report in both EDT and EST) + 12:30 UTC. Publishes only when data changed; each
   publish force-pushes a single orphan commit (`fred_daily.json` + README) to `fred-data`.
@@ -266,13 +316,14 @@ using each user's own key — the owner's call, 2026-09-16.
   secrets or start runs. Git pushes go over SSH and work.
 - **Live since 2026-09-17** (first run 20:42 ET). At that hour DFII10 and DGS2 reached the previous
   business day and T10YIE the same day; the "FRED feed through <date>" commit shows the latest.
-- **Order in the report:** the user's own key first, the feed only when that fetch comes back empty
-  (no key, or it failed). The first build had the feed first; fixed 2026-09-17 (`2b9b7df`) because
-  GitHub delays or skips scheduled runs. On the feed's first full weekday it ran 2 of 10 slots,
-  neither between the 4:15 PM post and the 6 PM report, so keyed users would have got the previous
-  day's yields. Keyless users still depend on the schedule; check whether it settles.
+- **Order:** the user's own key first, the feed only when that fetch comes back empty (no key, or
+  it failed). The first build had the feed first; fixed 2026-09-17 (`2b9b7df`) because GitHub delays
+  or skips scheduled runs. Note this is the **opposite** of the AI brief feed's order, and the
+  reason is that here the key is the fresher source while there it is the slower one.
 - **Failure = safe:** bad key / FRED down / short, stale or out-of-range data → the run fails,
-  nothing is published, GitHub emails the owner. The app drops any series older than 10 days.
+  nothing is published, GitHub emails the owner. The app drops any series older than 10 days, and a
+  dropped series shows as "No FRED data — pull to refresh" rather than as a missing key (the
+  `keyRequired` flag now means "neither the key nor the feed produced data").
 - **Run-page notices (2026-09-17), both harmless:** `actions/checkout@v4` targets Node 20 (GitHub
   forces Node 24; bump to `@v7`, see Open items), and `ubuntu-latest` moves to Ubuntu 26 from
   2026-10-19 (nothing to do: `build_feed.py` uses only the Python standard library).
@@ -281,9 +332,48 @@ using each user's own key — the owner's call, 2026-09-16.
   feed" → Enable / Run workflow.
 - **Required notice** (FRED API ToU, applies with or without a key): "This product uses the FRED® API
   but is not endorsed or certified by the Federal Reserve Bank of St. Louis." + a link to the ToU and
-  users agreeing to it. Lives in Settings (FRED card), the 20 Days tab, TERMS.md §3a, PRIVACY.md §3.
+  users agreeing to it. Lives in Settings (DATA SOURCES card — deliberately *outside* the collapsible
+  keys section, so collapsing it never hides the notice), the 20 Days tab, TERMS.md §3a, PRIVACY.md §3.
 - Local test without a key: `FRED_API_BASE=http://127.0.0.1:PORT FRED_API_KEY=x python3
   .github/fred-feed/build_feed.py --out /tmp/f.json` against a mock (see research log for how it was done).
+
+### Hosted AI brief feed (GitHub Action → `brief-data` branch)
+Why: the grounded Gemini call takes 15-60s, which made it the slowest thing in the app, and without
+a key the AI Brief and News tabs were simply empty. The Action generates the brief centrally with
+the owner's key so every install reads a ~200ms static file instead.
+- **Runs by itself** on GitHub: hourly at :05, **every day** (gold trades Sunday evening ET).
+  The cron is an upper bound, not a promise — `build_brief.py` skips any run that finds a published
+  brief younger than **50 minutes** (`MIN_AGE_MINUTES`) and exits 0. That guard, not the cron, is
+  what caps spend at ~24 grounded calls a day however often GitHub fires. Each publish force-pushes
+  a single orphan commit (`brief_daily.json` + README) to `brief-data`.
+  App URL: `https://raw.githubusercontent.com/bull88protocol/aurum/brief-data/brief_daily.json`.
+- **Secret:** `GEMINI_API_KEY` (repo Settings → Secrets and variables → Actions). Never in the app,
+  never in the repo. The key travels in the `x-goog-api-key` **header**, never in a URL, so it
+  cannot leak into a run log. **Not set yet** — until it is, runs skip with a warning.
+- **Order in the app — the reverse of FRED, on purpose.** The feed comes first and a user's own key
+  second. FRED's rule (user's key first) is right there because a live fetch is *fresher* than the
+  last GitHub run. Here the user's key is the *slow* path, so the app paints the feed brief at once
+  and replaces it with their own when the 15-60s call returns. A user's own brief less than an hour
+  old (`DataRepository.OWN_KEY_FRESH_MS`) is kept as-is and no call is made at all.
+- **Two jobs, not one.** `MainViewModel.refresh()` runs the market fetch and the brief fetch in
+  parallel; only the market job drives the pull-to-refresh spinner. The brief job's stage two waits
+  on the market job so the prompt is anchored to the freshly fetched quote (the v2.6.0 consistency
+  rule). `SymbolState.carryingBriefFrom` / `withBrief` keep the two writers off each other's fields.
+- **Provenance is shown.** A feed brief was written against the price at generation time, which can
+  be an hour behind the quote on the Gold tab, so the tab prints "Shared brief · written 6:54 PM,
+  23 Sep" rather than implying it is live.
+- **Failure = safe:** bad key / Gemini down / a brief that fails validation (missing prose, fewer
+  than 2 news items, a news item with no URL) → the run fails, nothing is published, GitHub emails
+  the owner. The app drops any brief older than 12 hours (`BriefFeedClient.MAX_STALE_HOURS`).
+- **The wire format is a *parsed* brief, not a model response** — `GeminiResultJson`'s field names,
+  which the disk cache also uses. So `build_brief.py` and `GeminiClient.kt` may word their prompts
+  differently without the app ever mis-parsing a feed: prompt drift costs quality, never
+  correctness. `BriefFeedClientTest.parses_real_output_from_the_feed_generator` pins that contract
+  against a committed fixture of real generator output.
+- Local test without a key: `python3 .github/brief-feed/mock_server.py &` then
+  `GEMINI_API_BASE=http://127.0.0.1:8731 YAHOO_API_BASE=http://127.0.0.1:8731 GEMINI_API_KEY=x
+  python3 .github/brief-feed/build_brief.py --out /tmp/b.json`. The mock asserts the key stays in
+  the header; `--thin` makes it return a brief that should fail validation.
 
 ### Google Sign-In / OAuth (Cloud Console — the SHA-1 trap)
 Sign-In powers only the **optional** Sheets sync (`GoogleAuthManager`, scope `drive.file`); quotes
@@ -330,7 +420,8 @@ Feature-branch job (`api-37`); do not start it while a release is in review.
 ## Key docs
 - `ios/APPLE_RELEASE_PLAN.md` · `ios/APP_STORE_SUBMISSION_CHECKLIST.md` · `ios/MAC_SETUP.md`
 - `release-2.0/RESUME.md` (v2.0 handoff) · `release-2.0/CHANGELOG.md` · `release-2.0/NEXT_RELEASE_PLAN.md`
-- `release-2.8/RELEASE_NOTES.md` (next release, built) · `release-2.7/RELEASE_NOTES.md` (live) · `release-2.6/RELEASE_NOTES.md`
+- `release-2.9/RELEASE_NOTES.md` (hosted AI brief, code complete) ·
+  `release-2.8/RELEASE_NOTES.md` (next release, built) · `release-2.7/RELEASE_NOTES.md` (live) · `release-2.6/RELEASE_NOTES.md`
 - `research/DRIVERS_20D_2026-09-16.md` (20 Days tab: why it is a nowcast, the shipped spec, parity)
 - `api-37/API_37_UPGRADE_PLAN.md` (next forced Android work — AGP 9 / Gradle 9 / Kotlin 2)
 - `TESTING.md` (tester onboarding) · `README.md` · `PRIVACY.md` · `TERMS.md`

@@ -100,7 +100,7 @@ object GoldIndexEngine {
     private fun scoreRealYield(obs: List<FredObs>): GoldComponentScore {
         if (obs.size < 5) return GoldComponentScore(
             name = "Real Yield Pressure", score = 50f, label = "N/A",
-            detail = "FRED API key required → Settings", available = false, keyRequired = true,
+            detail = "No FRED data — pull to refresh", available = false, keyRequired = true,
         )
         val vals = obs.map { it.value }
         val current = vals.last()
@@ -148,7 +148,7 @@ object GoldIndexEngine {
     private fun scoreInflation(obs: List<FredObs>): GoldComponentScore {
         if (obs.size < 5) return GoldComponentScore(
             name = "Inflation Expectations", score = 50f, label = "N/A",
-            detail = "FRED API key required → Settings", available = false, keyRequired = true,
+            detail = "No FRED data — pull to refresh", available = false, keyRequired = true,
         )
         val vals = obs.map { it.value }
         val current = vals.last()
@@ -359,7 +359,7 @@ object GoldIndexEngine {
     private fun scoreRealRateRegime(obs: List<FredObs>): GoldComponentScore {
         if (obs.size < 5) return GoldComponentScore(
             name = "Real-Rate Regime", score = 50f, label = "N/A",
-            detail = "FRED API key required → Settings", available = false, keyRequired = true,
+            detail = "No FRED data — pull to refresh", available = false, keyRequired = true,
         )
         val vals = obs.map { it.value }
         val current = vals.last()
@@ -395,7 +395,7 @@ object GoldIndexEngine {
     private fun scoreFedCycle(obs: List<FredObs>): GoldComponentScore {
         if (obs.size < 60) return GoldComponentScore(
             name = "Fed Cycle (2Y)", score = 50f, label = "N/A",
-            detail = "FRED API key required → Settings", available = false, keyRequired = true,
+            detail = "No FRED data — pull to refresh", available = false, keyRequired = true,
         )
         val vals = obs.map { it.value }
         val delta = vals.last() - vals[maxOf(0, vals.size - 63)]  // 3M change; fall = easing = bullish

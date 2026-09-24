@@ -14,6 +14,7 @@ import com.sun.aurum.data.DataRepository
 import com.sun.aurum.data.GoogleAuthManager
 import com.sun.aurum.data.SecurePrefs
 import com.sun.aurum.model.SymbolState
+import com.sun.aurum.model.withBrief
 import com.sun.aurum.network.FredFeedClient
 import com.sun.aurum.report.GoldReportContent
 import com.sun.aurum.report.GoldReportPdf
@@ -31,24 +32,37 @@ class DailyRefreshWorker(ctx: Context, params: WorkerParameters) : CoroutineWork
 
         val states = mutableMapOf<String, SymbolState>()
         val accessToken    = googleAuth.getAccessToken()
-        // The report is the one place the hosted FRED feed is used, so the PDF scores the FRED
-        // components for users without a key. A user's own key still comes first (a fetch now has
-        // the latest print); the feed only fills in where that fetch comes back empty. Everywhere
-        // else the app reads FRED with the user's own key alone.
+        // Fetched here rather than left to DataRepository because the PDF needs to know whether a
+        // feed was available at all (see hasFredKey below). A user's own key still comes first —
+        // a fetch now has the latest print; the feed only fills in where that comes back empty.
         val fredFeed       = FredFeedClient().fetch()
         val updatedSheetId = repo.fetchAll(
             symbols      = MainViewModel.SYMBOLS,
             accessToken  = accessToken,
             sheetId      = prefs.googleSheetId.ifBlank { null },
-            geminiKey    = prefs.geminiApiKey,
             fredKey      = prefs.fredApiKey,
             fredFeed     = fredFeed,
-            forceGemini  = true,   // new day — always get fresh briefing
         ) { state -> states[state.symbol] = state }
 
         if (updatedSheetId != null && updatedSheetId != prefs.googleSheetId) {
             prefs.googleSheetId = updatedSheetId
         }
+
+        // The brief, which the interactive app now loads on its own job, has to be fetched
+        // explicitly here — the report has to carry one. Unlike the app this waits for both
+        // stages: nothing is on screen, and a report is worth the extra minute. The hosted feed
+        // means the PDF has a brief even for users with no Gemini key of their own, which is the
+        // same reason the report reads the hosted FRED feed.
+        val gold = GoldReportContent.GOLD
+        var brief = repo.loadBrief(gold)
+        if (prefs.geminiApiKey.isNotBlank() && brief?.ownKeyFresh != true) {
+            brief = repo.refreshBriefWithOwnKey(gold, prefs.geminiApiKey, states[gold]?.quote) ?: brief
+        }
+        states[gold] = (states[gold] ?: SymbolState(gold)).withBrief(
+            brief        = brief?.result,
+            fromFeed     = brief?.fromFeed == true,
+            generatedUtc = brief?.generatedUtc,
+        )
         repo.saveCache(states)
 
         // The whole point of the 9 AM run: turn the day's fetch into a PDF now, while the data is
@@ -59,7 +73,9 @@ class DailyRefreshWorker(ctx: Context, params: WorkerParameters) : CoroutineWork
             states       = states,
             // With the feed in hand, a missing FRED component is a load failure, not a missing key.
             hasFredKey   = prefs.fredApiKey.isNotBlank() || !fredFeed.isNullOrEmpty(),
-            hasGeminiKey = prefs.geminiApiKey.isNotBlank(),
+            // With the hosted brief in hand, a missing brief is a load failure, not a missing
+            // key — the same rule as hasFredKey above.
+            hasGeminiKey = prefs.geminiApiKey.isNotBlank() || brief != null,
         )
         showNotification(report, states[GoldReportContent.GOLD])
         schedule(applicationContext) // re-schedule for next 9 AM

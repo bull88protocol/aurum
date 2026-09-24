@@ -97,7 +97,7 @@ class DriversFragment : Fragment() {
         binding.driversBar.progressTintList = ColorStateList.valueOf(color)
 
         val banner = report.legs.filter { !it.available }.joinToString("\n") { leg ->
-            if (leg.keyRequired) "Add a free FRED key in Settings to include ${shortName(leg)}."
+            if (leg.keyRequired) "No real-yield data right now — pull to refresh. A free FRED key in Settings is the backup."
             else "Couldn't load ${shortName(leg)} (pull to refresh)."
         }
         binding.tvDriversMissing.visibility = if (banner.isEmpty()) View.GONE else View.VISIBLE
@@ -163,7 +163,7 @@ class DriversFragment : Fragment() {
         row.addView(TextView(ctx).apply {
             text = when {
                 leg.available   -> legDetail(leg)
-                leg.keyRequired -> "Needs a FRED key (Settings)"
+                leg.keyRequired -> "No FRED data — pull to refresh"
                 else            -> "Not enough data yet"
             }
             textSize = 11f

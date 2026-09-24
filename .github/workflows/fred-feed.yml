@@ -2,10 +2,10 @@
 #
 # Fetches the three FRED series the Gold Index reads (DFII10, T10YIE, DGS2) with the maintainer's
 # FRED key, stored as the repository secret FRED_API_KEY and never shipped in the app, and publishes
-# them as one JSON file on the `fred-data` branch. Every install's report worker downloads that file
-# from raw.githubusercontent.com, so the maintainer's key makes a handful of requests a day however
-# many users there are. The report uses the feed only for users without a key of their own, or when
-# their fetch fails; a user's own key always comes first, and interactive refreshes use nothing else.
+# them as one JSON file on the `fred-data` branch. Every install downloads that file from
+# raw.githubusercontent.com, so the maintainer's key makes a handful of requests a day however many
+# users there are. The app uses the feed only for users without a key of their own, or when their
+# fetch fails; a user's own key always comes first, since a live fetch has FRED's latest print.
 #
 # Runs by itself on GitHub's servers, nothing to do by hand. To force a refresh: Actions tab >
 # "FRED feed" > Run workflow. A failed run (bad key, FRED down, suspicious data) publishes nothing
@@ -16,10 +16,17 @@ name: FRED feed
 on:
   schedule:
     # Cron is UTC and ignores daylight saving. The Fed posts H.15 at 4:15 PM ET: 20:15 UTC in summer
-    # (EDT), 21:15 UTC in winter (EST). The report runs at 6 PM ET: 22:00 / 23:00 UTC. A run every
-    # 20 minutes from 20:10 to 22:50 UTC on weekdays covers that gap in both seasons and rides out
-    # GitHub's scheduling delays. A run that finds nothing new publishes nothing.
-    - cron: "10,30,50 20-22 * * 1-5"
+    # (EDT), 21:15 UTC in winter (EST). The report runs at 6 PM ET: 22:00 / 23:00 UTC.
+    #
+    # These slots were every 20 minutes from 20:10 to 22:50, nine of them, on the theory that
+    # density rides out GitHub's scheduling delays. Six days of runs (2026-09-17..23) say the
+    # opposite: GitHub fired 2 of 10 slots a day and collapsed the whole bunched window into a
+    # single run at ~22:5x UTC, i.e. AFTER the 6 PM report every single weekday, while the lone
+    # 12:30 slot fired every day but 4-5 hours late. Reading of that: a burst is coalesced into
+    # one run, so spread slots an hour apart instead and let each be late on its own. Watch
+    # whether an evening run now lands before 22:00 UTC; if not, the trigger has to move off
+    # GitHub's scheduler. A run that finds nothing new publishes nothing.
+    - cron: "15 20-23 * * 1-5"
     # Morning catch-up for late postings and revisions.
     - cron: "30 12 * * 1-5"
   workflow_dispatch:
@@ -50,7 +57,7 @@ jobs:
             echo "::warning::Repository secret FRED_API_KEY is not set, so nothing was fetched. Add it under Settings > Secrets and variables > Actions."
           fi
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         if: steps.key.outputs.configured == 'true'
         with:
           sparse-checkout: .github/fred-feed

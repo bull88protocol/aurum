@@ -91,6 +91,14 @@ class SettingsActivity : AppCompatActivity() {
             AppCompatDelegate.setDefaultNightMode(mode)
         }
 
+        // Data sources — the key fields are collapsed behind "Use your own API keys". Both the
+        // Gold Index's FRED components and the AI brief now come from the app's hosted feeds by
+        // default, so a key is an optional upgrade (fresher data, generated per refresh) rather
+        // than the setup step it used to be, and the section stays shut unless someone wants it.
+        renderDataSourceSummary()
+        binding.rowAdvancedKeys.setOnClickListener { setAdvancedKeysExpanded(!advancedKeysExpanded) }
+        setAdvancedKeysExpanded(advancedKeysExpanded)
+
         // Gemini key — the field starts empty even when a key is stored; only the masked summary
         // is shown. Typing a new key replaces the stored one.
         renderKeyStatus(binding.tvGeminiKeyStatus, prefs.geminiApiKey)
@@ -103,12 +111,14 @@ class SettingsActivity : AppCompatActivity() {
             prefs.geminiApiKey = entered
             binding.etGeminiKey.setText("")
             renderKeyStatus(binding.tvGeminiKeyStatus, prefs.geminiApiKey)
+            renderDataSourceSummary()
             Toast.makeText(this, "Gemini key saved", Toast.LENGTH_SHORT).show()
         }
         binding.btnClear.setOnClickListener {
             prefs.geminiApiKey = ""
             binding.etGeminiKey.setText("")
             renderKeyStatus(binding.tvGeminiKeyStatus, prefs.geminiApiKey)
+            renderDataSourceSummary()
             Toast.makeText(this, "Gemini key cleared", Toast.LENGTH_SHORT).show()
         }
         binding.btnGeminiTest.setOnClickListener {
@@ -143,12 +153,14 @@ class SettingsActivity : AppCompatActivity() {
             prefs.fredApiKey = entered
             binding.etFredKey.setText("")
             renderKeyStatus(binding.tvFredKeyStatus, prefs.fredApiKey)
+            renderDataSourceSummary()
             Toast.makeText(this, "FRED key saved", Toast.LENGTH_SHORT).show()
         }
         binding.btnFredClear.setOnClickListener {
             prefs.fredApiKey = ""
             binding.etFredKey.setText("")
             renderKeyStatus(binding.tvFredKeyStatus, prefs.fredApiKey)
+            renderDataSourceSummary()
             Toast.makeText(this, "FRED key cleared", Toast.LENGTH_SHORT).show()
         }
         binding.btnFredTest.setOnClickListener {
@@ -216,6 +228,31 @@ class SettingsActivity : AppCompatActivity() {
             "Optional — sign in to sync your data to your own Google Sheet. Quotes use Yahoo Finance either way."
         binding.btnGoogleSignIn.visibility  = if (signedIn) View.GONE  else View.VISIBLE
         binding.btnGoogleSignOut.visibility = if (signedIn) View.VISIBLE else View.GONE
+    }
+
+    // ── Data sources ──────────────────────────────────────────────────────────
+
+    private var advancedKeysExpanded = false
+
+    private fun setAdvancedKeysExpanded(expanded: Boolean) {
+        advancedKeysExpanded = expanded
+        binding.advancedKeysBody.visibility = if (expanded) View.VISIBLE else View.GONE
+        binding.tvAdvancedKeysChevron.text = if (expanded) "▴" else "▾"
+    }
+
+    /**
+     * One line saying what the app is actually reading. The two keys are independent — a user can
+     * hold one and not the other — so it names them rather than collapsing to on/off.
+     */
+    private fun renderDataSourceSummary() {
+        val fred   = prefs.fredApiKey.isNotBlank()
+        val gemini = prefs.geminiApiKey.isNotBlank()
+        binding.tvDataSourceSummary.text = when {
+            fred && gemini -> "Using your own FRED and Gemini keys. The Gold Index reads FRED directly, and the AI brief is written against the live price each time you refresh."
+            fred           -> "Using your own FRED key for the Gold Index. The AI brief comes from the app's shared feed, refreshed about hourly."
+            gemini         -> "Using your own Gemini key for the AI brief, written against the live price each time you refresh. Gold Index components come from the app's shared feed."
+            else           -> "Using the app's built-in data feeds — no API keys needed. Gold Index components and the AI brief are kept up to date for you; the brief is refreshed about hourly."
+        }
     }
 
     /**

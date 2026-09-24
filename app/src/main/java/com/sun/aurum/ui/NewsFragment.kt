@@ -49,18 +49,18 @@ class NewsFragment : Fragment() {
         if (state.news.isEmpty()) {
             binding.newsScroll.visibility = View.GONE
             binding.newsEmptyState.visibility = View.VISIBLE
-            if (vm.hasGeminiKey) {
-                binding.tvNewsEmptyMsg.text =
-                    "No news loaded yet. Pull down to refresh and fetch today's gold headlines."
-                binding.btnNewsAction.text = "Refresh"
-                binding.btnNewsAction.setOnClickListener { vm.refresh() }
-            } else {
-                binding.tvNewsEmptyMsg.text =
-                    "Add a free Gemini key to see the latest gold-market headlines, pulled fresh each day with links to the source."
-                binding.btnNewsAction.text = "Add Gemini Key"
-                binding.btnNewsAction.setOnClickListener {
-                    startActivity(Intent(requireContext(), SettingsActivity::class.java))
-                }
+            // Headlines ride along with the AI brief, and since v2.9.0 that arrives from the
+            // shared feed with or without a key — so an empty list means the fetch hasn't landed,
+            // not that the user is locked out.
+            binding.tvNewsEmptyMsg.text = when {
+                state.briefLoading -> "Loading today's gold headlines…"
+                vm.hasGeminiKey    -> "No news loaded yet. Pull down to refresh and fetch today's gold headlines."
+                else               -> "No news loaded yet — the shared brief couldn't be reached. Pull down to try again, or add your own free Gemini key in Settings to pull headlines on every refresh."
+            }
+            binding.btnNewsAction.text = if (vm.hasGeminiKey) "Refresh" else "Add Gemini Key"
+            binding.btnNewsAction.setOnClickListener {
+                if (vm.hasGeminiKey) vm.refresh()
+                else startActivity(Intent(requireContext(), SettingsActivity::class.java))
             }
             return
         }

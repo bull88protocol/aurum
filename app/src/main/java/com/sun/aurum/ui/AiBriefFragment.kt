@@ -48,18 +48,18 @@ class AiBriefFragment : Fragment() {
         if (!hasBrief) {
             binding.aiScroll.visibility = View.GONE
             binding.aiEmptyState.visibility = View.VISIBLE
-            if (vm.hasGeminiKey) {
-                binding.tvAiEmptyMsg.text =
-                    "No AI brief loaded yet. Pull down to refresh and fetch today's analysis."
-                binding.btnAiAction.text = "Refresh"
-                binding.btnAiAction.setOnClickListener { vm.refresh() }
-            } else {
-                binding.tvAiEmptyMsg.text =
-                    "Add a free Gemini key to unlock daily AI analysis — market sentiment, a last-session recap, the next-session outlook, and the key factors moving gold."
-                binding.btnAiAction.text = "Add Gemini Key"
-                binding.btnAiAction.setOnClickListener {
-                    startActivity(Intent(requireContext(), SettingsActivity::class.java))
-                }
+            // Since v2.9.0 a key is no longer what stands between the user and a brief — the
+            // shared feed gives everyone one. So the empty state means the fetch hasn't landed
+            // or couldn't reach the feed, and the offer of a key is about freshness, not access.
+            binding.tvAiEmptyMsg.text = when {
+                state.briefLoading  -> "Loading today's gold brief…"
+                vm.hasGeminiKey     -> "No AI brief loaded yet. Pull down to refresh and fetch today's analysis."
+                else                -> "No AI brief loaded yet — the shared brief couldn't be reached. Pull down to try again, or add your own free Gemini key in Settings for a brief written against the live price each time you refresh."
+            }
+            binding.btnAiAction.text = if (vm.hasGeminiKey) "Refresh" else "Add Gemini Key"
+            binding.btnAiAction.setOnClickListener {
+                if (vm.hasGeminiKey) vm.refresh()
+                else startActivity(Intent(requireContext(), SettingsActivity::class.java))
             }
             return
         }
@@ -76,6 +76,8 @@ class AiBriefFragment : Fragment() {
             }
         )
         binding.tvAiScore.text = "Score: ${state.geminiScore ?: "--"}/100"
+
+        renderProvenance(state)
 
         binding.tvAiDescription.text = state.geminiDescription ?: ""
         binding.tvAiDescription.visibility = if (state.geminiDescription.isNullOrBlank()) View.GONE else View.VISIBLE
@@ -94,6 +96,33 @@ class AiBriefFragment : Fragment() {
         binding.tvAiFactors.text = state.geminiKeyFactors.joinToString("\n") { "• $it" }
         binding.tvAiFactors.visibility = if (state.geminiKeyFactors.isEmpty()) View.GONE else View.VISIBLE
     }
+
+
+    /**
+     * Says where the brief came from. A feed brief was written up to an hour ago against the price
+     * at that moment, so its numbers can disagree with the quote on the Gold tab — which is exactly
+     * the inconsistency v2.6.0 set out to remove, and the honest fix is to date it rather than
+     * pretend it is live. A brief from the user's own key is current by construction, so it says
+     * nothing unless a fresher one is on its way.
+     */
+    private fun renderProvenance(state: SymbolState) {
+        val text = when {
+            state.briefLoading && state.briefFromFeed -> "Shared brief — refreshing with your Gemini key…"
+            state.briefLoading                        -> "Refreshing…"
+            state.briefFromFeed                       -> "Shared brief" + formatGeneratedAt(state.briefGeneratedUtc)
+            else                                      -> null
+        }
+        binding.tvAiProvenance.text = text ?: ""
+        binding.tvAiProvenance.visibility = if (text == null) View.GONE else View.VISIBLE
+    }
+
+    /** " · written 6:54 PM, 23 Sep" in the device's own time zone, or "" if the stamp is unusable. */
+    private fun formatGeneratedAt(generatedUtc: String?): String = try {
+        val at = java.time.Instant.parse(generatedUtc)
+        " · written " + java.time.format.DateTimeFormatter.ofPattern("h:mm a, d MMM")
+            .withZone(java.time.ZoneId.systemDefault())
+            .format(at)
+    } catch (e: Exception) { "" }
 
     override fun onDestroyView() {
         super.onDestroyView()

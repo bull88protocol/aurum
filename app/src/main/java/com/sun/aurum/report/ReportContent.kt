@@ -272,7 +272,7 @@ object GoldReportContent {
         val (needKey, noData) = unavailable.partition { it.keyRequired || !hasFredKey }
         fun names(list: List<GoldComponentScore>) = list.joinToString(" · ") { it.name.substringBefore(" (") }
         val lines = buildList {
-            if (needKey.isNotEmpty()) add("Add a free FRED key in Settings to score: ${names(needKey)}.")
+            if (needKey.isNotEmpty()) add("Couldn't reach FRED data to score: ${names(needKey)}. Open the app and pull to refresh, or add a free FRED key in Settings.")
             if (noData.isNotEmpty())  add("Couldn't load: ${names(noData)}. Open the app and pull to refresh.")
         }
         return Block.Note(lines.joinToString(" "), Band.MID)
