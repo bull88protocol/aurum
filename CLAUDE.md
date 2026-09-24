@@ -117,10 +117,19 @@ when an item is done, delete it rather than leaving it ticked.
    same day, since GitHub only schedules from the default branch. Checklist:
    **`release-2.9/RELEASE_NOTES.md`** §Before uploading. Its on-device pass covers the AI Brief
    tab *with no Gemini key saved*, which is the whole point of the release.
-1. **Watch ANR rate now that 2.7.0 is live** (confirmed 2026-09-18) — see the caveat above about
+1. **LIVE BUG: the shipped app asks Gemini for a retired model.** v2.7.0 (production) calls
+   `gemini-2.5-flash`, which Google retired on/before 2026-09-24 to *"no longer available to new
+   users"*. A key created **after** that date answers **404**, `fetchAnalysisAndNews` swallows it
+   into null, and the AI Brief and News tabs sit empty with nothing explaining why. Existing keys
+   whose project already used 2.5-flash are grandfathered, so this hits **new users only** —
+   which is also why no one has reported it. Fixed on `feat/hosted-brief` (v2.9.0) by moving both
+   the app and the feed to the alias `gemini-flash-latest`. **This is now the strongest reason to
+   get v2.8.0 out and v2.9.0 behind it.** Discovered by the first real Gemini call ever made from
+   the feed; every mock in the repo had been answering happily.
+2. **Watch ANR rate now that 2.7.0 is live** (confirmed 2026-09-18) — see the caveat above about
    overlapping vitals. This is the highest-value thing to look at, and the reason is specific: the
    fix changed cancellation and timeout behaviour on every screen.
-2. **Did the FRED cron respread work?** The old question is **answered, and the answer was no**:
+3. **Did the FRED cron respread work?** The old question is **answered, and the answer was no**:
    six days of runs (2026-09-17..23) showed 2 of 10 slots a day, the 12:30 UTC slot firing 4-5¾h
    late and the nine bunched evening slots collapsing into one run at ~22:5x UTC — *after* the
    22:00 UTC report, every weekday. Keyless users' reports carried the previous publish the whole
@@ -129,28 +138,32 @@ when an item is done, delete it rather than leaving it ticked.
    (`gh run list --workflow fred-feed.yml --limit 60`). If not, the trigger has to leave GitHub's
    scheduler. Softening it: at that hour DFII10 and DGS2 only reach the previous business day
    anyway, so T10YIE is what's actually missed — the real loss is redundancy.
-3. **PDF "Open" tile on a gap day.** The one v2.6.0 fix never confirmed in the wild — the old bug
+4. **PDF "Open" tile on a gap day.** The one v2.6.0 fix never confirmed in the wild — the old bug
    (previous close shown as the open) was only visible when the previous close fell outside the
    day's range. One look, next time gold gaps.
-4. **Duplicate "Aurum Market Data" spreadsheets in Drive.** v2.7.0 stops new ones; it does **not**
+5. **Duplicate "Aurum Market Data" spreadsheets in Drive.** v2.7.0 stops new ones; it does **not**
    clean up existing ones. Delete strays by hand.
-5. **`resolveOpen` and the refresh-timeout paths have no unit tests** — `MainViewModel` needs a
+6. **`resolveOpen` and the refresh-timeout paths have no unit tests** — `MainViewModel` needs a
    context. (The other blocker, `org.json` being a throwing stub in unit tests, is fixed on
    `feat/20-day-drivers` by `testImplementation("org.json:json:20180813")`.) Moving the pure logic
    into `:shared` still fixes both; folded into `api-37/API_37_UPGRADE_PLAN.md` §4.
-6. **API 37 / Android 17** — the next *forced* work, and the only item with a deadline. Needs
+7. **API 37 / Android 17** — the next *forced* work, and the only item with a deadline. Needs
    AGP 9.1.1 + Gradle 9.3.1 + Kotlin 2.x (three major migrations; JDK 17 still fine). No Play
    deadline published; the annual pattern points at **August 2027**. Revisit Q1-Q2 2027.
    Plan, with a trial run behind it: `api-37/API_37_UPGRADE_PLAN.md`.
-7. **Store polish — consciously skipped 2026-09-04, not forgotten.** No screenshot shows the PDF
+8. **Store polish — consciously skipped 2026-09-04, not forgotten.** No screenshot shows the PDF
    report; `store/screenshots/02_*.png` still pictures the v1 forward card (stale since 2.2); the
    live full description was never confirmed against `store/STORE_LISTING.md`; the Play R8
    recommendation card was never read (the build already runs R8 full mode, so it is almost
    certainly generic). All store-side, no release needed, can land any time.
-8. **Gemini free-tier grounding allowance vs the brief feed's ~24 calls a day.** Worth checking
-   once against the account before the `GEMINI_API_KEY` secret goes in. `MIN_AGE_MINUTES` in
-   `.github/brief-feed/build_brief.py` is the single constant that bounds it.
-9. **iOS Phase 2** — parked, needs a Mac. `ios/APPLE_RELEASE_PLAN.md`. Do **not** run it in
+9. **BLOCKED: the Gemini account has no credits.** Every `generateContent` call on the owner's
+   key returns **402 "Your prepayment credits are depleted"** — account-wide, not specific to
+   grounding or to a model (verified 2026-09-24 against `gemini-flash-latest` with and without
+   tools). The Lambda is deployed and correct; it fails at exactly this point and publishes
+   nothing. Fix at **https://ai.studio/projects** → billing. Until then `brief-data` does not
+   exist and the app's AI Brief tab has no feed to read. Spend, once funded, is bounded by
+   `MIN_AGE_MINUTES` (50) in `.github/brief-feed/build_brief.py` at ~24 grounded calls/day.
+10. **iOS Phase 2** — parked, needs a Mac. `ios/APPLE_RELEASE_PLAN.md`. Do **not** run it in
    parallel with the API 37 work; both touch `shared/build.gradle.kts` and the Kotlin version.
 
 ## Platforms & status
