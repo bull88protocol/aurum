@@ -96,8 +96,10 @@ design meant to have ten chances a day has one.
 
 ## Cost and cadence of the brief feed
 
-The workflow asks hourly (`5 * * * *`, every day — gold trades Sunday evening ET), but
-`build_brief.py` skips any run that finds a published brief younger than 50 minutes and exits 0.
+The workflow asks twice an hour (`17,47 * * * *`, every day — gold trades Sunday evening ET), but
+`build_brief.py` skips any run that finds a published brief younger than 50 minutes and exits 0
+before the Gemini call, which is why extra slots cost nothing. (It started at `5 * * * *` and got
+zero runs in two hours; see CLAUDE.md §Hosted AI brief feed.)
 That guard, not the cron, is what bounds spend: at most ~24 grounded calls a day however often
 GitHub fires. **Check the Gemini free-tier allowance for Search-grounded requests against that
 number before enabling the secret** — `MIN_AGE_MINUTES` in `build_brief.py` is the one constant to

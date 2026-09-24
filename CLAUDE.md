@@ -344,11 +344,19 @@ a user whose own key works never fetches it. Revert by dropping the `fromFeed` f
 Why: the grounded Gemini call takes 15-60s, which made it the slowest thing in the app, and without
 a key the AI Brief and News tabs were simply empty. The Action generates the brief centrally with
 the owner's key so every install reads a ~200ms static file instead.
-- **Runs by itself** on GitHub: hourly at :05, **every day** (gold trades Sunday evening ET).
-  The cron is an upper bound, not a promise — `build_brief.py` skips any run that finds a published
-  brief younger than **50 minutes** (`MIN_AGE_MINUTES`) and exits 0. That guard, not the cron, is
-  what caps spend at ~24 grounded calls a day however often GitHub fires. Each publish force-pushes
-  a single orphan commit (`brief_daily.json` + README) to `brief-data`.
+- **Runs by itself** on GitHub: **:17 and :47 every hour, every day** (gold trades Sunday evening
+  ET). The cron is an upper bound, not a promise — `build_brief.py` skips any run that finds a
+  published brief younger than **50 minutes** (`MIN_AGE_MINUTES`) and exits 0 before the Gemini
+  call. That guard, not the cron, is what caps spend at ~24 grounded calls a day however often
+  GitHub fires, which is also why twice-hourly slots cost nothing. Each publish force-pushes a
+  single orphan commit (`brief_daily.json` + README) to `brief-data`.
+- **It started at `5 * * * *` and got nothing.** Two hours after going live on `master`
+  (2026-09-24 04:10 UTC), with the workflow showing `active`, GitHub had recorded **zero** runs —
+  not even a skipped one — across the 05:05 and 06:05 slots. Moved to `17,47 * * * *` on the
+  reading that round minutes near the top of the hour are the most contended on GitHub's shared
+  scheduler and the first dropped under load. **Unproven.** If the odd minutes also produce
+  nothing over a day, the problem is not minute choice and the trigger has to leave GitHub's
+  scheduler — see [[aurum-github-cron-unreliable]] and the Lambda option deferred 2026-09-23.
   App URL: `https://raw.githubusercontent.com/bull88protocol/aurum/brief-data/brief_daily.json`.
 - **Secret:** `GEMINI_API_KEY` (repo Settings → Secrets and variables → Actions). Never in the app,
   never in the repo. The key travels in the `x-goog-api-key` **header**, never in a URL, so it
