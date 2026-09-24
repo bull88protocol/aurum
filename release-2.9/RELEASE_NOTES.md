@@ -155,13 +155,20 @@ Changed:
 
 ## Before uploading
 
+**The feeds do not wait for this release.** GitHub runs scheduled workflows from the default
+branch alone, so `brief-feed.yml` and the respread `fred-feed.yml` were committed straight to
+`master` on 2026-09-24 (`3f1684b`) and are live there, independent of any app upload — the same
+way the FRED feed went live on 2026-09-17 while its app code sat on a branch. The owner added the
+`GEMINI_API_KEY` secret the same day. Only this branch's *app* code is gated below.
+
 1. **v2.8.0 must ship first** — it is one gate (an on-device pass) from done, and this branch is
    built on top of it.
-2. **Add the `GEMINI_API_KEY` repo secret** (Settings → Secrets and variables → Actions), signed
-   in as `bull88protocol` — the `gh` CLI on the Linux box is `CoinTranscend` and has read access
-   only. Until it exists, runs skip with a warning rather than failing.
-3. **Run the workflow by hand once** (Actions → "AI brief feed" → Run workflow; that path passes
-   `--force`) and confirm the `brief-data` branch appears with a sane `brief_daily.json`.
+2. **Confirm the brief feed is actually publishing** before shipping an app that depends on it:
+   `gh run list --workflow brief-feed.yml` for green runs, then
+   `git fetch origin brief-data && git show FETCH_HEAD:brief_daily.json`. A manual run needs the
+   `bull88protocol` login — the box's `gh` is `CoinTranscend` and gets HTTP 403 on dispatch.
+3. **Rebase onto the merged `master`.** Phase A's `.github/` commit is already there, so those
+   files should drop out of the rebase as duplicates.
 4. **On-device pass.** Specifically, with **no keys saved at all**: the AI Brief tab filling from
    the feed and showing the "Shared brief · written …" line; the **Gold Index scoring all five
    components** from the FRED feed (this is the part that never worked before); the Gold tab

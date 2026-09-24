@@ -95,9 +95,11 @@ clean, **nothing device-tested**. Start-here doc: **`release-2.9/RELEASE_NOTES.m
 2. Then steps 6-8 there: merge, tag `v2.8.0`, push, upload. Check the AAB's sha256 first.
    `master`'s CLAUDE.md has a pointer block to `feat/20-day-drivers` (added 2026-09-18); delete it
    in the merge.
-3. Only then v2.9.0: add the `GEMINI_API_KEY` repo secret, run the "AI brief feed" workflow by
-   hand once, confirm `brief-data` appears, then rebase `feat/hosted-brief` onto the merged
-   `master` and follow `release-2.9/RELEASE_NOTES.md` §Before uploading.
+3. Only then v2.9.0's app code: rebase `feat/hosted-brief` onto the merged `master` (Phase A's
+   `.github/` commit is already there, so those files drop out as duplicates) and follow
+   `release-2.9/RELEASE_NOTES.md` §Before uploading. **The feeds themselves are already done** —
+   both workflows went to `master` on 2026-09-24 (`3f1684b`) and the `GEMINI_API_KEY` secret was
+   added the same day; they run whether or not this app code has shipped.
 
 ## Open items (nothing here is blocking; reviewed 2026-09-23)
 
@@ -110,10 +112,11 @@ when an item is done, delete it rather than leaving it ticked.
    the Pixel 8a). Store listing/screenshots don't mention the new tab.
 
    **Then v2.9.0** (hosted AI brief + the slow-load fix), code complete on `feat/hosted-brief`,
-   85 tests green, **not built**. It is stacked on v2.8.0, so it ships after it. Needs the
-   `GEMINI_API_KEY` repo secret and one manual workflow run before it can be verified end to end.
-   Checklist: **`release-2.9/RELEASE_NOTES.md`** §Before uploading. Its on-device pass covers the
-   AI Brief tab *with no Gemini key saved*, which is the whole point of the release.
+   85 tests green, **not built**. It is stacked on v2.8.0, so it ships after it. Its *feeds* are
+   already live — both workflows went to `master` 2026-09-24 (`3f1684b`) with the secret set the
+   same day, since GitHub only schedules from the default branch. Checklist:
+   **`release-2.9/RELEASE_NOTES.md`** §Before uploading. Its on-device pass covers the AI Brief
+   tab *with no Gemini key saved*, which is the whole point of the release.
 1. **Watch ANR rate now that 2.7.0 is live** (confirmed 2026-09-18) — see the caveat above about
    overlapping vitals. This is the highest-value thing to look at, and the reason is specific: the
    fix changed cancellation and timeout behaviour on every screen.
@@ -349,7 +352,10 @@ the owner's key so every install reads a ~200ms static file instead.
   App URL: `https://raw.githubusercontent.com/bull88protocol/aurum/brief-data/brief_daily.json`.
 - **Secret:** `GEMINI_API_KEY` (repo Settings → Secrets and variables → Actions). Never in the app,
   never in the repo. The key travels in the `x-goog-api-key` **header**, never in a URL, so it
-  cannot leak into a run log. **Not set yet** — until it is, runs skip with a warning.
+  cannot leak into a run log. **Set 2026-09-24** by the owner as `bull88protocol`. A manual run
+  (Actions → "AI brief feed" → Run workflow, which passes `--force`) also needs that login: the
+  box's `gh` CLI is `CoinTranscend` and gets **HTTP 403 "Must have admin rights"** on dispatch, so
+  it can read runs and branches but never start one.
 - **Order in the app — the reverse of FRED, on purpose.** The feed comes first and a user's own key
   second. FRED's rule (user's key first) is right there because a live fetch is *fresher* than the
   last GitHub run. Here the user's key is the *slow* path, so the app paints the feed brief at once
