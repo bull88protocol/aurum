@@ -52,6 +52,21 @@ Dollar / DXY HMAI tab, see below). No backend; runs on-device. Since v2.5.0 the
 > **not** sync. When working from a different computer (e.g. a Mac for the iOS build), this committed
 > file — plus the docs it points to — is the context. Keep it current.
 
+> **⚠️ The next release is on a branch, not here (note added 2026-09-18).** v2.8.0 — the 20 Days
+> tab replacing the Dollar tab, the 6 PM report reading the hosted FRED feed, the FRED® notice —
+> lives on **`feat/20-day-drivers`** (pushed; signed AAB built; the FRED feed on `fred-data` is
+> already live). Until it merges, this file is behind: for release status or "what is pending",
+> read that branch's copy (`git fetch && git show origin/feat/20-day-drivers:CLAUDE.md`) and its
+> **`release-2.8/RELEASE_NOTES.md`**, or check the branch out. Delete this block in the merge.
+>
+> **Both feed workflows are live on THIS branch (`master`) and nowhere else** — GitHub runs
+> scheduled workflows from the default branch alone, so `.github/workflows/fred-feed.yml` and
+> `.github/workflows/brief-feed.yml` have to sit here even while the app code that reads them
+> waits on a feature branch. Added 2026-09-24. The AI brief feed (`brief-data` branch, hourly) is
+> read by the v2.9.0 app on **`feat/hosted-brief`**; the FRED feed (`fred-data`, weekday evenings)
+> is read today by the shipped report and, from v2.9.0, by the whole app. Operations for both are
+> documented on `feat/hosted-brief`'s copy of this file.
+
 ## ▶ "What is pending?" — answer from the Open items list below
 If the user asks **"what is pending"** / "what's left" / "where were we", read **§Open items** below
 and show them **all** of it, most-actionable first, with a one-line status on the release in flight.
