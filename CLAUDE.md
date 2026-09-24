@@ -77,7 +77,10 @@ report reading the hosted FRED feed (as a fallback behind the user's own key), t
 1. ~~2.7.0 is approved~~ — **done**: live on Production, confirmed 2026-09-18.
 2. ~~The FRED feed is live~~ — **done 2026-09-17**: secret added, the first manual run published
    `fred-data` (feed through 2026-09-17).
-3. **An on-device pass — the only gate left.** The tab has never been seen rendered.
+3. ~~An on-device pass~~ — **done 2026-09-24**: the 20 Days tab rendered for the first time on a
+   **Pixel 11** (`67220DLKY00817`), from a `feat/hosted-brief` debug build. STRONG HEADWIND -94,
+   both driver legs populated (real yields 2.63% +25bp/20d, DXY 101.25 +2.36%/20d), the -7.0%
+   move split -1.7 / -1.8 / -3.6, FRED® notice present. **All three gates now hold.**
 
 Start-here doc: **`release-2.8/RELEASE_NOTES.md`**, which has the checklist, the adb recipe and the
 paste-ready "What's new".
@@ -89,9 +92,9 @@ the collapsed key section in Settings, and the FRED cron respread. 85 tests gree
 clean, **nothing device-tested**. Start-here doc: **`release-2.9/RELEASE_NOTES.md`**.
 
 **▶ Pick up here (2026-09-23).** Everything is committed; nothing is half-done.
-1. On-device pass for v2.8.0, its only gate: needs the Pixel 8a plugged in with USB debugging
-   (`adb devices` was empty on 2026-09-18). Checklist and adb recipe:
-   `release-2.8/RELEASE_NOTES.md` step 5. It is also the first time the app reads the live feed.
+1. ~~On-device pass for v2.8.0~~ — **done 2026-09-24** on a Pixel 11 (`67220DLKY00817`; the older
+   notes say Pixel 8a). The 20 Days tab renders, and the Gold Index scored all five components
+   **with no FRED key**, off the hosted feed — the v2.9.0 claim, confirmed on the same run.
 2. Then steps 6-8 there: merge, tag `v2.8.0`, push, upload. Check the AAB's sha256 first.
    `master`'s CLAUDE.md has a pointer block to `feat/20-day-drivers` (added 2026-09-18); delete it
    in the merge.
@@ -106,10 +109,10 @@ clean, **nothing device-tested**. Start-here doc: **`release-2.9/RELEASE_NOTES.m
 The maintained answer to "what is pending". Ordered by what actually matters. Keep it current —
 when an item is done, delete it rather than leaving it ticked.
 
-0. **Ship v2.8.0** (20 Days tab + hosted FRED feed): AAB rebuilt 2026-09-17, see the gates in
-   §Next release built above and `release-2.8/RELEASE_NOTES.md`. The FRED feed went live
-   2026-09-17 and 2.7.0 is live (confirmed 2026-09-18); what's left is an on-device pass (plug in
-   the Pixel 8a). Store listing/screenshots don't mention the new tab.
+0. **Ship v2.8.0 — all three gates now hold.** AAB built 2026-09-17 from `2b9b7df`; the on-device
+   pass was done 2026-09-24 (see §Next release built). Nothing blocks the upload but doing it:
+   merge, tag `v2.8.0`, check the AAB's sha256, upload. Store listing/screenshots still don't
+   mention the new tab.
 
    **Then v2.9.0** (hosted AI brief + the slow-load fix), code complete on `feat/hosted-brief`,
    85 tests green, **not built**. It is stacked on v2.8.0, so it ships after it. Its *feeds* are
