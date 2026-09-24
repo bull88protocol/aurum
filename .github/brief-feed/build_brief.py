@@ -35,7 +35,13 @@ import urllib.parse
 import urllib.request
 from zoneinfo import ZoneInfo
 
-MODEL = "gemini-2.5-flash"
+# An alias, not a pinned version, and deliberately so. gemini-2.5-flash — which this used, and
+# which the app shipped with — was retired to "no longer available to new users" and started
+# answering 404 to any key whose project had not used it before. A pinned id turns a Google
+# retirement into a dead feed and, worse, a silently empty AI Brief tab in a shipped app that
+# cannot be patched without a Play review. The cost of the alias is that Google can change the
+# model under us; validate() is what catches that, and it fails loudly rather than publishing.
+MODEL = "gemini-flash-latest"
 GEMINI_BASE = os.environ.get("GEMINI_API_BASE", "https://generativelanguage.googleapis.com")
 YAHOO_BASE = os.environ.get("YAHOO_API_BASE", "https://query1.finance.yahoo.com")
 SYMBOL = "GLD"
@@ -196,9 +202,14 @@ def generate(prompt, key):
             with urllib.request.urlopen(req, timeout=180) as resp:
                 return json.load(resp)
         except urllib.error.HTTPError as e:
-            last_error = f"HTTP {e.code}"
+            # Safe to include the body here, unlike in the FRED builder: this request carries the
+            # key in a header, not the URL, so nothing secret is in the response. Worth the space —
+            # a bare "HTTP 404" cost two round trips to diagnose on 2026-09-24 when the real
+            # message was "this model is no longer available to new users".
+            detail = e.read(300).decode("utf-8", "replace").replace("\n", " ")
+            last_error = f"HTTP {e.code}: {detail}"
             if 400 <= e.code < 500 and e.code not in (429, 408):
-                break                      # bad key or bad request: retrying won't help
+                break                      # bad key, no credit, or bad model: retrying won't help
         except (urllib.error.URLError, TimeoutError, OSError, ValueError) as e:
             last_error = type(e).__name__
         time.sleep(20 * (attempt + 1))
