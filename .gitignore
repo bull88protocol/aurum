@@ -45,3 +45,8 @@ gold_index_history.csv
 # research data caches are reproducible (see research/README.md)
 research/cache/
 __pycache__/
+
+# Local key material. Never commit: this repo is public.
+tok/
+*.pat
+*.token
