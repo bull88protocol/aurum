@@ -131,13 +131,16 @@ class SettingsActivity : AppCompatActivity() {
             binding.btnGeminiTest.isEnabled = false
             binding.btnGeminiTest.text = "Testing…"
             lifecycleScope.launch {
-                val ok = withContext(Dispatchers.IO) { GeminiClient().testApiKey(key) }
+                val problem = withContext(Dispatchers.IO) { GeminiClient().testApiKey(key) }
                 binding.btnGeminiTest.isEnabled = true
                 binding.btnGeminiTest.text = "Test"
                 Toast.makeText(
                     this@SettingsActivity,
-                    if (ok) "Gemini key is valid" else "Gemini key invalid or network error",
-                    Toast.LENGTH_SHORT,
+                    // The reason matters: "prepayment credits are depleted" and "this model is no
+                    // longer available" both used to read as a generic failure, or worse, as
+                    // success back when this only listed models.
+                    problem?.let { "Gemini key problem: $it" } ?: "Gemini key is valid",
+                    if (problem == null) Toast.LENGTH_SHORT else Toast.LENGTH_LONG,
                 ).show()
             }
         }

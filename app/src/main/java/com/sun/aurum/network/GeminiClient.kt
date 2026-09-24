@@ -16,6 +16,20 @@ import java.util.concurrent.TimeUnit
 
 class GeminiClient {
 
+    private companion object {
+        /**
+         * An alias, not a pinned version, and deliberately so. This was `gemini-2.5-flash` until
+         * 2026-09-24, when Google retired it to "no longer available to new users": a key created
+         * after that date answers 404, so every new user of the app got an AI Brief tab that
+         * silently never filled. A pinned id makes a Google retirement into a dead feature in a
+         * shipped app that cannot be patched without a Play review; the alias trades that for the
+         * risk that the model changes under us, which the parser's defaults absorb.
+         *
+         * Keep in step with MODEL in .github/brief-feed/build_brief.py.
+         */
+        const val MODEL = "gemini-flash-latest"
+    }
+
     private val client = OkHttpClient.Builder()
         .connectTimeout(30, TimeUnit.SECONDS)
         .readTimeout(120, TimeUnit.SECONDS)
@@ -26,15 +40,41 @@ class GeminiClient {
         .build()
 
     /**
-     * Lightweight key validation — lists models (no token cost).
-     * Returns true if the key authenticates successfully.
+     * Checks a key by actually generating something, and returns null when it works or a short
+     * reason when it does not.
+     *
+     * This used to list models instead, which was cheaper and wrong: ListModels answers 200 for a
+     * key that cannot generate a single token. On 2026-09-24 this key listed `gemini-2.5-flash`
+     * happily while every generateContent call returned 402 (prepayment credits depleted) — and
+     * separately, 2.5-flash had been retired to "no longer available to new users", so a freshly
+     * created key 404s on it. Either way the old check said "valid", the user saved the key, and
+     * the AI Brief tab stayed empty forever with nothing explaining why.
+     *
+     * The probe sends no tools, so it costs a few tokens rather than a grounded search. That means
+     * it cannot detect a grounding-specific failure — it catches the two that actually happen: a
+     * bad or unfunded key, and a model that is gone.
      */
-    fun testApiKey(apiKey: String): Boolean {
-        if (apiKey.isBlank()) return false
-        val url = "https://generativelanguage.googleapis.com/v1beta/models?key=$apiKey"
+    fun testApiKey(apiKey: String): String? {
+        if (apiKey.isBlank()) return "No key entered"
+        val body = JSONObject().put("contents", JSONArray().put(
+            JSONObject().put("parts", JSONArray().put(JSONObject().put("text", "hi")))))
+        val req = Request.Builder()
+            .url("https://generativelanguage.googleapis.com/v1beta/models/$MODEL:generateContent")
+            .post(body.toString().toRequestBody("application/json".toMediaType()))
+            .header("x-goog-api-key", apiKey)      // header, never the URL: keeps it out of logs
+            .build()
         return try {
-            client.newCall(Request.Builder().url(url).build()).execute().use { it.isSuccessful }
-        } catch (e: Exception) { false }
+            client.newCall(req).execute().use { resp ->
+                if (resp.isSuccessful) null
+                else {
+                    val text = resp.body?.string().orEmpty()
+                    val msg = runCatching {
+                        JSONObject(text).getJSONObject("error").optString("message")
+                    }.getOrNull().orEmpty()
+                    if (msg.isNotBlank()) msg.take(160) else "Gemini returned ${resp.code}"
+                }
+            }
+        } catch (e: Exception) { e.message ?: "Couldn't reach Gemini" }
     }
 
     /**
@@ -51,13 +91,11 @@ class GeminiClient {
         val prompt = buildPrompt(symbol, lastSession.longLabel, nextSession.longLabel, quote)
         val bodyJson = buildRequestBody(prompt)
 
-        val url = "https://generativelanguage.googleapis.com/v1beta/models/" +
-                "gemini-2.5-flash:generateContent?key=$apiKey"
-
         val req = Request.Builder()
-            .url(url)
+            .url("https://generativelanguage.googleapis.com/v1beta/models/$MODEL:generateContent")
             .post(bodyJson.toString().toRequestBody("application/json".toMediaType()))
             .header("Content-Type", "application/json")
+            .header("x-goog-api-key", apiKey)      // header, never the URL: keeps it out of logs
             .build()
 
         return try {
