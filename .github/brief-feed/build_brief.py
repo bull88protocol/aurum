@@ -35,13 +35,18 @@ import urllib.parse
 import urllib.request
 from zoneinfo import ZoneInfo
 
-# An alias, not a pinned version, and deliberately so. gemini-2.5-flash — which this used, and
-# which the app shipped with — was retired to "no longer available to new users" and started
-# answering 404 to any key whose project had not used it before. A pinned id turns a Google
-# retirement into a dead feed and, worse, a silently empty AI Brief tab in a shipped app that
-# cannot be patched without a Play review. The cost of the alias is that Google can change the
-# model under us; validate() is what catches that, and it fails loudly rather than publishing.
-MODEL = "gemini-flash-latest"
+# Tried in order, because the two failure modes pull in opposite directions:
+#
+#   * a PINNED id eventually gets retired and answers 404 forever. gemini-2.5-flash did exactly
+#     that on 2026-09-24, taking the shipped app's AI Brief tab down for every new user.
+#   * the -latest ALIAS never 404s, but it tracks the newest model, which is the most capacity
+#     constrained. On 2026-09-25 gemini-flash-latest and gemini-3.8-flash both returned 503
+#     UNAVAILABLE repeatedly while gemini-3.6-flash answered fine.
+#
+# So: a known-good pinned model first, the alias behind it as the retirement safety net. When 3.6
+# is retired the 404 falls through to the alias and the feed keeps working; when the newest model
+# is overloaded the pinned one carries it. Keep in step with MODELS in GeminiClient.kt.
+MODELS = ("gemini-3.6-flash", "gemini-flash-latest")
 GEMINI_BASE = os.environ.get("GEMINI_API_BASE", "https://generativelanguage.googleapis.com")
 YAHOO_BASE = os.environ.get("YAHOO_API_BASE", "https://query1.finance.yahoo.com")
 SYMBOL = "GLD"
@@ -192,39 +197,44 @@ in a source. If a source disagrees with it, the source is stale; follow the veri
 # ── Gemini ────────────────────────────────────────────────────────────────────
 
 def generate(prompt, key):
-    """One grounded generateContent call. The key goes in a header so no URL ever carries it."""
-    url = f"{GEMINI_BASE}/v1beta/models/{MODEL}:generateContent"
+    """One grounded generateContent call. The key goes in a header so no URL ever carries it.
+
+    Walks [MODELS] and returns (response, model) from the first that answers. A 404 (retired) or
+    503 (overloaded) moves to the next model; a 429 does not, because grounding quota is
+    project-wide and every model returns the same answer — verified 2026-09-25.
+    """
     body = json.dumps({
         "contents": [{"parts": [{"text": prompt}]}],
         "tools": [{"google_search": {}}],
         "generationConfig": {"responseMimeType": "text/plain"},
     }).encode()
+
     last_error = "unknown"
-    for attempt in range(3):
-        req = urllib.request.Request(url, data=body, headers={
-            "Content-Type": "application/json",
-            "x-goog-api-key": key,
-        })
-        try:
-            with urllib.request.urlopen(req, timeout=180) as resp:
-                return json.load(resp)
-        except urllib.error.HTTPError as e:
-            # Safe to include the body here, unlike in the FRED builder: this request carries the
-            # key in a header, not the URL, so nothing secret is in the response. Worth the space —
-            # a bare "HTTP 404" cost two round trips to diagnose on 2026-09-24 when the real
-            # message was "this model is no longer available to new users".
-            detail = e.read(300).decode("utf-8", "replace").replace("\n", " ")
-            last_error = f"HTTP {e.code}: {detail}"
-            if 400 <= e.code < 500:
-                # Every 4xx, 429 included. 429 used to be retried on the theory that a rate limit
-                # clears in a minute; in practice it is a *quota* error that does not, and the
-                # retries turned one scheduled brief into three grounded calls and a 120-second
-                # invocation. The hourly schedule is the retry — there is nothing to gain from a
-                # second attempt 20 seconds later, and a quota error is made worse by one.
-                break
-        except (urllib.error.URLError, TimeoutError, OSError, ValueError) as e:
-            last_error = type(e).__name__
-        time.sleep(20 * (attempt + 1))
+    for model in MODELS:
+        url = f"{GEMINI_BASE}/v1beta/models/{model}:generateContent"
+        for attempt in range(2):
+            req = urllib.request.Request(url, data=body, headers={
+                "Content-Type": "application/json",
+                "x-goog-api-key": key,
+            })
+            try:
+                with urllib.request.urlopen(req, timeout=180) as resp:
+                    return json.load(resp), model
+            except urllib.error.HTTPError as e:
+                # Safe to include the body: this request carries the key in a header, not the URL.
+                # A bare "HTTP 404" cost two round trips to diagnose on 2026-09-24.
+                detail = e.read(300).decode("utf-8", "replace").replace("\n", " ")
+                last_error = f"{model}: HTTP {e.code}: {detail}"
+                if e.code in (404, 503):
+                    break                  # retired or overloaded: try the next model
+                if 400 <= e.code < 500:
+                    # Every other 4xx, 429 included. 429 here is a quota error that does not clear
+                    # in 20 seconds and is the same for every model; the schedule is the retry.
+                    raise BriefError(f"Gemini request failed ({last_error})")
+            except (urllib.error.URLError, TimeoutError, OSError, ValueError) as e:
+                last_error = f"{model}: {type(e).__name__}"
+            if attempt == 0:
+                time.sleep(20)
     raise BriefError(f"Gemini request failed ({last_error})")
 
 
@@ -331,7 +341,7 @@ def build_feed(key, now_utc=None):
     else:
         print("no Yahoo quote — the brief will be generated unanchored")
 
-    raw_response = generate(build_prompt(last_long, next_long, facts_block(quote)), key)
+    raw_response, model = generate(build_prompt(last_long, next_long, facts_block(quote)), key)
     try:
         text = raw_response["candidates"][0]["content"]["parts"][0]["text"]
     except (KeyError, IndexError, TypeError):
@@ -348,7 +358,7 @@ def build_feed(key, now_utc=None):
     return {
         "schema": SCHEMA,
         "generated_utc": now_utc.isoformat(timespec="seconds").replace("+00:00", "Z"),
-        "model": MODEL,
+        "model": model,
         "symbol": SYMBOL,
         "quote_at_generation": quote,   # what the brief's numbers were written against
         "brief": brief,

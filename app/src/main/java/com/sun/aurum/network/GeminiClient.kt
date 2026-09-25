@@ -18,16 +18,19 @@ class GeminiClient {
 
     private companion object {
         /**
-         * An alias, not a pinned version, and deliberately so. This was `gemini-2.5-flash` until
-         * 2026-09-24, when Google retired it to "no longer available to new users": a key created
-         * after that date answers 404, so every new user of the app got an AI Brief tab that
-         * silently never filled. A pinned id makes a Google retirement into a dead feature in a
-         * shipped app that cannot be patched without a Play review; the alias trades that for the
-         * risk that the model changes under us, which the parser's defaults absorb.
+         * Tried in order, because the two failure modes pull in opposite directions:
          *
-         * Keep in step with MODEL in .github/brief-feed/build_brief.py.
+         *  - a PINNED id eventually gets retired and answers 404 forever. `gemini-2.5-flash` did
+         *    exactly that on 2026-09-24, and because this client swallows failures into null it
+         *    took the AI Brief tab down silently for every new user of the shipped app.
+         *  - the `-latest` ALIAS never 404s, but it tracks the newest model, which is the most
+         *    capacity constrained. On 2026-09-25 `gemini-flash-latest` and `gemini-3.8-flash`
+         *    both returned 503 UNAVAILABLE repeatedly while `gemini-3.6-flash` answered fine.
+         *
+         * So: a known-good pinned model first, the alias behind it as the retirement safety net.
+         * Keep in step with MODELS in .github/brief-feed/build_brief.py.
          */
-        const val MODEL = "gemini-flash-latest"
+        val MODELS = listOf("gemini-3.6-flash", "gemini-flash-latest")
     }
 
     private val client = OkHttpClient.Builder()
@@ -58,23 +61,27 @@ class GeminiClient {
         if (apiKey.isBlank()) return "No key entered"
         val body = JSONObject().put("contents", JSONArray().put(
             JSONObject().put("parts", JSONArray().put(JSONObject().put("text", "hi")))))
-        val req = Request.Builder()
-            .url("https://generativelanguage.googleapis.com/v1beta/models/$MODEL:generateContent")
-            .post(body.toString().toRequestBody("application/json".toMediaType()))
-            .header("x-goog-api-key", apiKey)      // header, never the URL: keeps it out of logs
-            .build()
-        return try {
-            client.newCall(req).execute().use { resp ->
-                if (resp.isSuccessful) null
-                else {
+        var lastProblem: String? = null
+        for (model in MODELS) {
+            val req = Request.Builder()
+                .url("https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent")
+                .post(body.toString().toRequestBody("application/json".toMediaType()))
+                .header("x-goog-api-key", apiKey)  // header, never the URL: keeps it out of logs
+                .build()
+            try {
+                client.newCall(req).execute().use { resp ->
+                    if (resp.isSuccessful) return null
                     val text = resp.body?.string().orEmpty()
                     val msg = runCatching {
                         JSONObject(text).getJSONObject("error").optString("message")
                     }.getOrNull().orEmpty()
-                    if (msg.isNotBlank()) msg.take(160) else "Gemini returned ${resp.code}"
+                    lastProblem = if (msg.isNotBlank()) msg.take(160) else "Gemini returned ${resp.code}"
+                    // Only a retired or overloaded model is worth trying the next id for.
+                    if (resp.code != 404 && resp.code != 503) return lastProblem
                 }
-            }
-        } catch (e: Exception) { e.message ?: "Couldn't reach Gemini" }
+            } catch (e: Exception) { return e.message ?: "Couldn't reach Gemini" }
+        }
+        return lastProblem ?: "Couldn't reach Gemini"
     }
 
     /**
@@ -91,20 +98,28 @@ class GeminiClient {
         val prompt = buildPrompt(symbol, lastSession.longLabel, nextSession.longLabel, quote)
         val bodyJson = buildRequestBody(prompt)
 
-        val req = Request.Builder()
-            .url("https://generativelanguage.googleapis.com/v1beta/models/$MODEL:generateContent")
-            .post(bodyJson.toString().toRequestBody("application/json".toMediaType()))
-            .header("Content-Type", "application/json")
-            .header("x-goog-api-key", apiKey)      // header, never the URL: keeps it out of logs
-            .build()
-
-        return try {
-            client.newCall(req).execute().use { resp ->
-                val body = resp.body?.string().orEmpty()
-                if (!resp.isSuccessful) throw IOException("Gemini error (${resp.code}): ${body.take(200)}")
-                parseResponse(JSONObject(body), lastSession.shortLabel, nextSession.shortLabel)
-            }
-        } catch (e: Exception) { null }
+        // A 404 (retired) or 503 (overloaded) falls through to the next model; anything else
+        // ends it, because a quota or auth failure is identical on every model.
+        for (model in MODELS) {
+            val req = Request.Builder()
+                .url("https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent")
+                .post(bodyJson.toString().toRequestBody("application/json".toMediaType()))
+                .header("Content-Type", "application/json")
+                .header("x-goog-api-key", apiKey)  // header, never the URL: keeps it out of logs
+                .build()
+            val result = try {
+                client.newCall(req).execute().use { resp ->
+                    val body = resp.body?.string().orEmpty()
+                    when {
+                        resp.isSuccessful -> parseResponse(JSONObject(body), lastSession.shortLabel, nextSession.shortLabel)
+                        resp.code == 404 || resp.code == 503 -> null   // try the next model
+                        else -> throw IOException("Gemini error (${resp.code}): ${body.take(200)}")
+                    }
+                }
+            } catch (e: Exception) { return null }
+            if (result != null) return result
+        }
+        return null
     }
 
     /** Computes the last closed trading session and the next upcoming trading session in ET. */
