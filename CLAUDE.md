@@ -58,51 +58,42 @@ and show them **all** of it, most-actionable first, with a one-line status on th
 Do not improvise a list from git log — that section is the maintained answer. Verify anything
 time-sensitive (Play status, whether a build is stale) before repeating it.
 
-## ▶ Release in flight — v2.9.0 AAB built and ready to upload; v2.8.0 is skipped
-**v2.7.0 / versionCode 15 is live on Google Play Production** (confirmed 2026-09-18: 177 countries
-/ regions, 9 installs). Code on `master`, tagged **`v2.7.0`**; **15 is claimed**. Notes:
-**`release-2.7/RELEASE_NOTES.md`**.
+## ▶ Release in flight — nothing. v2.9.0 is LIVE on Production
+**v2.9.0 / versionCode 17 was approved and is live on Google Play Production** (owner confirmed
+2026-09-25, installed from the store on their own device). Code on `master`, tagged **`v2.9.0`**;
+**17 is claimed**. Notes: **`release-2.9/RELEASE_NOTES.md`**.
 
-### v2.8.0 / versionCode 16 — SKIPPED, superseded by v2.9.0 (decision 2026-09-24)
-Its AAB was built and all three gates were met, including the on-device pass on 2026-09-24. It was
-skipped anyway, the same way v2.1.1 and v2.2.0 were, because **v2.9.0 is a strict superset and
-v2.8.0 is not**: 2.8.0 still asks Gemini for the retired `gemini-2.5-flash`, so shipping it would
-have meant two Play reviews with the first one knowingly broken for every new user. Its content —
-the 20 Days tab, the report's hosted FRED feed, the FRED® notice — all rides in 2.9.0.
-**Do not upload versionCode 16.**
+Confirmed working in production from the owner's install: **the Gold Index shows its FRED-backed
+components with no FRED key**, off the hosted `fred-data` feed. That is the release's central
+claim, now true on a Play build and not just a debug one.
 
-### Ready to upload — v2.9.0 / versionCode 17
-**Signed AAB built and verified 2026-09-24** from `feat/hosted-brief`:
+**v2.8.0 / versionCode 16 was SKIPPED**, superseded by v2.9.0 (decision 2026-09-24), the same way
+v2.1.1 and v2.2.0 were: v2.9.0 is a strict superset and also fixes the retired-Gemini-model bug
+that v2.8.0 would have shipped. **Do not upload versionCode 16.**
 
-    sha256 2c9c499aa50ce89393569e2c9789dda4111a34138b1fbd75400d0b09386f6202
-    manifest: com.sun.aurum, versionCode 17, versionName 2.9.0
-
-It carries everything from v2.8.0 plus: the AI brief off the refresh critical path and onto a
-hosted feed, the hosted FRED feed extended from the report to the whole app (so a keyless Gold
-Index scores all five components), the collapsed key section in Settings, and the
-`gemini-flash-latest` fix for the retired model. 85 tests. Start-here doc:
-**`release-2.9/RELEASE_NOTES.md`** — checklist and paste-ready "What's new".
-
-**Device pass done 2026-09-24** on a **Pixel 11** (`67220DLKY00817`; older notes say Pixel 8a),
-from a debug build: 20 Days tab renders (STRONG HEADWIND -94, both legs populated); Gold Index
-scored all five components and all three Forward Signal drivers **with no FRED key**, off the
-hosted feed; Settings showed the DATA SOURCES card collapsed with the FRED® notice outside it, and
-expanded correctly. **Not verified: the AI Brief filling from the brief feed** — see Open items,
-the Lambda is not publishing yet. The app degrades correctly without it (honest empty state).
-
-**▶ Pick up here (2026-09-24).**
-1. Upload the AAB to Play. Internal testing first is the safer route — a release build runs R8 full
-   mode and only the debug variant has been on a device. Then promote.
-2. Fix the brief feed Lambda (Open items) — it is server-side and needs no app release.
+**Not yet working in production: the AI Brief and News tabs**, because the brief feed has never
+published — see Open items. That is server-side and needs no app release; the app degrades
+correctly meanwhile.
 
 ## Open items (nothing here is blocking; reviewed 2026-09-23)
 
 The maintained answer to "what is pending". Ordered by what actually matters. Keep it current —
 when an item is done, delete it rather than leaving it ticked.
 
-0. **Upload v2.9.0** — AAB built and verified 2026-09-24, see §Ready to upload above. v2.8.0 is
-   skipped; **do not upload versionCode 16**. Internal testing first, then promote. Store
-   listing/screenshots still don't mention the 20 Days tab or the keyless data feeds.
+0. **The AI brief feed has never published — Google Search grounding quota.** The Lambda is
+   correct and EventBridge fires it hourly, reliably (verified in CloudWatch 2026-09-25). Every
+   grounded call returns **429 RESOURCE_EXHAUSTED**, while *plain* generation on the same key
+   works — so the binding limit is the **Search grounding** allowance, which is far smaller than
+   the generation one. Until one brief publishes, the AI Brief and News tabs are empty for
+   everyone in production.
+   **Owner action:** check usage and the grounding allowance at <https://ai.dev/rate-limit> and
+   billing at <https://ai.studio/projects>. Grounding may need a paid tier.
+   **Two bugs of ours made it worse and are fixed** (`5652312`, `0f536b2`): `generate()` retried
+   429 three times with backoff, and Lambda's default async policy retried the invocation twice,
+   so each hourly tick spent **nine** grounded calls and three 120-second invocations instead of
+   one. Now: 4xx fail fast, `MaximumRetryAttempts=0`, and `MIN_AGE_MINUTES` 50 → 230 so the
+   steady state is ~6 briefs/day rather than 24.
+1. **Store listing/screenshots** still don't mention the 20 Days tab or the keyless data feeds.
 1. **LIVE BUG: the shipped app asks Gemini for a retired model.** v2.7.0 (production) calls
    `gemini-2.5-flash`, which Google retired on/before 2026-09-24 to *"no longer available to new
    users"*. A key created **after** that date answers **404**, `fetchAnalysisAndNews` swallows it
