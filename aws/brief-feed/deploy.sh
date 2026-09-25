@@ -84,6 +84,15 @@ aws lambda add-permission --function-name "$FUNCTION" --region "$REGION" \
 aws events put-targets --rule "$RULE" --region "$REGION" \
   --targets "Id=1,Arn=${FN_ARN}" --no-cli-pager >/dev/null
 
+# EventBridge invokes asynchronously, and Lambda's default async policy retries a FAILED
+# invocation twice. For this function that is exactly wrong: a failure is a bad key, an exhausted
+# quota or a rejected brief, none of which a retry 60 seconds later fixes, and each retry spends
+# another grounded Gemini call. Left at the default it turned one scheduled brief into three
+# invocations (and, with the old in-process 429 retry, nine grounded calls an hour). The hourly
+# schedule is the retry.
+aws lambda put-function-event-invoke-config --function-name "$FUNCTION" --region "$REGION" \
+  --maximum-retry-attempts 0 --maximum-event-age-in-seconds 900 --no-cli-pager >/dev/null
+
 cat <<EOF
 
 Deployed.

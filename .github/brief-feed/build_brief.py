@@ -47,10 +47,17 @@ YAHOO_BASE = os.environ.get("YAHOO_API_BASE", "https://query1.finance.yahoo.com"
 SYMBOL = "GLD"
 ET = ZoneInfo("America/New_York")
 
-# A run that finds a published brief younger than this does nothing and exits 0. GitHub fires
-# scheduled runs late and in bursts, so the hourly cron is a best-effort upper bound, not a
-# promise; this is what actually caps how many grounded calls the key makes in a day.
-MIN_AGE_MINUTES = 50
+# A run that finds a published brief younger than this returns before the Gemini call. This, not
+# the cron, is what caps how many grounded calls the key makes in a day — the schedule can tick as
+# often as it likes and most ticks cost nothing.
+#
+# 230 minutes, not 50, because the binding limit turned out to be Google *Search grounding* quota,
+# which is a much smaller allowance than plain generation: on 2026-09-25 this key could generate
+# fine but every grounded call returned 429 RESOURCE_EXHAUSTED. At ~3h50m an hourly schedule
+# settles at about six briefs a day. That is comfortably inside the app's 12-hour staleness limit
+# (BriefFeedClient.MAX_STALE_HOURS), and a gold macro brief does not change meaningfully faster.
+# Lower it if the account's grounding allowance turns out to be generous.
+MIN_AGE_MINUTES = 230
 
 SCHEMA = 1
 
