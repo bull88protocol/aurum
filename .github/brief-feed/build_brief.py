@@ -47,17 +47,17 @@ YAHOO_BASE = os.environ.get("YAHOO_API_BASE", "https://query1.finance.yahoo.com"
 SYMBOL = "GLD"
 ET = ZoneInfo("America/New_York")
 
-# A run that finds a published brief younger than this returns before the Gemini call. This, not
-# the cron, is what caps how many grounded calls the key makes in a day — the schedule can tick as
-# often as it likes and most ticks cost nothing.
+# A run that finds a published brief younger than this returns before the Gemini call. This is a
+# backstop, not the schedule: EventBridge fires three times a day (see aws/brief-feed/deploy.sh)
+# and this exists so a retry, a manual invoke or an overlapping tick cannot spend a second
+# grounded call.
 #
-# 230 minutes, not 50, because the binding limit turned out to be Google *Search grounding* quota,
-# which is a much smaller allowance than plain generation: on 2026-09-25 this key could generate
-# fine but every grounded call returned 429 RESOURCE_EXHAUSTED. At ~3h50m an hourly schedule
-# settles at about six briefs a day. That is comfortably inside the app's 12-hour staleness limit
-# (BriefFeedClient.MAX_STALE_HOURS), and a gold macro brief does not change meaningfully faster.
-# Lower it if the account's grounding allowance turns out to be generous.
-MIN_AGE_MINUTES = 230
+# The binding limit is Google *Search grounding* quota, which is far smaller than the plain
+# generation allowance — on 2026-09-25 this key generated fine while every grounded call returned
+# 429 RESOURCE_EXHAUSTED. Three a day is the owner's call (2026-09-25): the free grounding tier is
+# small and gold's macro story does not turn over in an hour. 400 minutes sits comfortably under
+# the 480-minute gap between scheduled runs, so it never blocks a real one.
+MIN_AGE_MINUTES = 400
 
 SCHEMA = 1
 

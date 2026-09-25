@@ -15,9 +15,17 @@ ROLE=${ROLE:-${FUNCTION}-role}
 RULE=${RULE:-${FUNCTION}-schedule}
 REGION=${REGION:-$(aws configure get region || echo us-east-1)}
 REPO=${GITHUB_REPO:-bull88protocol/aurum}
-# :17 past every hour, UTC. EventBridge cron is 6 fields and needs ? for one of day-of-month /
-# day-of-week. Unlike GitHub's scheduler this actually fires, so once an hour is once an hour.
-SCHEDULE=${SCHEDULE:-"cron(17 * * * ? *)"}
+# Three a day, UTC, evenly spaced. EventBridge cron is 6 fields and needs ? for one of
+# day-of-month / day-of-week. Unlike GitHub's scheduler this actually fires, so three means three.
+#
+#   05:17 UTC — 01:17 ET, the Asia session
+#   13:17 UTC — 09:17 ET, just before the US equity open
+#   21:17 UTC — 17:17 ET, after the 4 PM close and the 4:15 H.15 post, and before the app's
+#               6 PM ET daily report, which reads this feed
+#
+# Hourly was the original plan and it was overkill: Search grounding quota is the scarce resource
+# and gold's macro story does not turn over in an hour (owner's call, 2026-09-25).
+SCHEDULE=${SCHEDULE:-"cron(17 5,13,21 * * ? *)"}
 
 : "${GEMINI_API_KEY:?set GEMINI_API_KEY in the environment}"
 : "${GITHUB_TOKEN:?set GITHUB_TOKEN in the environment}"
