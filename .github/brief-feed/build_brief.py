@@ -208,8 +208,13 @@ def generate(prompt, key):
             # message was "this model is no longer available to new users".
             detail = e.read(300).decode("utf-8", "replace").replace("\n", " ")
             last_error = f"HTTP {e.code}: {detail}"
-            if 400 <= e.code < 500 and e.code not in (429, 408):
-                break                      # bad key, no credit, or bad model: retrying won't help
+            if 400 <= e.code < 500:
+                # Every 4xx, 429 included. 429 used to be retried on the theory that a rate limit
+                # clears in a minute; in practice it is a *quota* error that does not, and the
+                # retries turned one scheduled brief into three grounded calls and a 120-second
+                # invocation. The hourly schedule is the retry — there is nothing to gain from a
+                # second attempt 20 seconds later, and a quota error is made worse by one.
+                break
         except (urllib.error.URLError, TimeoutError, OSError, ValueError) as e:
             last_error = type(e).__name__
         time.sleep(20 * (attempt + 1))
