@@ -96,7 +96,9 @@ when an item is done, delete it rather than leaving it ticked.
    plain generation the way it refuses grounding, the GitHub PAT expiring silently, or RSS
    returning too few gold items to pass validation.
 1. **Ship v2.9.1 whenever something else needs a release** — see §Built but deliberately not
-   shipped. Deferred, not forgotten.
+   shipped. Deferred by the owner 2026-09-26, with the reasoning recorded so it is not
+   re-litigated: a lost feed run leaves the tab empty for a few hours and nothing else, which
+   does not justify a Play review on its own. Deferred, not forgotten.
 2. **Store listing/screenshots** still don't mention the 20 Days tab or the keyless data feeds.
 3. **Watch Play vitals for v2.9.0**, live since 2026-09-25. Two reasons it is worth a look
    rather than a glance: it restructured `refresh()` into parallel market and brief jobs, and
