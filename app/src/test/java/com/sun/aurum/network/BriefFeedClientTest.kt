@@ -69,10 +69,17 @@ class BriefFeedClientTest {
         assertEquals("BULLISH", feed.result.signal)
     }
 
-    @Test fun twelve_hours_old_is_stale() {
-        assertTrue(BriefFeedClient.isFresh("2026-09-23T11:30:00Z", now))   // 11h30m
-        assertFalse(BriefFeedClient.isFresh("2026-09-23T10:30:00Z", now))  // 12h30m
-        assertNull(BriefFeedClient.parse(feed(generated = "2026-09-23T10:30:00Z"), now))
+    @Test fun a_brief_goes_stale_at_twenty_six_hours() {
+        // The feed publishes every 8h, so this tolerates two consecutive failed runs. At the old
+        // 12h limit a single miss (16h gap) emptied the tab until the next success.
+        assertTrue(BriefFeedClient.isFresh("2026-09-22T22:00:00Z", now))   // 25h
+        assertFalse(BriefFeedClient.isFresh("2026-09-22T20:00:00Z", now))  // 27h
+        assertNull(BriefFeedClient.parse(feed(generated = "2026-09-22T20:00:00Z"), now))
+    }
+
+    @Test fun one_missed_run_does_not_empty_the_tab() {
+        // The regression this limit exists to prevent: 8h cadence, one run missed -> 16h gap.
+        assertTrue(BriefFeedClient.isFresh("2026-09-23T07:00:00Z", now))   // 16h
     }
 
     @Test fun an_unparseable_or_missing_timestamp_is_not_fresh() {

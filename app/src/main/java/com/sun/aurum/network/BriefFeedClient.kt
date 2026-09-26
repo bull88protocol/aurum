@@ -62,7 +62,20 @@ class BriefFeedClient {
     companion object {
         const val FEED_URL =
             "https://raw.githubusercontent.com/bull88protocol/aurum/brief-data/brief_daily.json"
-        const val MAX_STALE_HOURS = 12L
+        /**
+         * How old a brief may be before the app drops it and shows the empty state instead.
+         *
+         * 26 hours, not 12. The feed publishes three times a day, eight hours apart, so a healthy
+         * brief is never older than eight — but at 12 a *single* missed run made the gap 16 and
+         * emptied the tab until the next success. 26 rides out two consecutive failures, which is
+         * what a Gemini outage or a bad night of quota actually looks like.
+         *
+         * The cost is that a brief this old can describe the previous session rather than the
+         * current one. That is disclosed, not hidden: the tab prints "Shared brief · written
+         * <time>" whenever it came from the feed, so a stale brief reads as stale rather than as
+         * a wrong one. An honest old brief beats an empty tab.
+         */
+        const val MAX_STALE_HOURS = 26L
         private const val SCHEMA = 1
 
         /** Parses the feed, or null if it is unreadable, the wrong schema, empty or stale. */
