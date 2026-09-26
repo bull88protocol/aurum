@@ -28,11 +28,16 @@ BRIEF = {
     "key_factors": ["10y TIPS yield down 12bp on the week", "DXY off 0.6%", "Central-bank buying steady"],
     "yesterday_recap": "Gold rose 2.26% to settle near $398.47 on the GLD ETF as a soft core PCE print pulled the 10-year real yield lower and knocked the dollar index down half a percent. Buying was broad, with ETF inflows turning positive. Risk sentiment was mixed, with equities flat.",
     "today_outlook": "Attention turns to jobless claims and two Fed speakers, either of which could reprice the front end and with it gold's real-yield tailwind. A sustained move below 2.60% on the 10-year TIPS would open room toward the prior high, while resistance sits near $399.10 and reclaimed support around $392.00.",
+    # The model picks headlines by INDEX out of the list the prompt offers it, and writes only
+    # summaries. build_brief.to_brief maps these back to the real RSS metadata, so a model can
+    # never invent a URL. Note fetch_news is NOT mocked — it hits Google News RSS for real, which
+    # is free and needs no key, so a run here exercises the true headline path.
     "news": [
-        {"headline": "Gold jumps as soft inflation data lifts rate-cut bets", "summary": "Bullion climbed after core PCE undershot forecasts.", "source": "Reuters", "url": "https://example.com/a", "date": "2026-09-23"},
-        {"headline": "Central banks add to reserves for a fourth quarter", "summary": "WGC data shows steady official-sector demand.", "source": "Bloomberg", "url": "https://example.com/b", "date": "2026-09-22"},
-        {"headline": "Dollar slips as easing bets build", "summary": "DXY fell 0.6% on the session.", "source": "FT", "url": "https://example.com/c", "date": "2026-09-22"},
-        {"headline": "An item older than seven days, which must be dropped", "summary": "Stale.", "source": "Old", "url": "https://example.com/d", "date": "2020-01-01"},
+        {"i": 0, "summary": "Sets the tone for the session and speaks directly to the rate path."},
+        {"i": 1, "summary": "Official-sector demand is the structural bid under the market."},
+        {"i": 2, "summary": "The dollar leg of the move, which the index scores separately."},
+        {"i": 3, "summary": "Positioning colour that explains the intraday range."},
+        {"i": 4, "summary": "Flows data, the slowest-moving of the five drivers."},
     ],
 }
 
