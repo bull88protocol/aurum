@@ -41,8 +41,10 @@ Email the same address to be added to the TestFlight list when it opens.
 
 - It's a **testing build**: free, as-is, may contain bugs, and may change at any time. See
   [TERMS.md](TERMS.md) and [PRIVACY.md](PRIVACY.md).
-- It's a **bring-your-own-keys** app — it runs on your device with no backend. On first launch the
-  **Getting Started** guide explains what each optional key (FRED / Gemini) unlocks.
+- **No API keys are needed** — every tab works on install, reading public price data and two
+  small public data files we keep updated. On first launch the **Getting Started** guide explains
+  what the optional FRED and Gemini keys change, which is freshness rather than access: with a key
+  the data is fetched live on each refresh instead of coming from the shared feed.
 - **Not financial or investment advice.** Every trading decision is yours alone.
 
 ## Feedback

@@ -33,20 +33,23 @@ Dollar / DXY HMAI tab, see below). No backend; runs on-device. Since v2.5.0 the
 > PRIVACY.md) — the app had never shown it. Research: **`research/DRIVERS_20D_2026-09-16.md`**.
 > Feed operations: §Hosted FRED feed below.
 
-> **Hosted AI brief + the slow-load fix (2026-09-23; on `feat/hosted-brief`, ships as v2.9.0):**
-> the AI brief was the slowest thing in the app for two reasons, and only one was Gemini's fault.
-> The grounded `generateContent` call takes 15-60s, *and* it ran inside `DataRepository`'s
-> per-symbol loop, so the Gold Index, the chart and the 20 Days tab — none of which use it — all
-> waited on it. Now: a GitHub Action regenerates the brief about hourly with the owner's Gemini key
-> (repo secret `GEMINI_API_KEY`) and publishes `brief_daily.json` to the `brief-data` branch, which
-> the app reads in ~200ms; and `MainViewModel.refresh()` runs the market fetch and the brief fetch
-> as two parallel jobs, with only the market job driving the spinner. **The feed is the default
-> source and a user's own key is the upgrade — the opposite order to the FRED feed**, because here
-> the user's key is the *slow* path, not the fresher one; their own brief replaces the feed's when
-> it arrives. The AI Brief and News tabs now work with no key at all, and the key fields moved
-> behind a collapsed "Use your own API keys" section in Settings. Index and Forward Signal math
-> untouched. 85 tests. Notes: **`release-2.9/RELEASE_NOTES.md`**. Feed operations: §Hosted AI brief
-> feed below.
+> **Hosted AI brief, live since 2026-09-26 (shipped in v2.9.0):** the AI brief was the slowest
+> thing in the app for two reasons and only one was Gemini's. The call takes 15-60s, *and* it ran
+> inside `DataRepository`'s per-symbol loop, so the Gold Index, the chart and the 20 Days tab —
+> none of which use it — waited on it. Now `MainViewModel.refresh()` runs the market fetch and the
+> brief fetch as two parallel jobs, only the market job drives the spinner, and the brief itself
+> comes from a hosted feed the app reads in ~200ms. **The feed is the default and a user's own key
+> is the upgrade — the opposite order to the FRED feed**, because here their key is the *slow*
+> path, not the fresher one. The AI Brief and News tabs work with no key at all.
+>
+> Getting it live took three corrections worth remembering. **GitHub's scheduler cannot run it** —
+> ~2 dispatches/day for this repo, and zero for a new hourly workflow — so the trigger is AWS
+> Lambda + EventBridge (`aws/brief-feed/`). **`gemini-2.5-flash` was retired** mid-flight and
+> answers 404 to any key created after the cutoff, which had silently emptied the tab for every
+> new user of the *shipped* app. **Search grounding is not available on the free tier at all** —
+> three days of 429 on every model while plain generation worked — so headlines now come from free
+> Google News RSS and the model picks them by index and never writes a URL. Operations:
+> §Hosted AI brief feed below. Notes: **`release-2.9/RELEASE_NOTES.md`**.
 
 > **This file is the cross-machine source of truth.** Claude Code's memory is per-machine and does
 > **not** sync. When working from a different computer (e.g. a Mac for the iOS build), this committed
@@ -58,51 +61,48 @@ and show them **all** of it, most-actionable first, with a one-line status on th
 Do not improvise a list from git log — that section is the maintained answer. Verify anything
 time-sensitive (Play status, whether a build is stale) before repeating it.
 
-## ▶ Release in flight — nothing. v2.9.0 is LIVE on Production
-**v2.9.0 / versionCode 17 was approved and is live on Google Play Production** (owner confirmed
-2026-09-25, installed from the store on their own device). Code on `master`, tagged **`v2.9.0`**;
-**17 is claimed**. Notes: **`release-2.9/RELEASE_NOTES.md`**.
+## ▶ Release in flight — nothing. v2.9.0 is live and both feeds are publishing
+**v2.9.0 / versionCode 17 is live on Google Play Production** (approved and confirmed installed
+from the store 2026-09-25). Code on `master`, tagged **`v2.9.0`**; **17 is claimed**. Notes:
+**`release-2.9/RELEASE_NOTES.md`**.
 
-Confirmed working in production from the owner's install: **the Gold Index shows its FRED-backed
-components with no FRED key**, off the hosted `fred-data` feed. That is the release's central
-claim, now true on a Play build and not just a debug one.
+Confirmed working in production, from the owner's own install: the Gold Index shows all five
+components **with no FRED key**, and since 2026-09-26 the AI Brief and News tabs fill from the
+hosted brief feed **with no Gemini key**. That is the whole point of the release, true on a Play
+build rather than a debug one.
 
-**v2.8.0 / versionCode 16 was SKIPPED**, superseded by v2.9.0 (decision 2026-09-24), the same way
-v2.1.1 and v2.2.0 were: v2.9.0 is a strict superset and also fixes the retired-Gemini-model bug
-that v2.8.0 would have shipped. **Do not upload versionCode 16.**
+**v2.8.0 / versionCode 16 was SKIPPED**, superseded by v2.9.0, the same way v2.1.1 and v2.2.0
+were. **Do not upload versionCode 16.**
 
-**Not yet working in production: the AI Brief and News tabs**, because the brief feed has never
-published — see Open items. That is server-side and needs no app release; the app degrades
-correctly meanwhile.
+### Built but deliberately not shipped — v2.9.1 / versionCode 18
+Committed on `master`, 86 tests green, **no AAB built**. Deferred by the owner 2026-09-26: "if one
+[run] is lost it won't matter." It carries two things, neither urgent:
+- `BriefFeedClient.MAX_STALE_HOURS` 12 → 26, so a single missed feed run does not empty the tab.
+- The `MODELS` fallback (pinned id, then the `-latest` alias), which survives both a model
+  retirement and an overloaded newest model.
+
+**Ship it with whatever goes next.** Nothing is broken without it; the version is already bumped,
+so the next release either goes out as 2.9.1 or gets renumbered.
 
 ## Open items (nothing here is blocking; reviewed 2026-09-23)
 
 The maintained answer to "what is pending". Ordered by what actually matters. Keep it current —
 when an item is done, delete it rather than leaving it ticked.
 
-0. **The AI brief feed has never published — Google Search grounding quota.** The Lambda is
-   correct and EventBridge fires it hourly, reliably (verified in CloudWatch 2026-09-25). Every
-   grounded call returns **429 RESOURCE_EXHAUSTED**, while *plain* generation on the same key
-   works — so the binding limit is the **Search grounding** allowance, which is far smaller than
-   the generation one. Until one brief publishes, the AI Brief and News tabs are empty for
-   everyone in production.
-   **Owner action:** check usage and the grounding allowance at <https://ai.dev/rate-limit> and
-   billing at <https://ai.studio/projects>. Grounding may need a paid tier.
-   **Two bugs of ours made it worse and are fixed** (`5652312`, `0f536b2`): `generate()` retried
-   429 three times with backoff, and Lambda's default async policy retried the invocation twice,
-   so each hourly tick spent **nine** grounded calls and three 120-second invocations instead of
-   one. Now: 4xx fail fast, `MaximumRetryAttempts=0`, and `MIN_AGE_MINUTES` 50 → 230 so the
-   steady state is ~6 briefs/day rather than 24.
-1. **`BriefFeedClient.MAX_STALE_HOURS` is 12, and the feed now publishes every 8h.** Fine while
-   runs succeed — a brief is at most 8h old. But **one missed run makes the gap 16h, past the
-   limit, and the app drops the brief and shows the empty state** until the next success. That is
-   honest behaviour, not a crash, and it needs no urgent release; but **raise it to ~26h in the
-   next version that ships for any reason**, so a single failed run is survivable. It is a
-   one-constant change in `BriefFeedClient.kt` and cannot be done server-side.
+0. **Watch the brief feed for a week** now that it publishes (first ever publish 2026-09-26
+   16:55 UTC). Three runs a day at 01:17 / 09:17 / 17:17 ET. Check
+   `aws logs tail /aws/lambda/aurum-brief-feed --region us-east-1 --since 24h` and
+   `git log -1 FETCH_HEAD` on `brief-data`. What could go wrong: the Gemini free tier throttling
+   plain generation the way it refuses grounding, the GitHub PAT expiring silently, or RSS
+   returning too few gold items to pass validation.
+1. **Ship v2.9.1 whenever something else needs a release** — see §Built but deliberately not
+   shipped. Deferred, not forgotten.
 2. **Store listing/screenshots** still don't mention the 20 Days tab or the keyless data feeds.
-3. **Watch ANR rate now that 2.7.0 is live** (confirmed 2026-09-18) — see the caveat above about
-   overlapping vitals. This is the highest-value thing to look at, and the reason is specific: the
-   fix changed cancellation and timeout behaviour on every screen.
+3. **Watch Play vitals for v2.9.0**, live since 2026-09-25. Two reasons it is worth a look
+   rather than a glance: it restructured `refresh()` into parallel market and brief jobs, and
+   refresh is exactly what v2.7.0 was fixing; and 2.7.0, 2.8.0-skipped and 2.9.0 landed close
+   enough together that a new signal cannot be cleanly attributed to one of them. **ANR rate
+   first.**
 4. **Did the FRED cron respread work?** The old question is **answered, and the answer was no**:
    six days of runs (2026-09-17..23) showed 2 of 10 slots a day, the 12:30 UTC slot firing 4-5¾h
    late and the nine bunched evening slots collapsing into one run at ~22:5x UTC — *after* the
@@ -150,21 +150,20 @@ when an item is done, delete it rather than leaving it ticked.
   on `refresh()`, and a Retry button. Also stops `fetchLiveQuotes` minting a duplicate Drive
   spreadsheet on any transient failure. Verified on a Pixel 8a: radios off → error + RETRY button
   instead of a spinner, recovers when tapped. See `release-2.7/RELEASE_NOTES.md`.
-  **v2.9.0 / versionCode 17** — **code complete on `feat/hosted-brief`, not built** (2026-09-23).
-  The AI brief moves to a hosted hourly feed and off the critical path: `refresh()` now runs the
-  market fetch and the brief fetch as two parallel jobs, so the Gold Index and charts no longer
-  wait on a 15-60s grounded Gemini call, and the AI Brief and News tabs work with no key at all.
-  The key fields are collapsed behind "Use your own API keys" in Settings under a new DATA SOURCES
-  card. **The hosted FRED feed also stops being report-only** — the app reads it too, so a keyless
-  Gold Index works, which is what makes "no API keys needed" true. Also respreads the FRED cron
-  after six days of runs showed GitHub firing 2 of 10 slots and never before the 6 PM report, and
-  bumps `checkout@v4` → `@v7`. 85 tests. Stacked on v2.8.0.
-  See `release-2.9/RELEASE_NOTES.md`.
-  **v2.8.0 / versionCode 16** — **signed AAB rebuilt 2026-09-17, not uploaded** (gate left: an
-  on-device pass; 2.7.0 and the FRED feed are both live). The 20 Days tab replaces the Dollar tab
-  (HMAI + VIX deleted); the 6 PM report reads the hosted FRED feed so keyless users get every FRED row (a
-  user's own key still comes first); FRED® terms notice added. 64 tests. See
-  `release-2.8/RELEASE_NOTES.md`.
+  **v2.9.0 / versionCode 17** — **LIVE on Production** (approved 2026-09-25). The AI brief moved
+  off the refresh critical path and onto a hosted feed; the hosted FRED feed extended from the
+  report to the whole app, so a keyless Gold Index scores all five components; the key fields
+  collapsed behind "Use your own API keys" in Settings; and `gemini-flash-latest` replaced the
+  retired `gemini-2.5-flash`. Confirmed in production with no keys: FRED components 2026-09-25,
+  AI brief and news 2026-09-26. See `release-2.9/RELEASE_NOTES.md`.
+  **v2.9.1 / versionCode 18** — committed, **not built**, deferred by the owner 2026-09-26:
+  `MAX_STALE_HOURS` 12 → 26 and the `MODELS` fallback. Ship with whatever goes next.
+  **v2.8.0 / versionCode 16** — **SKIPPED**, superseded by v2.9.0. Do not upload 16. Its AAB was
+  built and all three gates were met (including the on-device pass on a Pixel 11, 2026-09-24);
+  it was dropped because v2.9.0 is a strict superset and also fixes the retired-model bug 2.8.0
+  would have shipped. Its content — the 20 Days tab replacing the Dollar tab (HMAI + VIX deleted),
+  the report reading the hosted FRED feed, the FRED® notice — all rides in v2.9.0. Historical
+  detail: `release-2.8/RELEASE_NOTES.md`.
   **v2.1.0 / versionCode 7** (Forward
   Signal v2 + conditions labels; carries the KMP `:shared` core) is on Play **internal testing**.
   v2.1.1 / versionCode 8 (Clear Cache also busts the 7-day CB feed cache) was never uploaded —
@@ -230,8 +229,13 @@ when an item is done, delete it rather than leaving it ticked.
   Dollar tab) and `util/formatDecimals` (expect/actual); deps: kotlinx-datetime.
   `androidTarget` only for now; iOS targets get enabled on the Mac (Phase 2). The app depends on `:shared`.
 - `.github/workflows/fred-feed.yml` + `.github/fred-feed/build_feed.py` (hosted FRED feed, see below)
-- `.github/workflows/brief-feed.yml` + `.github/brief-feed/` (hosted AI brief: `build_brief.py`
-  and `mock_server.py`, a local stand-in for Yahoo + Gemini so it runs without a key)
+- `.github/workflows/brief-feed.yml` + `.github/brief-feed/` (the AI brief *generator*:
+  `build_brief.py`, and `mock_server.py`, a local stand-in for Yahoo + Gemini so it runs
+  without a key. The workflow is a manual escape hatch only — the schedule is in AWS.)
+- `aws/brief-feed/` — **what actually runs the brief feed**: `lambda_function.py`,
+  `github_publish.py` (Git Data API, orphan commit), `deploy.sh` (idempotent, creates the IAM
+  role, Lambda and EventBridge rule), `README.md` (setup, cost, key handling), and
+  `DEEP_RESEARCH_PROMPT.md` + `deep_research_prompt.txt` (the not-yet-wired upgrade path)
 - `data/cb_quarterly.json` (hosted CB feed) · `release-2.0/` (v2.0 docs) · `ios/` (Apple plan) ·
   `release-2.0/cb-data/` (CB feed tool) · `research/` (Gold Index backtest: scripts + results; `cache/` gitignored,
   regenerate via `research/README.md`).
@@ -241,7 +245,7 @@ when an item is done, delete it rather than leaving it ticked.
 ## Build / test the shared module
 ```bash
 ./gradlew :shared:assembleDebug          # build the KMP android artifact
-./gradlew :app:testDebugUnitTest         # 85 tests (still run from :app for now)
+./gradlew :app:testDebugUnitTest         # 86 tests (still run from :app for now)
 ```
 
 ## Branch model
@@ -256,7 +260,7 @@ when an item is done, delete it rather than leaving it ticked.
 ```bash
 source /home/sun/option_android/android_env.sh   # this Linux box only
 ./gradlew :app:assembleDebug                      # debug build
-./gradlew :app:testDebugUnitTest                  # 85 tests (Gold Index 19 + drivers 12 + FRED feed 6 + brief feed 10 + brief JSON 5 + brief merge 6 + report 17 + schedule 8 + research dumps 2)
+./gradlew :app:testDebugUnitTest                  # 86 tests (Gold Index 19 + drivers 12 + FRED feed 6 + brief feed 11 + brief JSON 5 + brief merge 6 + report 17 + schedule 8 + research dumps 2)
 ./gradlew :app:bundleRelease                       # signed Play AAB (needs keystore.properties)
 ```
 
@@ -320,61 +324,53 @@ a user whose own key works never fetches it. Revert by dropping the `fromFeed` f
 - Local test without a key: `FRED_API_BASE=http://127.0.0.1:PORT FRED_API_KEY=x python3
   .github/fred-feed/build_feed.py --out /tmp/f.json` against a mock (see research log for how it was done).
 
-### Hosted AI brief feed (GitHub Action → `brief-data` branch)
-Why: the grounded Gemini call takes 15-60s, which made it the slowest thing in the app, and without
-a key the AI Brief and News tabs were simply empty. The Action generates the brief centrally with
-the owner's key so every install reads a ~200ms static file instead.
-- **The schedule is in AWS, not GitHub** (decided 2026-09-24, after the evidence below). An
-  EventBridge rule fires the `aurum-brief-feed` Lambda at **:17 every hour**; the Lambda packages
-  `.github/brief-feed/build_brief.py` **verbatim**, so there is one prompt, one validator and one
-  output shape whichever side runs. It publishes the same single orphan commit (`brief_daily.json`
-  + README) to `brief-data`, through the Git Data API (blob → tree → parentless commit → forced
-  ref update) because Lambda has no git. Setup, cost and key handling: **`aws/brief-feed/README.md`**.
-  The GitHub workflow keeps `workflow_dispatch` as a manual escape hatch and has **no schedule**.
-- **Why it left GitHub.** `brief-feed.yml` went live on `master` at 2026-09-24 04:10 UTC and got
-  **zero** dispatches in six hours across two cron variants (`5 * * * *`, then `17,47 * * * *`) —
-  not a failed run, not a skipped one, with the workflow showing `active` — while `fred-feed.yml`
-  kept getting its usual two a day. That matches the wider pattern: ~2 dispatches a day for this
-  repo, clustered near 17:00 and 22:50 UTC, with **15-18 hour overnight gaps**. An hourly brief
-  cannot live with that, and neither could the app's 12-hour staleness limit. See
-  [[aurum-github-cron-unreliable]].
-- **Spend did not change** — `build_brief.py` still skips any run that finds a published brief
-  younger than **50 minutes** (`MIN_AGE_MINUTES`), so the cap is ~24 grounded calls a day whatever
-  the trigger. The Lambda is inside the always-free tier (~730 requests, ~11k GB-seconds a month
-  against 1M and 400k).
-- **Likeliest silent failure: the GitHub PAT expiring.** Fine-grained, Contents read/write on this
-  repo only. Nothing warns you; the feed just stops and the app ages the brief out.
-  App URL: `https://raw.githubusercontent.com/bull88protocol/aurum/brief-data/brief_daily.json`.
-- **Secret:** `GEMINI_API_KEY` (repo Settings → Secrets and variables → Actions). Never in the app,
-  never in the repo. The key travels in the `x-goog-api-key` **header**, never in a URL, so it
-  cannot leak into a run log. **Set 2026-09-24** by the owner as `bull88protocol`. A manual run
-  (Actions → "AI brief feed" → Run workflow, which passes `--force`) also needs that login: the
-  box's `gh` CLI is `CoinTranscend` and gets **HTTP 403 "Must have admin rights"** on dispatch, so
-  it can read runs and branches but never start one.
-- **Order in the app — the reverse of FRED, on purpose.** The feed comes first and a user's own key
-  second. FRED's rule (user's key first) is right there because a live fetch is *fresher* than the
-  last GitHub run. Here the user's key is the *slow* path, so the app paints the feed brief at once
-  and replaces it with their own when the 15-60s call returns. A user's own brief less than an hour
-  old (`DataRepository.OWN_KEY_FRESH_MS`) is kept as-is and no call is made at all.
-- **Two jobs, not one.** `MainViewModel.refresh()` runs the market fetch and the brief fetch in
-  parallel; only the market job drives the pull-to-refresh spinner. The brief job's stage two waits
-  on the market job so the prompt is anchored to the freshly fetched quote (the v2.6.0 consistency
-  rule). `SymbolState.carryingBriefFrom` / `withBrief` keep the two writers off each other's fields.
-- **Provenance is shown.** A feed brief was written against the price at generation time, which can
-  be an hour behind the quote on the Gold tab, so the tab prints "Shared brief · written 6:54 PM,
-  23 Sep" rather than implying it is live.
-- **Failure = safe:** bad key / Gemini down / a brief that fails validation (missing prose, fewer
-  than 2 news items, a news item with no URL) → the run fails, nothing is published, GitHub emails
-  the owner. The app drops any brief older than 12 hours (`BriefFeedClient.MAX_STALE_HOURS`).
-- **The wire format is a *parsed* brief, not a model response** — `GeminiResultJson`'s field names,
-  which the disk cache also uses. So `build_brief.py` and `GeminiClient.kt` may word their prompts
-  differently without the app ever mis-parsing a feed: prompt drift costs quality, never
-  correctness. `BriefFeedClientTest.parses_real_output_from_the_feed_generator` pins that contract
-  against a committed fixture of real generator output.
+### Hosted AI brief feed (AWS Lambda → `brief-data` branch)
+Why hosted: the Gemini call takes 15-60s, which made it the slowest thing in the app, and without a
+key the AI Brief and News tabs were simply empty. Generating it centrally means every install reads
+a ~200ms static file instead. **Live since 2026-09-26.**
+- **Trigger: AWS Lambda + EventBridge, not GitHub.** `cron(17 5,13,21 * * ? *)` — 01:17 / 09:17 /
+  17:17 ET, three a day. The last lands before the 6 PM ET report, which reads this same feed.
+  GitHub's scheduler was tried first and cannot do it: ~2 dispatches/day for this repo and **zero**
+  for a newly added hourly workflow over six hours across two cron variants, while `fred-feed.yml`
+  kept getting its usual two. See [[aurum-github-cron-unreliable]].
+- **Code:** `aws/brief-feed/` — `lambda_function.py`, `github_publish.py`, `deploy.sh`, `README.md`.
+  It packages `.github/brief-feed/build_brief.py` **verbatim**, so there is one prompt, one
+  validator and one output shape whichever side runs. `.github/workflows/brief-feed.yml` survives
+  as a manual `workflow_dispatch` escape hatch with **no schedule**.
+- **Publishing:** the same single orphan commit the workflow made, through the Git Data API
+  (blob → tree → parentless commit → forced ref update), because Lambda has no git. Keeps
+  `brief-data` at one commit instead of ~1,100 a year.
+- **Redeploy:** `GEMINI_API_KEY=… GITHUB_TOKEN=… ./aws/brief-feed/deploy.sh`. Idempotent. Keys are
+  Lambda env vars; `tok/` holds them locally and is gitignored. **Cost: inside the always-free
+  tier** (~90 requests and ~1.3k GB-seconds a month).
+- **No Search grounding — headlines come from RSS.** Grounding is unavailable on this key's tier
+  entirely: 429 RESOURCE_EXHAUSTED on every model for three days while plain generation answered
+  fine. It was never load-bearing anyway — prices come from Yahoo and the prompt defers to them.
+  `fetch_news` pulls three Google News RSS queries (~195 deduped items), and **the model picks
+  headlines by index and never writes a URL**; `to_brief` maps indices back to real RSS metadata,
+  so a hallucinated link is structurally impossible. Out-of-range or repeated indices are dropped.
+- **Two retry layers once cost 9 grounded calls an hour instead of 1** — `generate()` retried 429
+  three times, and Lambda's default async policy retried the invocation twice. Both fixed: all 4xx
+  fail fast, `MaximumRetryAttempts=0` (set by `deploy.sh`, so a fresh deploy cannot inherit the
+  default), and `MIN_AGE_MINUTES` is 400 as a backstop under the 480-minute schedule gap.
+- **Model:** `MODELS = ("gemini-3.6-flash", "gemini-flash-latest")`, tried in order — a pinned id
+  first, the alias behind it. Both failure modes are real and pull opposite ways: a pinned id gets
+  **retired** (2.5-flash did, and 404'd for every new user of the shipped app), while the `-latest`
+  alias tracks the newest model and is the most **overloaded** (503 on repeated attempts the same
+  week). Keep in step between `build_brief.py` and `GeminiClient.kt`.
+- **Failure = safe:** a bad key, an exhausted quota or a brief that fails validation (missing
+  prose, fewer than 2 news items, an unusable summary) raises, publishes nothing and logs to
+  CloudWatch; the last good brief stays up until the app ages it out.
+- **Watch:** the GitHub PAT expiring is the likeliest silent failure — fine-grained, Contents
+  read/write on this repo only, and nothing warns you when it lapses.
+- **Upgrade path:** `aws/brief-feed/DEEP_RESEARCH_PROMPT.md` + `deep_research_prompt.txt` — a daily
+  Gemini Deep Research prompt, pinned to the app's own five drivers, that emits the feed's exact
+  JSON schema. Not wired up; its URLs are model-written and would need validating first.
 - Local test without a key: `python3 .github/brief-feed/mock_server.py &` then
   `GEMINI_API_BASE=http://127.0.0.1:8731 YAHOO_API_BASE=http://127.0.0.1:8731 GEMINI_API_KEY=x
   python3 .github/brief-feed/build_brief.py --out /tmp/b.json`. The mock asserts the key stays in
-  the header; `--thin` makes it return a brief that should fail validation.
+  the header; `--thin` returns a brief that should fail validation. NB `fetch_news` is not mocked —
+  it hits Google News RSS for real, which is free and keyless.
 
 ### Google Sign-In / OAuth (Cloud Console — the SHA-1 trap)
 Sign-In powers only the **optional** Sheets sync (`GoogleAuthManager`, scope `drive.file`); quotes

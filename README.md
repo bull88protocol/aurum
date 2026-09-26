@@ -20,11 +20,14 @@ history chart, AI market brief, news, and exportable data.
 
 ## What it is
 
-Aurum88 Protocol is a **bring-your-own-keys** gold-market app for Android. It runs
-entirely on your device and connects directly to public (and optionally your own)
-data services — **there is no backend, and nothing is shipped or shared by us.**
-Your keys and data stay on your device. See [PRIVACY.md](PRIVACY.md) for exactly
-what is stored where.
+Aurum88 Protocol is a gold-market app for Android that **works out of the box with no
+API keys at all**. It runs entirely on your device, reading public price data and two
+small public data files we keep updated. There is no account, no backend of ours holding
+your data, and nothing about you is sent anywhere.
+
+You can optionally add your own free API keys to get the same data refreshed live on every
+pull rather than from the shared feeds. See [PRIVACY.md](PRIVACY.md) for exactly what is
+stored where.
 
 ## What it does
 
@@ -41,16 +44,16 @@ It distills the gold macro picture into one number and a clear read, across four
   signal** (3–6 month lean), a **history chart** with regime bands,
   and one-tap **CSV export** of the full index history.
 - **AI Brief** — a daily AI-generated market read: sentiment, last-session recap,
-  next-session outlook, and the key factors moving gold *(needs a free Gemini key)*.
-- **News** — the day's most relevant gold headlines, with source links
-  *(needs a free Gemini key)*.
+  next-session outlook, and the key factors moving gold. Refreshed for you several times
+  a day; the tab says when the brief you are reading was written.
+- **News** — the day's most relevant gold headlines, with source links.
 - **20 Days** — what real yields and the dollar did to gold over the last 20 trading
   days: a tailwind/headwind read, a one-year history, and gold's own 20-day move broken
   down into real yields, the dollar and everything else. It explains the move; it is not
-  a forecast. The dollar half needs no key; real yields use your FRED key.
+  a forecast.
 
-**Pull down on any tab to refresh.** Data is cached for instant open and auto-refreshes
-each morning; adding a key in Settings refreshes the relevant tabs automatically.
+**Pull down on any tab to refresh.** Data is cached for instant open, and a report lands
+each weekday evening. Adding a key in Settings refreshes the relevant tabs automatically.
 
 > The components above are what the engine weighs; the exact thresholds, regime
 > bands, and scoring math are intentionally not published.
@@ -58,14 +61,17 @@ each morning; adding a key in Settings refreshes the relevant tabs automatically
 ## Requirements
 
 - Android **8.0+** (API 26 or newer).
-- Works out of the box on **public price data** (Yahoo Finance) — no key needed for
-  the gold quote, intraday chart, and the USD + technical parts of the index.
-- *(Optional, for the full macro index + AI)* your own **free** keys, added in
-  **Settings**:
-  - **FRED** key — unlocks the Real Yield and Inflation components (St. Louis Fed).
-  - **Gemini** key — unlocks the AI Brief and News. (Central-Bank Demand now ships built-in
-    from a WGC net-purchase series — no key needed.)
-  The app degrades gracefully without them.
+- **No API keys needed.** Every tab works on install: the quote and chart from Yahoo
+  Finance, and the FRED-backed index components plus the AI brief and news from small
+  public data files we refresh for you.
+- *(Optional)* your own **free** keys, added in **Settings** under "Use your own API
+  keys". They change *freshness*, not access:
+  - **FRED** key — index components read FRED directly on every refresh, rather than
+    from the feed's last update.
+  - **Gemini** key — the AI brief is written against the live gold price each time you
+    refresh, rather than being the shared brief written earlier.
+  The app degrades gracefully if a feed or a key is unavailable, and says so rather than
+  showing you something stale without warning.
 - *(Optional)* a Google account to sync your market data to your own Google Sheet. (Quotes always
   use live Yahoo Finance, including pre/after-hours.)
 

@@ -41,7 +41,8 @@ the way a commodity macro desk weights them:
 
 **Your data stays yours.** Aurum88 Protocol runs no servers and collects nothing about you.
 It works out of the box on public price data, and unlocks the full macro index
-when you add your own free FRED key and (optionally) a Gemini key. Everything is
+with no API keys at all; adding your own free FRED or Gemini key refreshes the same
+data live on every pull instead of from the shared feed. Everything is
 stored encrypted on your device. Optional sync writes to *your own* Google Sheet.
 
 **Important:** Aurum88 Protocol is an informational tool, **not financial advice.** Data may

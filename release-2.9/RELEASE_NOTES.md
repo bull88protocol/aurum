@@ -2,7 +2,12 @@
 
 ## v2.9.0 (versionCode 17)
 
-**Status: signed AAB built and verified 2026-09-24. Ready to upload.**
+**Status: LIVE on Google Play Production, approved 2026-09-25.**
+
+Confirmed working in production from the owner's own install, with no API keys of any kind:
+the Gold Index shows all five components (2026-09-25), and the AI Brief and News tabs fill from
+the hosted brief feed (2026-09-26, once that feed finally published). A follow-up, **v2.9.1 /
+versionCode 18**, is committed but deliberately unbuilt — see the end of this file.
 
 **v2.8.0 / versionCode 16 is SKIPPED, superseded by this release** (decision 2026-09-24), the same
 way v2.1.1 and v2.2.0 were. v2.9.0 is a strict superset: it carries the 20 Days tab, the report's
@@ -210,3 +215,51 @@ way the FRED feed went live on 2026-09-17 while its app code sat on a branch. Th
 - `GeminiClient`'s prompt and `build_brief.py`'s prompt are maintained by hand in two languages.
   They are *allowed* to drift — the app parses the generator's output, not the model's, so drift
   costs quality and never correctness — but a real improvement to one should be copied to the other.
+
+
+---
+
+## Postscript — what it took to get the brief feed actually publishing
+
+v2.9.0 shipped before its own brief feed worked. The app degraded honestly in the meantime (the
+AI Brief tab said the shared brief could not be reached), and the feed came online two days later
+with no app update, which is the architecture working as intended. Three things had to be fixed,
+none of them visible from the code:
+
+1. **GitHub's scheduler cannot run this.** ~2 dispatches/day for this repo, clustered, with 15-18h
+   overnight gaps — and **zero** for a newly added hourly workflow over six hours across two cron
+   variants, while `fred-feed.yml` kept getting its usual two. The trigger moved to AWS Lambda +
+   EventBridge (`aws/brief-feed/`), which fires on time. The workflow survives as a manual escape
+   hatch with no schedule.
+2. **`gemini-2.5-flash` had been retired** — "no longer available to new users", 404 for any key
+   created after the cutoff. This was a *live production bug*, not a feed bug: the shipped app
+   asked for it, and `fetchAnalysisAndNews` swallowed the failure into an empty tab for every new
+   user. Both sides now try a pinned id then the `-latest` alias, because a pinned id gets retired
+   and the alias tracks the most overloaded model — both failure modes are real.
+3. **Search grounding is not available on the free tier at all.** Three days of 429
+   RESOURCE_EXHAUSTED on every model while plain generation answered fine. It was never
+   load-bearing: prices come from Yahoo and the prompt is told to defer to them. Headlines now come
+   from free Google News RSS, and **the model picks them by index and never writes a URL**, so a
+   hallucinated link is structurally impossible rather than merely unlikely.
+
+Two of our own bugs made (3) worse and are worth remembering: `generate()` retried 429 three times
+and Lambda's default async policy retried the invocation twice, so each hourly tick spent **nine**
+grounded calls instead of one — 216/day against a design that claimed 24. All 4xx now fail fast and
+`deploy.sh` sets `MaximumRetryAttempts=0` itself.
+
+The feed now runs **three times a day** (01:17 / 09:17 / 17:17 ET, the last before the 6 PM ET
+report), on the owner's call: the free tier is small and gold's macro story does not turn over in
+an hour.
+
+## v2.9.1 / versionCode 18 — committed, not built
+
+Deferred 2026-09-26 ("if one run is lost it won't matter"). Two changes, neither urgent:
+
+- **`BriefFeedClient.MAX_STALE_HOURS` 12 → 26.** At an 8-hour publishing cadence a single missed
+  run made a 16h gap and emptied the tab. 26 rides out two consecutive failures. The cost is that
+  a brief that old can describe the previous session — disclosed, since the tab prints
+  "Shared brief · written <time>".
+- **The `MODELS` fallback**, which earned its keep the day it was written: the first successful
+  publish came from the `-latest` alias because the pinned model was 503 at that moment.
+
+86 tests. Ship it with whatever goes next; the version is already bumped.
