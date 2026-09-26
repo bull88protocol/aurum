@@ -6,12 +6,16 @@ BEFORE WRITING ANYTHING, LOOK UP AND PIN THESE SIX NUMBERS
 
 Find each from a primary source and state it, with its date, in a short block at the very top of the report. Everything you write afterwards must be consistent with this block — if a commentary piece implies a different level, the block wins and the commentary is stale.
 
-- GLD closing price, and the session high and low
-- Spot XAU/USD
-- 10-year TIPS real yield (FRED DFII10)
-- 10-year breakeven (FRED T10YIE)
-- 2-year Treasury yield (FRED DGS2)
-- DXY
+Go to these exact sources. Do not take any of these six from a news article, a commentary piece or a forecast post — those lag, round, and are frequently stale by a day or more.
+
+- 10-year TIPS real yield: https://fred.stlouisfed.org/series/DFII10
+- 10-year breakeven: https://fred.stlouisfed.org/series/T10YIE
+- 2-year Treasury yield: https://fred.stlouisfed.org/series/DGS2
+- GLD close, session high and low: https://finance.yahoo.com/quote/GLD
+- Spot XAU/USD: https://finance.yahoo.com/quote/GC=F or another primary quote source
+- DXY: https://finance.yahoo.com/quote/DX-Y.NYB
+
+FRED publishes these with a one-business-day lag, so the latest value may be dated yesterday. That is expected and correct — report the value with its actual date rather than reaching for a fresher-looking number from somewhere less reliable.
 
 A test run on 2026-09-26 stated the 2-year at 5.14% when FRED had it at 4.87%, and put GLD support at $395 when GLD had closed at $393.41. Both errors came from reasoning off commentary instead of pinning the data first. Do not do that.
 
