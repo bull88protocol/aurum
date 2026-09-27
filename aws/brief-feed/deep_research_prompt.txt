@@ -110,7 +110,7 @@ End the report with the following, as a fenced json code block, filled in from w
     "score": 0,                         // 0-100 BULLISHNESS. Below 50 if sig is BEARISH.
     "desc": "<section 1, as 2-3 sentences>",
     "yr": "<section 2, as 3-4 sentences>",
-    "to": "<sections 6 and 7 condensed, as 3-4 sentences>",
+    "to": "<sections 6 and 7 condensed, as 3-4 sentences, then ONE more sentence giving section 8's INVERT falsifier with its number — e.g. 'This view flips bullish if the 10-year TIPS real yield closes below 2.25%.' That sentence is the only part of section 8 a reader of the app ever sees>",
     "lsl": "<last closed session, e.g. September 25>",
     "nsl": "<next session, e.g. September 28>",
     "kf": ["<driver doing the most work>", "<second>", "<third>"],
