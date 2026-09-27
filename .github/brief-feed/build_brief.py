@@ -81,6 +81,18 @@ NEWS_PICK = 5          # how many it must return
 # the 480-minute gap between scheduled runs, so it never blocks a real one.
 MIN_AGE_MINUTES = 400
 
+# Optional: a Google Doc holding the day's Deep Research report (aws/brief-feed/deep_research_prompt.txt).
+# Set DEEP_RESEARCH_DOC_ID and the doc's JSON block supplies the ANALYSIS — signal, score and the
+# three prose fields — while the RSS pass keeps supplying the headlines. It is a merge rather than
+# a replacement because the app's News tab and the PDF's news section both read brief.news, and a
+# Deep Research report always has news: [] by design.
+#
+# The doc is read through Docs' plain-text export, which needs no OAuth and no client library as
+# long as the doc is link-shared, so the Lambda stays stdlib-only. Unset, everything below is
+# skipped and the feed behaves exactly as before.
+DEEP_RESEARCH_DOC = "https://docs.google.com/document/d/{doc_id}/export?format=txt"
+DEEP_RESEARCH_MAX_AGE_H = 24
+
 SCHEMA = 1
 
 
@@ -333,6 +345,97 @@ def extract_json(text):
         return None
 
 
+# ── Deep Research overlay ────────────────────────────────────────────────────
+
+def fetch_deep_research(doc_id, now_utc, expect_lsl):
+    """The JSON block from the Deep Research doc, or None if unusable.
+
+    Refuses anything that is not schema 1, is older than [DEEP_RESEARCH_MAX_AGE_H], or describes a
+    different trading session than the one this run is covering — that last check is the important
+    one. A report written on Sunday evening is still correct on Monday morning and wrong by Monday
+    evening, and the session label says so precisely where an age in hours only approximates it.
+    """
+    if not doc_id:
+        return None
+    try:
+        req = urllib.request.Request(DEEP_RESEARCH_DOC.format(doc_id=doc_id),
+                                     headers={"User-Agent": "aurum-brief-feed/1"})
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            text = resp.read().decode("utf-8", "replace")
+    except (urllib.error.URLError, TimeoutError, OSError) as e:
+        print(f"deep research: doc unreadable ({type(e).__name__}) — using the RSS brief")
+        return None
+
+    doc = _extract_json_block(text)
+    if not doc or doc.get("schema") != SCHEMA:
+        print("deep research: no schema-1 JSON block in the doc — using the RSS brief")
+        return None
+
+    try:
+        age_h = (now_utc - dt.datetime.fromisoformat(
+            doc["as_of_utc"].replace("Z", "+00:00"))).total_seconds() / 3600
+    except (KeyError, ValueError, TypeError):
+        print("deep research: unreadable as_of_utc — using the RSS brief")
+        return None
+    if not (-2 <= age_h <= DEEP_RESEARCH_MAX_AGE_H):
+        print(f"deep research: report is {age_h:.1f}h old — using the RSS brief")
+        return None
+
+    got_lsl = (doc.get("brief") or {}).get("lsl", "")
+    # "September 25, 2026" and "September 25" should both match; compare on the leading date.
+    if not got_lsl.startswith(expect_lsl):
+        print(f"deep research: report covers '{got_lsl}', this run covers '{expect_lsl}' "
+              f"— using the RSS brief")
+        return None
+
+    print(f"deep research: using analysis from {doc['as_of_utc']} ({age_h:.1f}h old)")
+    return doc["brief"]
+
+
+def _extract_json_block(text):
+    """First balanced {...} containing a "schema" key. Same shape as check_report.py's."""
+    for start in (i for i, c in enumerate(text) if c == "{"):
+        depth, in_str, esc = 0, False, False
+        for i, ch in enumerate(text[start:], start):
+            if in_str:
+                if esc:
+                    esc = False
+                elif ch == "\\":
+                    esc = True
+                elif ch == '"':
+                    in_str = False
+                continue
+            if ch == '"':
+                in_str = True
+            elif ch == "{":
+                depth += 1
+            elif ch == "}":
+                depth -= 1
+                if depth == 0:
+                    try:
+                        obj = json.loads(text[start:i + 1])
+                    except ValueError:
+                        break
+                    if isinstance(obj, dict) and "schema" in obj:
+                        return obj
+                    break
+    return None
+
+
+def overlay_deep_research(brief, dr):
+    """Deep Research supplies the analysis; the RSS pass keeps the headlines.
+
+    news is deliberately NOT taken from [dr]: the prompt bans it from writing URLs, so its news
+    array is always empty, and brief.news is what the app's News tab and the PDF both render.
+    """
+    merged = dict(brief)
+    for field in ("sig", "score", "desc", "yr", "to", "kf"):
+        value = dr.get(field)
+        if value not in (None, "", []):
+            merged[field] = value
+    return merged
+
+
 # ── Parse + validate ──────────────────────────────────────────────────────────
 # The output uses GeminiCache's short field names (sig/score/desc/yr/to/lsl/nsl/kf/news) so the app
 # deserializes a feed brief with exactly the code that reads its own on-disk cache.
@@ -446,6 +549,17 @@ def build_feed(key, now_utc=None):
         raise BriefError("Gemini returned no parseable JSON object")
 
     brief = to_brief(parsed, last_short, next_short, articles)
+
+    # Optional overlay. Anything wrong with the doc — missing, stale, wrong session, unparseable —
+    # logs a line and leaves the RSS brief untouched, so the feed degrades to its normal output
+    # rather than failing.
+    dr = fetch_deep_research(os.environ.get("DEEP_RESEARCH_DOC_ID", "").strip(),
+                             now_utc, last_short)
+    analysis_source = "rss"
+    if dr:
+        brief = overlay_deep_research(brief, dr)
+        analysis_source = "deep-research"
+
     validate(brief)
 
     print(f"{brief['sig']} {brief['score']}/100 · {len(brief['news'])} news items · sessions "
@@ -456,6 +570,7 @@ def build_feed(key, now_utc=None):
         "model": model,
         "symbol": SYMBOL,
         "quote_at_generation": quote,   # what the brief's numbers were written against
+        "analysis_source": analysis_source,   # "rss" or "deep-research"; the app ignores it
         "brief": brief,
     }
 

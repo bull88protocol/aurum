@@ -52,6 +52,38 @@ aws lambda invoke --function-name aurum-brief-feed \
 git fetch origin brief-data && git show FETCH_HEAD:brief_daily.json | python3 -m json.tool | head -20
 ```
 
+## Optional: feeding in the Deep Research report
+
+Set `DEEP_RESEARCH_DOC_ID` and the day's Deep Research report supplies the **analysis** while the
+RSS pass keeps supplying the **headlines**.
+
+It is a merge and not a replacement, for a concrete reason: the app's News tab and the PDF's news
+section both render `brief.news`, and `deep_research_prompt.txt` bans the model from writing URLs,
+so a Deep Research report always has `news: []`. Dropping it in whole would empty both.
+
+`sig`, `score`, `desc`, `yr`, `to` and `kf` come from the report; `news` stays from RSS. The
+published feed records which it used in `analysis_source`.
+
+**Setup** — no OAuth, no service account, no new Lambda dependencies:
+
+1. Put the report in one Google Doc. Keep reusing the same doc; the ID is what Lambda reads.
+2. Share → General access → **Anyone with the link → Viewer**. The doc is then readable via Docs'
+   plain-text export, which is why this needs no credentials. It also means anyone with the link
+   can read it, so do not put anything private in that doc.
+3. Take the ID out of the URL: `docs.google.com/document/d/`**`<ID>`**`/edit`
+4. `DEEP_RESEARCH_DOC_ID=<ID> GEMINI_API_KEY=… GITHUB_TOKEN=… ./aws/brief-feed/deploy.sh`
+
+**When the doc is ignored**, each logging a line and falling back to the RSS brief rather than
+failing: the doc is unreachable or not shared; it has no schema-1 JSON block; its `as_of_utc` is
+more than 24 hours old; or its `lsl` names a different session than the run is covering. That last
+check is the one that matters — a report written Sunday evening is still right on Monday morning
+and wrong by Monday evening, and the session label says so exactly where an age in hours only
+approximates it.
+
+**Timing.** Deep Research at ~16:00 ET → the doc → the 17:17 ET feed run merges and publishes →
+the 6 PM ET report reads the merged feed. The 01:17 and 09:17 runs will reuse the same report
+while it still covers the current session, then fall back on their own.
+
 ## Cost
 
 Free, and not marginally. 24 invocations a day at ~60s and 256 MB is ~730 requests and ~11,000
