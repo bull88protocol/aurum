@@ -141,10 +141,33 @@ def main():
               f"as of {dates[fred_id]}; report cites {cited}")
 
     print("\nNEWS LINKS")
-    for n in b.get("news") or []:
+    news = b.get("news") or []
+    if not news:
+        print("  SKIP  no news array — correct; the prompt bans URLs and the app sources news from RSS")
+    for n in news:
         url = n.get("url", "")
         path = re.sub(r"^https?://[^/]+", "", url)
-        check(len(path.strip("/")) > 3, f"{n.get('src', '?')} link has an article path", url or "(none)")
+        if len(path.strip("/")) <= 3:
+            check(False, f"{n.get('src', '?')} link has an article path", url or "(none)")
+            continue
+        # A placeholder slug is the clearest fabrication tell there is.
+        if re.search(r"\b(abc|xxx|example|placeholder|slug|1234)\w*\b", url, re.I):
+            check(False, f"{n.get('src', '?')} link looks fabricated", url)
+            continue
+        # 404 is decisive. 401/403 usually means a paywall or bot-block, which proves nothing.
+        try:
+            req = urllib.request.Request(url, method="HEAD", headers={"User-Agent": "Mozilla/5.0"})
+            code = urllib.request.urlopen(req, timeout=20).status
+        except urllib.error.HTTPError as e:
+            code = e.code
+        except Exception:
+            code = 0
+        if code == 404:
+            check(False, f"{n.get('src', '?')} link is a 404", url)
+        elif code in (401, 403, 0):
+            print(f"  ????  {n.get('src', '?')} link unverifiable (HTTP {code or 'no response'}) — paywall or bot-block")
+        else:
+            check(True, f"{n.get('src', '?')} link resolves", f"HTTP {code}")
 
     print(f"\n{'ALL CHECKS PASSED' if not fails else str(len(fails)) + ' CHECK(S) FAILED'}")
     return 1 if fails else 0

@@ -18,7 +18,9 @@ Go to these exact sources. Do not take any of these six from a news article, a c
 - Spot XAU/USD: https://finance.yahoo.com/quote/GC=F or another primary quote source
 - DXY: https://finance.yahoo.com/quote/DX-Y.NYB
 
-FRED publishes these with a one-business-day lag, so the latest value may be dated yesterday. That is expected and correct — report the value with its actual date rather than reaching for a fresher-looking number from somewhere less reliable.
+FRED publishes these with a one-business-day lag, so the latest value may be dated a day or two back. That is expected and correct — report the value with its actual date rather than reaching for a fresher-looking number from somewhere less reliable.
+
+Take the BOTTOM row of FRED's table — the most recent observation — and copy its date from that same row. Do not assume the latest value is dated today. A test run reported DFII10 as "2.76% (September 25)" when 2.76 was the September 23 print and the latest was 2.85; the number was real, the row was wrong, and the whole argument was then built on a stale figure while claiming it was current.
 
 A test run on 2026-09-26 stated the 2-year at 5.14% when FRED had it at 4.87%, and put GLD support at $395 when GLD had closed at $393.41. Both errors came from reasoning off commentary instead of pinning the data first. Do not do that.
 
@@ -52,13 +54,13 @@ SECTIONS, IN THIS ORDER
 
 8. LEVELS — support and resistance for spot XAU/USD and for the GLD ETF, with what makes each level matter (prior close, 50/200-day moving average, option strike, prior breakdown). Check each against the pinned block at the top: every support must be BELOW the current price and every resistance ABOVE it, for both instruments. The GLD levels and the spot levels must also imply roughly the same percentage moves as each other.
 
-9. NEWS THAT MATTERS — the five most consequential stories of the last 48 hours.
+9. WHAT YOU READ — the five most consequential things you actually found, most important first. For each: the headline as published, the publisher, the date, and one line on why it moves gold.
 
-A story is a piece of journalism reporting an event. These do not count, and a test run returned four of the five from this list: auto-generated data cards (24/7 Wall St "cards" and similar), live quote pages ("US Dollar Index Today: 100.97" is a number, not a story), evergreen explainers, and buy/sell signal sites. Nor does anything published by a bullion dealer or anyone else selling the asset — they have a position.
+DO NOT WRITE URLs. Not for these, not anywhere in the report. Three test runs produced, in order: five homepages; five real-but-worthless links (data cards, a quote page, a bullion dealer); and five authoritative-looking links of which one contained the literal placeholder "abc123xx" and another 404'd. Asking for a URL you do not have reliably produces a plausible one, and a fabricated Reuters link is far more dangerous than no link, because nothing about it looks wrong.
 
-Prefer wire services and established financial press: Reuters, Bloomberg, the FT, the WSJ, Kitco, MarketWatch, CNBC, Mining.com. At most two from any one publisher.
+Only include a story you actually opened and read. If you are unsure a piece exists as described, leave it out — four solid items beat five with one invented. Do not include auto-generated data cards, live quote pages, evergreen explainers, buy/sell signal sites, or anything published by someone selling gold.
 
-For each: headline, publisher, date, the full direct article URL, and one line on why it moves gold. The URL must be the article's own address with a path — "https://reuters.com" is not acceptable, "https://www.reuters.com/markets/commodities/<slug>" is. If you cannot produce the real article URL, drop that story and use another; a wrong link is worse than one fewer item. No corporate news from individual miners unless it moves the metal. Prefer a spread of publishers — at most two from any one.
+Sanity-check each date against the calendar before you write it: a test run cited "Central Banks Added 120 Tonnes of Gold in Q3, WGC Reports" dated 24 September, six days before Q3 had even ended.
 
 10. WHAT WOULD CHANGE MY MIND — three specific, falsifiable things that would break the view in section 1. Be concrete: a level, a print, a date.
 
@@ -87,9 +89,7 @@ End the report with the following, as a fenced json code block, filled in from w
     "lsl": "<last closed session, e.g. September 25>",
     "nsl": "<next session, e.g. September 28>",
     "kf": ["<driver doing the most work>", "<second>", "<third>"],
-    "news": [
-      {"h": "<headline>", "s": "<why it moves gold>", "src": "<publisher>", "url": "<direct article URL>", "dt": "YYYY-MM-DD"}
-    ]
+    "news": []                          // Leave empty. The app sources news elsewhere.
   },
   "levels": {"spot_support": [0], "spot_resistance": [0], "gld_support": [0], "gld_resistance": [0]},
   "scenarios": [{"label": "", "probability": 0, "trigger": "", "target": ""}]

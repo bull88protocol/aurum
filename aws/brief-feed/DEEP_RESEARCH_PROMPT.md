@@ -32,7 +32,38 @@ model what to append to the report. Paste it along with everything else.
 The Gemini app's **Scheduled Actions** (Pro/Ultra) can run this daily. Set it for ~16:00 ET so it
 lands before the 17:17 ET feed run and the 6 PM ET report.
 
-## Test run, 2026-09-26 — verdict: read it, don't wire it in
+## Three test runs — what each one taught
+
+| | run 1 (09-26) | run 2 (09-26) | run 3 (09-27) |
+|---|---|---|---|
+| Checker failures | 8 | 1 | — |
+| Score direction | BEARISH scored 75 | fixed | fixed |
+| Levels vs price | GLD support above close | fixed | fixed, with implied % stated |
+| Driver figures | 2y 27bp wrong | correct | **right value, wrong row** |
+| News URLs | five homepages | real but worthless | **fabricated** |
+
+**Anchoring worked.** Naming exact source URLs took it from 8 failures to 1, and the analysis got
+better each time — run 3's "Western rate-driven capitulation sets the daily price, Eastern
+accumulation sets the floor" is a genuinely useful frame, and section 5 naming the crowded short as
+the risk to its own bearish call is exactly right.
+
+**But section 9 failed three times, three different ways, and the third was caused by the fix for
+the second.** Tightening the source rule to "prefer Reuters, Bloomberg, FT, WSJ, CNBC" made the
+model satisfy it by *generating plausible URLs at those domains*: one contained the literal
+placeholder `abc123xx`, one 404'd, and one cited a WGC Q3 report dated six days before Q3 ended.
+That is strictly worse than run 2's junk-but-real links, because nothing about it looks wrong.
+
+The lesson generalises: **a model asked for a URL it does not have will produce one.** The only
+structural fix is to never ask — which is exactly what the production RSS path does, where the
+model picks headlines by index from a real list and never writes a link. Section 9 now bans URLs
+outright and the JSON's `news` array is always empty.
+
+Run 3's other defect is subtler and worth watching: it read **real** FRED values but took the wrong
+row — 2.76 dated "September 25" was the September 23 print, when the latest was 2.85. The number
+was verifiable, the date was not, and the argument was then built on a stale figure. The prompt now
+says to take FRED's bottom row and copy the date from that same row.
+
+## Verdict: read it, don't wire it in
 
 First run through Gemini Pro Deep Research, checked against FRED and the app's own quote.
 
