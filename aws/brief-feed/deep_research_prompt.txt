@@ -40,11 +40,11 @@ SECTIONS, IN THIS ORDER
 
 2. THE SESSION — what gold did and why, in about 120 words. Lead with the actual close and % change. Attribute the move to specific drivers, not to "market sentiment".
 
-3. THE FIVE DRIVERS — a compact table: driver, current level, change (1 day / 20 days), direction of pressure on gold, one-line note. Then two or three sentences on whichever driver is doing the most work right now. Every number needs a date and a source.
+3. THE FIVE DRIVERS — a compact table: driver, current level, change (1 day / 20 days), direction of pressure on gold, one-line note. Where a driver's one-day pressure differs from its trend, say both rather than averaging them into one verdict — "BULLISH (1d), bearish trend" is more useful than "NEUTRAL". Then two or three sentences on whichever driver is doing the most work right now. Every number needs a date and a source.
 
 4. WHY THIS IS HAPPENING — about 200 words of causal narrative tying the drivers together. This is the section that earns the report. Not a list of facts: an argument about mechanism. Why are real yields where they are? What is the Fed reacting to? Who is buying, and why now?
 
-5. WHAT THE MARKET IS TALKING ABOUT — the prevailing narrative, and whether it is right. Positioning, flows, what the loud voices are saying, what is crowded. Flag where consensus looks wrong or stretched. About 150 words.
+5. WHAT THE MARKET IS TALKING ABOUT — the prevailing narrative, and whether it is right. Positioning, flows, what the loud voices are saying, what is crowded. Flag where consensus looks wrong or stretched — including when the crowded trade is the same side as your own call in section 1. If you are bearish and the short is crowded, say so; that is the most useful sentence in the section, not a contradiction of it. About 150 words.
 
 6. WHAT IT MEANS — two or three scenarios for the next 1-4 weeks. For each: a rough probability, the trigger that would produce it, and the level gold would be trading at. Probabilities should sum to about 100%.
 
