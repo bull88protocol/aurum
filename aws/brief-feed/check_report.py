@@ -136,8 +136,12 @@ def main():
                         headers={"User-Agent": "Mozilla/5.0"})
         with _u.urlopen(_r, timeout=30) as _resp:
             _d = json.load(_resp)["chart"]["result"][0]
-        closes = [c for c in _d["indicators"]["quote"][0]["close"] if c]
-        drawdown = closes[-1] / max(closes) - 1
+        _q = _d["indicators"]["quote"][0]
+        closes = [c for c in _q["close"] if c]
+        # Intraday highs, not closing highs: that is the 52-week-high convention, and using
+        # closes understated the drawdown by ~2pp when this was first written.
+        highs = [h for h in _q["high"] if h]
+        drawdown = closes[-1] / max(highs) - 1
         prose = " ".join(str(b.get(k, "")) for k in ("desc", "yr", "to")).lower()
         near_highs = any(p in prose for p in
                          ("near historic high", "near record", "near its high", "at record",

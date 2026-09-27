@@ -26,7 +26,9 @@ Name, next to each number, which page you actually read it from. If you could no
 
 WHERE THE PRICE SITS — three more, from https://finance.yahoo.com/quote/GLD/history
 
-- GLD 20-day change, in percent
+- GLD 20-day change, in percent — this one is not displayed anywhere, so compute it from the
+  history table: the latest close against the close 20 trading sessions earlier. A test run
+  answered "not found" for it while reading the moving averages off the same page
 - GLD 52-week high, and how far below it today's close is, in percent
 - GLD 50-day and 200-day moving averages, and whether the close is above or below each
 

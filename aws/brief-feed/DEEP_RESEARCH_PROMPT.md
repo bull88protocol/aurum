@@ -32,6 +32,25 @@ model what to append to the report. Paste it along with everything else.
 The Gemini app's **Scheduled Actions** (Pro/Ultra) can run this daily. Set it for ~16:00 ET so it
 lands before the 17:17 ET feed run and the 6 PM ET report.
 
+## Run 8: the position block worked
+
+Same prompt plus the three position numbers, and the thesis inverted back to correct. Where runs
+6 and 7 said "pinned near historic highs" with a crowded **long**, run 8 opens with a technical
+breakdown below the 200-day, states gold is "22.82% below its 52-week high", and reads the
+crowding the right way round — *"the short trade is now intensely crowded... pressing fresh shorts
+down here is dangerous"* — while still committing to BEARISH on the rates mechanics. Score moved
+35 → 20, consistent with the corrected read.
+
+The numbers it pinned were exact to the cent: 50-day $395.43, 200-day $416.44, 52-week high
+$509.70, and the drawdown at 22.82%. It also used the **intraday** high for the 52-week figure,
+which is the standard convention — `check_report.py` had been using closing highs and understating
+the drawdown by about 2pp. The report was right and the checker was wrong; the checker is fixed.
+
+Two small things left. Friday's session high comes back $0.08 light across every run ($394.14 vs
+$394.22) — immaterial, and not worth prompt text. And it answered "not found" for the 20-day change
+while reading the moving averages off the same page, because that figure is not displayed anywhere;
+the prompt now says to compute it from the history table.
+
 ## Run 6: the failure the checker could not see
 
 Run 6 had every pinned number right and an inverted thesis. It described gold as "pinned near
