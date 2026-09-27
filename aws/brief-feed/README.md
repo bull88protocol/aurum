@@ -66,12 +66,19 @@ published feed records which it used in `analysis_source`.
 
 **Setup** — no OAuth, no service account, no new Lambda dependencies:
 
-1. Put the report in one Google Doc. Keep reusing the same doc; the ID is what Lambda reads.
-2. Share → General access → **Anyone with the link → Viewer**. The doc is then readable via Docs'
-   plain-text export, which is why this needs no credentials. It also means anyone with the link
-   can read it, so do not put anything private in that doc.
-3. Take the ID out of the URL: `docs.google.com/document/d/`**`<ID>`**`/edit`
-4. `DEEP_RESEARCH_DOC_ID=<ID> GEMINI_API_KEY=… GITHUB_TOKEN=… ./aws/brief-feed/deploy.sh`
+1. Make **one** Google Doc and keep reusing it. Name it whatever you like; only the ID matters.
+2. Share → General access → **Anyone with the link → Viewer**. That is what makes the
+   credential-free plain-text export work. It also means anyone with the link can read it, so
+   nothing private goes in that doc.
+3. Each day, paste **the whole report** into it — prose and the fenced JSON block. The JSON is
+   what the feed reads; the prose is for you. **Append or replace, either works**: the extractor
+   scans every schema-1 block in the doc and takes the one with the newest `as_of_utc`.
+4. ID from the URL: `docs.google.com/document/d/`**`<ID>`**`/edit`
+5. Check it before deploying — this fetches the doc exactly the way the Lambda will:
+   ```bash
+   python3 aws/brief-feed/check_doc.py <ID>
+   ```
+6. `DEEP_RESEARCH_DOC_ID=<ID> GEMINI_API_KEY=… GITHUB_TOKEN=… ./aws/brief-feed/deploy.sh`
 
 **When the doc is ignored**, each logging a line and falling back to the RSS brief rather than
 failing: the doc is unreachable or not shared; it has no schema-1 JSON block; its `as_of_utc` is

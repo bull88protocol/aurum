@@ -393,7 +393,14 @@ def fetch_deep_research(doc_id, now_utc, expect_lsl):
 
 
 def _extract_json_block(text):
-    """First balanced {...} containing a "schema" key. Same shape as check_report.py's."""
+    """The NEWEST schema-1 JSON block in the doc, by as_of_utc.
+
+    Newest rather than first on purpose. Appending each day's report to one running doc is the
+    natural way to keep this, and taking the first block would pin the feed to the oldest report
+    forever — which the session check would then reject, falling back to RSS silently and looking
+    like the doc was never wired up. Scanning them all means append or replace both work.
+    """
+    blocks = []
     for start in (i for i, c in enumerate(text) if c == "{"):
         depth, in_str, esc = 0, False, False
         for i, ch in enumerate(text[start:], start):
@@ -417,9 +424,13 @@ def _extract_json_block(text):
                     except ValueError:
                         break
                     if isinstance(obj, dict) and "schema" in obj:
-                        return obj
+                        blocks.append(obj)
                     break
-    return None
+    if not blocks:
+        return None
+    if len(blocks) > 1:
+        print(f"deep research: {len(blocks)} reports in the doc — taking the newest")
+    return max(blocks, key=lambda b: str(b.get("as_of_utc", "")))
 
 
 def overlay_deep_research(brief, dr):
