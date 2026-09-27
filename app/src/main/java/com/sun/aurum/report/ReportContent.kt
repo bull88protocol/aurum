@@ -230,6 +230,18 @@ object GoldReportContent {
                 ?: "NEXT SESSION OUTLOOK"
             blocks += Block.Labeled(label, it)
         }
+        // The deep sections, when the brief came from a Deep Research run. Placed after the
+        // outlook and before the key factors so the PDF reads in the same order as the tab.
+        gold.geminiWhy.takeIf { it.isNotBlank() }?.let {
+            blocks += Block.Labeled("WHY THIS IS HAPPENING", it)
+        }
+        gold.geminiConsensus.takeIf { it.isNotBlank() }?.let {
+            blocks += Block.Labeled("WHAT THE MARKET IS SAYING", it)
+        }
+        if (gold.geminiFalsifiers.isNotEmpty()) {
+            blocks += Block.Labeled("WHAT WOULD CHANGE THIS VIEW", "")
+            blocks += Block.Bullets(gold.geminiFalsifiers)
+        }
         if (gold.geminiKeyFactors.isNotEmpty()) {
             blocks += Block.Labeled("KEY FACTORS", "")
             blocks += Block.Bullets(gold.geminiKeyFactors)

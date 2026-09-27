@@ -58,6 +58,10 @@ object DataCache {
         put("gkf2", JSONArray().also { a -> geminiKeyFactors.forEach { a.put(it) } })
         // briefLoading is deliberately not persisted: it describes a fetch in flight, and a cache
         // restored with it set would open the tab on a spinner that nothing will ever clear.
+        if (geminiWhy.isNotBlank()) put("gwhy", geminiWhy)
+        if (geminiConsensus.isNotBlank()) put("gcons", geminiConsensus)
+        if (geminiFalsifiers.isNotEmpty())
+            put("gfals", JSONArray().also { a -> geminiFalsifiers.forEach { a.put(it) } })
         if (briefGeneratedUtc != null) put("bgen", briefGeneratedUtc)
         if (briefFromFeed) put("bfeed", true)
     }
@@ -80,6 +84,9 @@ object DataCache {
         lastSessionLabel     = if (has("lsl2")) getString("lsl2") else null,
         nextSessionLabel     = if (has("nsl2")) getString("nsl2") else null,
         geminiKeyFactors     = if (has("gkf2")) getJSONArray("gkf2").let { a -> (0 until a.length()).map { a.getString(it) } } else emptyList(),
+        geminiWhy            = optString("gwhy", ""),
+        geminiConsensus      = optString("gcons", ""),
+        geminiFalsifiers     = if (has("gfals")) getJSONArray("gfals").let { a -> (0 until a.length()).map { a.getString(it) } } else emptyList(),
         briefGeneratedUtc    = if (has("bgen")) getString("bgen") else null,
         briefFromFeed        = optBoolean("bfeed", false),
     )

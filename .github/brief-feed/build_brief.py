@@ -464,11 +464,12 @@ def _extract_json_block(text):
 def overlay_deep_research(brief, dr):
     """Deep Research supplies the analysis; the RSS pass keeps the headlines.
 
-    news is deliberately NOT taken from [dr]: the prompt bans it from writing URLs, so its news
+    why/cons/fals are the three deep sections; only a Deep Research brief has them, and the app
+    hides each one it does not get. news is deliberately NOT taken from [dr]: the prompt bans it from writing URLs, so its news
     array is always empty, and brief.news is what the app's News tab and the PDF both render.
     """
     merged = dict(brief)
-    for field in ("sig", "score", "desc", "yr", "to", "kf"):
+    for field in ("sig", "score", "desc", "yr", "to", "kf", "why", "cons", "fals"):
         value = dr.get(field)
         if value not in (None, "", []):
             merged[field] = value

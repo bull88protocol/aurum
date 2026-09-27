@@ -32,6 +32,12 @@ object GeminiResultJson {
             }
         })
         if (result.goldCentralBankScore != null) put("gcbs", result.goldCentralBankScore)
+        // Deep-section fields, written only when populated so an RSS brief stays byte-identical
+        // to what it was before these existed.
+        if (result.why.isNotBlank()) put("why", result.why)
+        if (result.consensus.isNotBlank()) put("cons", result.consensus)
+        if (result.falsifiers.isNotEmpty())
+            put("fals", JSONArray().also { a -> result.falsifiers.forEach { a.put(it) } })
     }
 
     fun decode(json: JSONObject): GeminiResult = GeminiResult(
@@ -53,6 +59,11 @@ object GeminiResultJson {
             }
         } ?: emptyList(),
         goldCentralBankScore = if (json.has("gcbs")) json.optInt("gcbs", 50) else null,
+        why                  = json.optString("why", ""),
+        consensus            = json.optString("cons", ""),
+        falsifiers           = json.optJSONArray("fals")?.let { a ->
+            (0 until a.length()).map { a.getString(it) }
+        } ?: emptyList(),
     )
 
     /** True when a brief has enough substance to be worth showing instead of the empty state. */

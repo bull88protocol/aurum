@@ -182,6 +182,95 @@
                             android:textColor="@color/text_primary"
                             android:lineSpacingExtra="3dp" />
 
+                        <!-- The three deep sections. Only a Deep Research brief fills these; on
+                             an RSS day they are all GONE and tvDeepPending explains why. -->
+                        <TextView
+                            android:id="@+id/tvWhyLabel"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="WHY THIS IS HAPPENING"
+                            android:textSize="11sp"
+                            android:textColor="@color/text_secondary"
+                            android:letterSpacing="0.08"
+                            android:layout_marginTop="16dp"
+                            android:visibility="gone"
+                            tools:visibility="visible" />
+
+                        <TextView
+                            android:id="@+id/tvWhy"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textSize="13sp"
+                            android:textColor="@color/text_primary"
+                            android:lineSpacingExtra="3dp"
+                            android:layout_marginTop="4dp"
+                            android:visibility="gone"
+                            tools:text="Gold is caught between macroeconomic gravity and sovereign accumulation…"
+                            tools:visibility="visible" />
+
+                        <TextView
+                            android:id="@+id/tvConsensusLabel"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="WHAT THE MARKET IS SAYING"
+                            android:textSize="11sp"
+                            android:textColor="@color/text_secondary"
+                            android:letterSpacing="0.08"
+                            android:layout_marginTop="16dp"
+                            android:visibility="gone"
+                            tools:visibility="visible" />
+
+                        <TextView
+                            android:id="@+id/tvConsensus"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textSize="13sp"
+                            android:textColor="@color/text_primary"
+                            android:lineSpacingExtra="3dp"
+                            android:layout_marginTop="4dp"
+                            android:visibility="gone"
+                            tools:text="The short trade is now intensely crowded…"
+                            tools:visibility="visible" />
+
+                        <TextView
+                            android:id="@+id/tvFalsifiersLabel"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="WHAT WOULD CHANGE THIS VIEW"
+                            android:textSize="11sp"
+                            android:textColor="@color/text_secondary"
+                            android:letterSpacing="0.08"
+                            android:layout_marginTop="16dp"
+                            android:visibility="gone"
+                            tools:visibility="visible" />
+
+                        <TextView
+                            android:id="@+id/tvFalsifiers"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textSize="12sp"
+                            android:textColor="@color/text_secondary"
+                            android:lineSpacingExtra="3dp"
+                            android:layout_marginTop="4dp"
+                            android:visibility="gone"
+                            tools:text="• Invert: 10y TIPS closing below 2.25%"
+                            tools:visibility="visible" />
+
+                        <!-- Shown only when the deep sections are absent, so an empty tab reads as
+                             "not yet" rather than "broken". -->
+                        <TextView
+                            android:id="@+id/tvDeepPending"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Deep analysis — the causal read, what the market is saying, and what would change this view — arrives with the evening brief after the US close."
+                            android:textSize="11sp"
+                            android:textColor="@color/text_secondary"
+                            android:lineSpacingExtra="2dp"
+                            android:alpha="0.75"
+                            android:layout_marginTop="16dp"
+                            android:visibility="gone"
+                            tools:visibility="visible" />
+
                         <TextView
                             android:id="@+id/tvAiFactors"
                             android:layout_width="match_parent"

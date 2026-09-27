@@ -59,6 +59,40 @@ class GeminiResultJsonTest {
         assertEquals("", sparse.todayOutlook)
     }
 
+    private val deep = brief.copy(
+        why = "Real yields are doing the work because breakevens are anchored.",
+        consensus = "The short trade is crowded, which is where consensus looks stretched.",
+        falsifiers = listOf("Soften: ISM below 48", "Invert: 10y TIPS below 2.25%", "Weak joint: assumes ETF outflows persist"),
+    )
+
+    @Test fun round_trips_the_deep_sections() {
+        assertEquals(deep, GeminiResultJson.decode(GeminiResultJson.encode(deep)))
+    }
+
+    @Test fun an_rss_brief_writes_no_deep_keys_at_all() {
+        // Only a Deep Research brief has these. An RSS brief must serialise exactly as it did
+        // before the fields existed, so an older app reading a newer feed sees nothing new.
+        val keys = GeminiResultJson.encode(brief).keys().asSequence().toSet()
+        assertFalse(keys.contains("why"))
+        assertFalse(keys.contains("cons"))
+        assertFalse(keys.contains("fals"))
+    }
+
+    @Test fun deep_keys_use_the_names_the_feed_generator_writes() {
+        val keys = GeminiResultJson.encode(deep).keys().asSequence().toSet()
+        assertEquals(
+            setOf("sig", "score", "desc", "yr", "to", "lsl", "nsl", "kf", "news", "why", "cons", "fals"),
+            keys,
+        )
+    }
+
+    @Test fun a_feed_without_the_deep_keys_decodes_to_empty_not_null() {
+        val plain = GeminiResultJson.decode(GeminiResultJson.encode(brief))
+        assertEquals("", plain.why)
+        assertEquals("", plain.consensus)
+        assertEquals(emptyList<String>(), plain.falsifiers)
+    }
+
     @Test fun usable_means_at_least_one_piece_of_prose() {
         assertTrue(GeminiResultJson.isUsable(brief))
         assertTrue(GeminiResultJson.isUsable(brief.copy(description = "", yesterdayRecap = "")))

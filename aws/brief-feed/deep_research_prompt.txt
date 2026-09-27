@@ -114,6 +114,9 @@ End the report with the following, as a fenced json code block, filled in from w
     "lsl": "<last closed session, e.g. September 25>",
     "nsl": "<next session, e.g. September 28>",
     "kf": ["<driver doing the most work>", "<second>", "<third>"],
+    "why": "<section 4, the causal argument, in full — the app shows this verbatim>",
+    "cons": "<section 5, what the market is saying and whether it is right, in full>",
+    "fals": ["Soften: <…>", "Invert: <…>", "Weak joint: <…>"],
     "news": []                          // Always empty. Do not populate it, and do not write URLs anywhere.
   },
   "scenarios": [{"label": "", "probability": 0, "trigger": "", "target": ""}]

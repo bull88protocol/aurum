@@ -44,6 +44,11 @@ data class GeminiResult(
     val lastSessionLabel: String = "", // e.g. "March 17" — the last closed trading session
     val nextSessionLabel: String = "", // e.g. "March 18" — the next/upcoming trading session
     val goldCentralBankScore: Int? = null,
+    // The three deep sections. Only a Deep Research brief fills these; the RSS brief leaves them
+    // empty and the tab simply omits them. See aws/brief-feed/deep_research_prompt.txt.
+    val why: String = "",           // the causal argument — why the drivers are where they are
+    val consensus: String = "",     // what the market believes, and whether it is right
+    val falsifiers: List<String> = emptyList(),   // what would break the call, labelled
 )
 
 data class NewsItem(
@@ -75,6 +80,12 @@ data class SymbolState(
     val geminiTodayOutlook: String? = null,
     val lastSessionLabel: String? = null,
     val nextSessionLabel: String? = null,
+    /** The causal argument behind the read. Empty unless the brief came from a Deep Research run. */
+    val geminiWhy: String = "",
+    /** What the market believes and whether it is right. Empty unless from a Deep Research run. */
+    val geminiConsensus: String = "",
+    /** What would break the call. Empty unless from a Deep Research run. */
+    val geminiFalsifiers: List<String> = emptyList(),
     /** True while the AI brief is still being fetched, after the market data has already landed. */
     val briefLoading: Boolean = false,
     /** When a feed brief was generated (ISO-8601 UTC). Null for a brief from the user's own key. */
@@ -99,6 +110,9 @@ fun SymbolState.carryingBriefFrom(previous: SymbolState?): SymbolState =
         geminiTodayOutlook   = previous.geminiTodayOutlook,
         lastSessionLabel     = previous.lastSessionLabel,
         nextSessionLabel     = previous.nextSessionLabel,
+        geminiWhy            = previous.geminiWhy,
+        geminiConsensus      = previous.geminiConsensus,
+        geminiFalsifiers     = previous.geminiFalsifiers,
         briefLoading         = previous.briefLoading,
         briefGeneratedUtc    = previous.briefGeneratedUtc,
         briefFromFeed        = previous.briefFromFeed,
@@ -120,6 +134,9 @@ fun SymbolState.withBrief(
     geminiTodayOutlook   = brief?.todayOutlook,
     lastSessionLabel     = brief?.lastSessionLabel,
     nextSessionLabel     = brief?.nextSessionLabel,
+    geminiWhy            = brief?.why.orEmpty(),
+    geminiConsensus      = brief?.consensus.orEmpty(),
+    geminiFalsifiers     = brief?.falsifiers ?: emptyList(),
     briefLoading         = loading,
     briefGeneratedUtc    = generatedUtc.takeIf { brief != null },
     briefFromFeed        = fromFeed && brief != null,

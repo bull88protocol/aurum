@@ -95,6 +95,30 @@ class AiBriefFragment : Fragment() {
 
         binding.tvAiFactors.text = state.geminiKeyFactors.joinToString("\n") { "• $it" }
         binding.tvAiFactors.visibility = if (state.geminiKeyFactors.isEmpty()) View.GONE else View.VISIBLE
+
+        renderDeepSections(state)
+    }
+
+    /**
+     * The three sections only a Deep Research brief carries. The RSS brief leaves them empty, which
+     * is most of the day, so rather than three silent gaps the tab says when they turn up — an
+     * absent section that explains itself reads as "not yet" instead of "broken".
+     */
+    private fun renderDeepSections(state: SymbolState) {
+        val falsifiers = state.geminiFalsifiers.joinToString("\n") { "• $it" }
+        val sections = listOf(
+            Triple(binding.tvWhyLabel, binding.tvWhy, state.geminiWhy),
+            Triple(binding.tvConsensusLabel, binding.tvConsensus, state.geminiConsensus),
+            Triple(binding.tvFalsifiersLabel, binding.tvFalsifiers, falsifiers),
+        )
+        for ((label, body, text) in sections) {
+            val show = text.isNotBlank()
+            label.visibility = if (show) View.VISIBLE else View.GONE
+            body.visibility = if (show) View.VISIBLE else View.GONE
+            if (show) body.text = text
+        }
+        binding.tvDeepPending.visibility =
+            if (sections.none { it.third.isNotBlank() }) View.VISIBLE else View.GONE
     }
 
 

@@ -76,6 +76,34 @@ class BriefMergeTest {
         assertTrue(SymbolState("GLD").carryingBriefFrom(loading).briefLoading)
     }
 
+    @Test fun withBrief_carries_the_deep_sections() {
+        val deep = brief.copy(
+            why = "Because breakevens are anchored.",
+            consensus = "The short is crowded.",
+            falsifiers = listOf("Invert: TIPS below 2.25%"),
+        )
+        val s = SymbolState("GLD").withBrief(deep)
+        assertEquals("Because breakevens are anchored.", s.geminiWhy)
+        assertEquals("The short is crowded.", s.geminiConsensus)
+        assertEquals(listOf("Invert: TIPS below 2.25%"), s.geminiFalsifiers)
+    }
+
+    @Test fun an_rss_brief_leaves_the_deep_sections_empty_so_the_tab_hides_them() {
+        val s = SymbolState("GLD").withBrief(brief)
+        assertEquals("", s.geminiWhy)
+        assertEquals("", s.geminiConsensus)
+        assertEquals(emptyList<String>(), s.geminiFalsifiers)
+    }
+
+    @Test fun carryingBriefFrom_keeps_the_deep_sections_through_a_market_refresh() {
+        val withDeep = SymbolState("GLD").withBrief(brief.copy(
+            why = "w", consensus = "c", falsifiers = listOf("f")))
+        val merged = SymbolState("GLD", quote = quote).carryingBriefFrom(withDeep)
+        assertEquals("w", merged.geminiWhy)
+        assertEquals("c", merged.geminiConsensus)
+        assertEquals(listOf("f"), merged.geminiFalsifiers)
+    }
+
     @Test fun carryingBriefFrom_nothing_is_a_no_op() {
         val fresh = SymbolState("GLD", quote = quote)
         assertEquals(fresh, fresh.carryingBriefFrom(null))
