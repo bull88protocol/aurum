@@ -94,7 +94,9 @@ class AiBriefFragment : Fragment() {
         binding.tvTodayOutlook.visibility = if (state.geminiTodayOutlook.isNullOrBlank()) View.GONE else View.VISIBLE
 
         binding.tvAiFactors.text = state.geminiKeyFactors.joinToString("\n") { "• $it" }
-        binding.tvAiFactors.visibility = if (state.geminiKeyFactors.isEmpty()) View.GONE else View.VISIBLE
+        val hasFactors = state.geminiKeyFactors.isNotEmpty()
+        binding.tvAiFactors.visibility = if (hasFactors) View.VISIBLE else View.GONE
+        binding.tvAiFactorsLabel.visibility = if (hasFactors) View.VISIBLE else View.GONE
 
         renderDeepSections(state)
     }

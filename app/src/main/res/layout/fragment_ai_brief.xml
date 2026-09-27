@@ -271,6 +271,20 @@
                             android:visibility="gone"
                             tools:visibility="visible" />
 
+                        <!-- Labelled since v2.9.1: the falsifiers above are also a bullet list,
+                             and two unlabelled lists in a row read as one. -->
+                        <TextView
+                            android:id="@+id/tvAiFactorsLabel"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="KEY FACTORS"
+                            android:textSize="11sp"
+                            android:textColor="@color/text_secondary"
+                            android:letterSpacing="0.08"
+                            android:layout_marginTop="16dp"
+                            android:visibility="gone"
+                            tools:visibility="visible" />
+
                         <TextView
                             android:id="@+id/tvAiFactors"
                             android:layout_width="match_parent"
