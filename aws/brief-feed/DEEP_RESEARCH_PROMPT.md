@@ -32,15 +32,40 @@ model what to append to the report. Paste it along with everything else.
 The Gemini app's **Scheduled Actions** (Pro/Ultra) can run this daily. Set it for ~16:00 ET so it
 lands before the 17:17 ET feed run and the 6 PM ET report.
 
-## Three test runs — what each one taught
+## The pattern across four runs
 
-| | run 1 (09-26) | run 2 (09-26) | run 3 (09-27) |
-|---|---|---|---|
-| Checker failures | 8 | 1 | — |
-| Score direction | BEARISH scored 75 | fixed | fixed |
-| Levels vs price | GLD support above close | fixed | fixed, with implied % stated |
-| Driver figures | 2y 27bp wrong | correct | **right value, wrong row** |
-| News URLs | five homepages | real but worthless | **fabricated** |
+**Every fix worked, and two of them created the next problem.** That turns out to be the most
+useful thing these runs taught, and it is worth internalising before editing this prompt again:
+
+> **A constraint on the OUTPUT invites fabrication. A constraint on the PROCESS produces truth.**
+
+"Pin these six numbers from these exact URLs, take FRED's bottom row" is a process constraint — it
+took the data from wrong to exact. "Prefer Reuters, Bloomberg, FT" is an output constraint, and the
+model satisfied it by inventing URLs at those domains. "The GLD and spot levels must imply the same
+percentage move" is an output constraint, and the model satisfied it by deriving all four levels
+from one number and rescaling, to the cent, while calling one of them a "prior breakdown level".
+
+When adding a rule, ask which kind it is. If it describes what the answer should look like rather
+than where to go and what to read, it will be met by construction rather than by research.
+
+## Four test runs — what each one taught
+
+| | run 1 | run 2 | run 3 | run 4 |
+|---|---|---|---|---|
+| Checker failures | 8 | 1 | 2 | 3 |
+| Score direction | scored 75 on a bearish call | fixed | fixed | fixed |
+| Levels vs price | support above close | fixed | fixed | fixed, but **derived** |
+| Pinned data | n/a | 2y 27bp wrong | right value, **wrong row** | **all six exact** |
+| News URLs | five homepages | real but worthless | **fabricated** | section removed |
+| Falsifiers | generic | generic | generic | **names its own unverified assumption** |
+
+Run 4 got the data completely right — all six pinned figures exact, with correct dates — and used
+"Not found" honestly four times rather than inventing. Its third falsifier is exactly what that
+section is for: *"This bearish call assumes ETF outflows drove Friday's price action; if SPDR
+reports net inflows for September 25 when data drops Monday, my premise is flawed."* That is the
+report criticising its own thesis with a clock on it.
+
+It also quoted GC=F at +0.83% on a day GLD moved +0.44% — same metal, so one of them was misread.
 
 **Anchoring worked.** Naming exact source URLs took it from 8 failures to 1, and the analysis got
 better each time — run 3's "Western rate-driven capitulation sets the daily price, Eastern

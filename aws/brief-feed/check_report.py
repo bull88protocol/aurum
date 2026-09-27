@@ -140,6 +140,22 @@ def main():
         check(ok, f"{label} matches FRED {truth}",
               f"as of {dates[fred_id]}; report cites {cited}")
 
+    print("\nLEVELS — derived or researched?")
+    if gld and lv.get("gld_support") and lv.get("gld_resistance"):
+        sup, res = lv["gld_support"][0], lv["gld_resistance"][0]
+        down, up = sup / gld - 1, res / gld - 1
+        # Real support and resistance are not equidistant from the close; that only happens when
+        # one was computed from the other. Run 4 mirrored Friday's session low to the cent.
+        check(abs(down + up) > 0.0015,
+              "GLD levels are not a mirror of each other",
+              f"support {down*100:+.2f}%, resistance {up*100:+.2f}% — symmetric to within "
+              f"{abs(down + up)*100:.3f}pp, which means one was derived from the other")
+        for label, vals in (("GLD", lv.get("gld_support", []) + lv.get("gld_resistance", [])),
+                            ("spot", lv.get("spot_support", []) + lv.get("spot_resistance", []))):
+            cents = [v for v in vals if round(v, 2) != round(v * 2) / 2]
+            check(not cents, f"{label} levels rounded like a desk would quote them",
+                  f"quoted to the cent: {cents} — that is a calculation, not a level")
+
     print("\nNEWS LINKS")
     news = b.get("news") or []
     if not news:
