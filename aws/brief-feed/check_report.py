@@ -12,6 +12,7 @@ Exit status is 0 when everything passes, 1 when anything fails.
 """
 import html
 import json
+import os
 import re
 import sys
 import urllib.error
@@ -35,33 +36,17 @@ def load_text(path):
 
 
 def extract_json(text):
-    """The report's JSON block: the first balanced {...} containing a "schema" key."""
-    for start in (m.start() for m in re.finditer(r"\{", text)):
-        depth, in_str, esc = 0, False, False
-        for i, ch in enumerate(text[start:], start):
-            if in_str:
-                if esc:
-                    esc = False
-                elif ch == "\\":
-                    esc = True
-                elif ch == '"':
-                    in_str = False
-                continue
-            if ch == '"':
-                in_str = True
-            elif ch == "{":
-                depth += 1
-            elif ch == "}":
-                depth -= 1
-                if depth == 0:
-                    try:
-                        obj = json.loads(text[start:i + 1])
-                    except ValueError:
-                        break
-                    if isinstance(obj, dict) and "schema" in obj:
-                        return obj
-                    break
-    return None
+    """The report's JSON block, via the generator's own extractor.
+
+    Deliberately not a second implementation. There was one here, it did not get the fix for the
+    literal \\n sequences a Google Docs export leaves in a code block, and it then reported "no
+    JSON block" on a doc the Lambda parsed fine — the two disagreeing about the same file is worse
+    than either being wrong.
+    """
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                    "..", "..", ".github", "brief-feed"))
+    import build_brief
+    return build_brief._extract_json_block(text)
 
 
 def fetch(url):

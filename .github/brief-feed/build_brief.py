@@ -394,6 +394,32 @@ def fetch_deep_research(doc_id, now_utc, expect_lsl):
     return doc["brief"]
 
 
+def _loads_forgiving(raw):
+    """(parsed, repair_used) — json.loads, progressively repairing what Docs does to a code block.
+
+    Exporting a doc flattens the fenced JSON: its newlines come back as literal backslash-n
+    sequences, which outside a string is a syntax error, so a strict parse finds nothing and the
+    feed falls back to RSS looking like the doc was never wired up. Docs also likes turning
+    straight quotes into curly ones.
+
+    Strict first, always — a repair only runs once the raw text has genuinely failed, so a
+    well-formed block is never touched. The \\n repair would corrupt a deliberately escaped
+    newline inside a string value, which no field in this schema has.
+    """
+    attempts = (
+        ("as written", lambda t: t),
+        ("un-escaping literal \\n", lambda t: t.replace("\\n", "\n")),
+        ("straightening smart quotes", lambda t: t.replace("\u201c", '"').replace("\u201d", '"')),
+        ("both", lambda t: t.replace("\\n", "\n").replace("\u201c", '"').replace("\u201d", '"')),
+    )
+    for label, repair in attempts:
+        try:
+            return json.loads(repair(raw)), label
+        except ValueError:
+            continue
+    return None, None
+
+
 def _extract_json_block(text):
     """The NEWEST schema-1 JSON block in the doc, by as_of_utc.
 
@@ -421,18 +447,18 @@ def _extract_json_block(text):
             elif ch == "}":
                 depth -= 1
                 if depth == 0:
-                    try:
-                        obj = json.loads(text[start:i + 1])
-                    except ValueError:
-                        break
+                    obj, repair = _loads_forgiving(text[start:i + 1])
                     if isinstance(obj, dict) and "schema" in obj:
-                        blocks.append(obj)
+                        blocks.append((obj, repair))
                     break
     if not blocks:
         return None
     if len(blocks) > 1:
         print(f"deep research: {len(blocks)} reports in the doc — taking the newest")
-    return max(blocks, key=lambda b: str(b.get("as_of_utc", "")))
+    obj, repair = max(blocks, key=lambda b: str(b[0].get("as_of_utc", "")))
+    if repair != "as written":
+        print(f"deep research: JSON needed repairing ({repair}) — the Docs export mangles code blocks")
+    return obj
 
 
 def overlay_deep_research(brief, dr):
@@ -570,8 +596,16 @@ def build_feed(key, now_utc=None):
                              now_utc, last_short)
     analysis_source = "rss"
     if dr:
-        brief = overlay_deep_research(brief, dr)
-        analysis_source = "deep-research"
+        merged = overlay_deep_research(brief, dr)
+        try:
+            validate(merged)
+        except BriefError as e:
+            # The overlay is an enhancement, never a dependency. A Deep Research report too terse
+            # for the validator must not take the whole feed down when a perfectly good RSS brief
+            # is already in hand — publish that instead and say why.
+            print(f"deep research: overlay rejected ({e}) — publishing the RSS brief")
+        else:
+            brief, analysis_source = merged, "deep-research"
 
     validate(brief)
 
