@@ -357,9 +357,11 @@ def fetch_deep_research(doc_id, now_utc, expect_lsl):
     """
     if not doc_id:
         return None
+    # Accepts a bare doc id, or a full URL — the latter so an Apps Script web app serving the
+    # report directly can be swapped in without touching this code.
+    url = doc_id if doc_id.startswith("http") else DEEP_RESEARCH_DOC.format(doc_id=doc_id)
     try:
-        req = urllib.request.Request(DEEP_RESEARCH_DOC.format(doc_id=doc_id),
-                                     headers={"User-Agent": "aurum-brief-feed/1"})
+        req = urllib.request.Request(url, headers={"User-Agent": "aurum-brief-feed/1"})
         with urllib.request.urlopen(req, timeout=30) as resp:
             text = resp.read().decode("utf-8", "replace")
     except (urllib.error.URLError, TimeoutError, OSError) as e:

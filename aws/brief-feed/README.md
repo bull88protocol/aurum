@@ -80,6 +80,31 @@ published feed records which it used in `analysis_source`.
    ```
 6. `DEEP_RESEARCH_DOC_ID=<ID> GEMINI_API_KEY=… GITHUB_TOKEN=… ./aws/brief-feed/deploy.sh`
 
+### Making it hands-off
+
+If the scheduled Gemini action writes a new doc each day — `gold_report_09272026` and so on —
+nothing above has to change. **`sync_latest_report.gs`** (this directory) is an Apps Script that
+finds the newest doc matching that prefix and copies its text into the one fixed inbox doc the
+Lambda already reads.
+
+The search has to happen somewhere, and doing it in Apps Script rather than in Lambda is the whole
+point: finding a doc by name needs the Drive API, which needs OAuth and a client library — exactly
+the two things the plain-text export route avoids. Inside Google, Drive access is free and already
+authenticated as you, so no credential leaves Google and the AWS side is untouched.
+
+    Gemini (~16:00 ET)  ->  gold_report_<date>
+    Apps Script (~16:30 ET)  ->  copies newest into the inbox doc
+    Lambda (17:17 ET)  ->  reads the inbox doc, merges, publishes
+    App report (18:00 ET)  ->  reads the merged feed
+
+Setup is in the file's header comment. Two details worth knowing: it picks the newest by Drive's
+**creation time**, not by the date in the filename, because a mistyped name would otherwise win or
+lose silently where a timestamp cannot be wrong; and it refuses to copy a doc with no JSON block,
+so a failed Deep Research run leaves the inbox intact rather than blanking it.
+
+`DEEP_RESEARCH_DOC_ID` also accepts a full URL, so if you would rather have Apps Script serve the
+report from a web app than copy it into a doc, that works with no code change.
+
 **When the doc is ignored**, each logging a line and falling back to the RSS brief rather than
 failing: the doc is unreachable or not shared; it has no schema-1 JSON block; its `as_of_utc` is
 more than 24 hours old; or its `lsl` names a different session than the run is covering. That last
