@@ -11,7 +11,10 @@ Go to these exact sources. Do not take any of these six from a news article, a c
 - 10-year TIPS real yield: https://fred.stlouisfed.org/series/DFII10
 - 10-year breakeven: https://fred.stlouisfed.org/series/T10YIE
 - 2-year Treasury yield: https://fred.stlouisfed.org/series/DGS2
-- GLD close, session high and low: https://finance.yahoo.com/quote/GLD
+- GLD close, session high and low: https://finance.yahoo.com/quote/GLD — read the exact figures
+  off the quote page. Report them to the cent with no "~" and no rounding. A test run quoted the
+  close exactly (because it is widely repeated) but estimated the intraday range and had the low
+  $2.75 out, which quietly moves every support level derived from it.
 - Spot XAU/USD: https://finance.yahoo.com/quote/GC=F or another primary quote source
 - DXY: https://finance.yahoo.com/quote/DX-Y.NYB
 
@@ -49,7 +52,13 @@ SECTIONS, IN THIS ORDER
 
 8. LEVELS — support and resistance for spot XAU/USD and for the GLD ETF, with what makes each level matter (prior close, 50/200-day moving average, option strike, prior breakdown). Check each against the pinned block at the top: every support must be BELOW the current price and every resistance ABOVE it, for both instruments. The GLD levels and the spot levels must also imply roughly the same percentage moves as each other.
 
-9. NEWS THAT MATTERS — the five most consequential stories of the last 48 hours. For each: headline, publisher, date, the full direct article URL, and one line on why it moves gold. The URL must be the article's own address with a path, not a homepage — "https://reuters.com" is not acceptable, "https://www.reuters.com/markets/commodities/<slug>" is. If you cannot produce the real article URL, drop that story and use another; a wrong link is worse than one fewer item. No corporate news from individual miners unless it moves the metal. Prefer a spread of publishers — at most two from any one.
+9. NEWS THAT MATTERS — the five most consequential stories of the last 48 hours.
+
+A story is a piece of journalism reporting an event. These do not count, and a test run returned four of the five from this list: auto-generated data cards (24/7 Wall St "cards" and similar), live quote pages ("US Dollar Index Today: 100.97" is a number, not a story), evergreen explainers, and buy/sell signal sites. Nor does anything published by a bullion dealer or anyone else selling the asset — they have a position.
+
+Prefer wire services and established financial press: Reuters, Bloomberg, the FT, the WSJ, Kitco, MarketWatch, CNBC, Mining.com. At most two from any one publisher.
+
+For each: headline, publisher, date, the full direct article URL, and one line on why it moves gold. The URL must be the article's own address with a path — "https://reuters.com" is not acceptable, "https://www.reuters.com/markets/commodities/<slug>" is. If you cannot produce the real article URL, drop that story and use another; a wrong link is worse than one fewer item. No corporate news from individual miners unless it moves the metal. Prefer a spread of publishers — at most two from any one.
 
 10. WHAT WOULD CHANGE MY MIND — three specific, falsifiable things that would break the view in section 1. Be concrete: a level, a print, a date.
 
