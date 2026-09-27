@@ -6,7 +6,9 @@ BEFORE WRITING ANYTHING, LOOK UP AND PIN THESE SIX NUMBERS
 
 Find each from a primary source and state it, with its date, in a short block at the very top of the report. Everything you write afterwards must be consistent with this block — if a commentary piece implies a different level, the block wins and the commentary is stale.
 
-Go to these exact sources. Do not take any of these six from a news article, a commentary piece or a forecast post — those lag, round, and are frequently stale by a day or more.
+Go to these exact sources. Do not take any of these six from a news article, a commentary piece, a forecast post, or a data aggregator — those lag, round, and are frequently stale by a day or more.
+
+Name, next to each number, which page you actually read it from. If you could not open one of the pages below, write "not found" for that number — do not substitute a different site. A test run went to Barchart, CME and Trading Economics instead, and reported "4.81% (September 25, FRED DGS2)" when 4.81 does not appear anywhere in DGS2's last sixty observations and the latest print was 4.87 on September 24. It also took the breakeven from a page a week stale. A figure carrying FRED's name that is not FRED's figure is worse than a gap, because it cannot be checked against the source it claims.
 
 - 10-year TIPS real yield: https://fred.stlouisfed.org/series/DFII10
 - 10-year breakeven: https://fred.stlouisfed.org/series/T10YIE
