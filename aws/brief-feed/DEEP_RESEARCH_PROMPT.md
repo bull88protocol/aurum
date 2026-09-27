@@ -32,6 +32,29 @@ model what to append to the report. Paste it along with everything else.
 The Gemini app's **Scheduled Actions** (Pro/Ultra) can run this daily. Set it for ~16:00 ET so it
 lands before the 17:17 ET feed run and the 6 PM ET report.
 
+## Run 6: the failure the checker could not see
+
+Run 6 had every pinned number right and an inverted thesis. It described gold as "pinned near
+historic highs" and "coiled near range highs", diagnosed a crowded **long** and a "higher forever"
+consensus, and built sections 4 and 5 on that. GLD was **20.7% below its 52-week high and down
+6.9% over 20 days**. Runs 1-5 had it the other way round, correctly: gold selling off, shorts
+crowded.
+
+`check_report.py` passed it, because the checker only validated figures.
+
+The cause was a gap in the prompt rather than a bad rule. The pinned block supplied six
+**point-in-time** values and no **position**: today's price, today's yields, and nothing saying
+whether that price was high or low in its own recent history. The model filled the gap from priors
+— gold at record highs is true of most of its training data — instead of from data.
+
+Fixed by pinning three more numbers from GLD's history page: the 20-day change, the distance from
+the 52-week high, and where the close sits against the 50- and 200-day averages, with an
+instruction that sections 1, 4 and 5 must agree with them. The checker now cross-checks
+"near highs" language against the real drawdown, which is the one class of error it was blind to.
+
+The lesson generalises past this prompt: **verifying every number does not verify the claim.** A
+report can be arithmetically spotless and still be about a different market.
+
 ## When to add a rule and when to delete one
 
 Five runs in, the prompt had doubled to ~1,900 words while the failure count went 8 → 1 → 2 → 3.

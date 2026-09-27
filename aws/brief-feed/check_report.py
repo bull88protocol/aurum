@@ -127,6 +127,29 @@ def main():
         check(ok, f"{label} matches FRED {truth}",
               f"as of {dates[fred_id]}; report cites {cited}")
 
+    print("\nNARRATIVE vs WHERE THE PRICE ACTUALLY IS")
+    # The failure this catches: every pinned number correct, the story around them inverted.
+    # Run 6 called gold "pinned near historic highs" while GLD sat 20.7% below its 52-week high.
+    try:
+        import urllib.request as _u
+        _r = _u.Request("https://query1.finance.yahoo.com/v8/finance/chart/GLD?interval=1d&range=1y",
+                        headers={"User-Agent": "Mozilla/5.0"})
+        with _u.urlopen(_r, timeout=30) as _resp:
+            _d = json.load(_resp)["chart"]["result"][0]
+        closes = [c for c in _d["indicators"]["quote"][0]["close"] if c]
+        drawdown = closes[-1] / max(closes) - 1
+        prose = " ".join(str(b.get(k, "")) for k in ("desc", "yr", "to")).lower()
+        near_highs = any(p in prose for p in
+                         ("near historic high", "near record", "near its high", "at record",
+                          "near range high", "record high", "historic high"))
+        if near_highs and drawdown < -0.10:
+            check(False, "narrative says 'near highs' but the price is not",
+                  f"GLD is {drawdown*100:.1f}% below its 52-week high")
+        else:
+            print(f"  PASS  narrative consistent with position — GLD {drawdown*100:+.1f}% from its 52-week high")
+    except Exception as e:
+        print(f"  SKIP  could not fetch GLD history ({type(e).__name__})")
+
     print("\nNEWS LINKS")
     news = b.get("news") or []
     if not news:

@@ -16,8 +16,24 @@ Go to these exact sources. Do not take any of these six from a news article, a c
   close exactly (because it is widely repeated) but estimated the intraday range and had the low
   $2.75 out. The range is what tells you how the session actually traded, so an estimate there
   quietly misstates the whole session.
-- Spot XAU/USD: https://finance.yahoo.com/quote/GC=F or another primary quote source
+- Spot XAU/USD: https://finance.yahoo.com/quote/GC=F — this one source, not "a primary quote
+  source". Three test runs gave $4,333.60, $4,321.20 and $4,286.20 for the same Friday close
+  while all reporting the same +0.54%, which means the level was being sourced loosely and the
+  percentage carried over.
 - DXY: https://finance.yahoo.com/quote/DX-Y.NYB
+
+WHERE THE PRICE SITS — three more, from https://finance.yahoo.com/quote/GLD/history
+
+- GLD 20-day change, in percent
+- GLD 52-week high, and how far below it today's close is, in percent
+- GLD 50-day and 200-day moving averages, and whether the close is above or below each
+
+These are not optional colour. Without them you have today's price and no idea whether it is high
+or low, and a test run filled that gap from memory: it described gold as "pinned near historic
+highs" and "coiled near range highs", and built an entire thesis about crowded LONGS and a
+"higher forever" consensus, when GLD was 20.7% below its 52-week high and down 6.9% over 20 days.
+Every pinned number in that report was correct. The story around them was inverted. State these
+three in the block and make sure sections 1, 4 and 5 agree with them.
 
 FRED publishes these with a one-business-day lag, so the latest value may be dated a day or two back. That is expected and correct — report the value with its actual date rather than reaching for a fresher-looking number from somewhere less reliable.
 
@@ -51,7 +67,7 @@ SECTIONS, IN THIS ORDER
 
 Spot and GLD track the same metal, so their one-day percentage moves should be within about 0.15pp of each other. If what you have read says otherwise — a test run had GC=F at +0.83% on a day GLD moved +0.44% — you have misread one of them. Go back to the quote pages and re-read. Do not split the difference and do not report both as if they are compatible.
 
-3. THE FIVE DRIVERS — a compact table: driver, current level, change (1 day / 20 days), direction of pressure on gold, one-line note. Where a driver's one-day pressure differs from its trend, say both rather than averaging them into one verdict — "BULLISH (1d), bearish trend" is more useful than "NEUTRAL". Then two or three sentences on whichever driver is doing the most work right now. Every number needs a date and a source.
+3. THE FIVE DRIVERS — a compact table: driver, current level, change (1 day / 20 days), direction of pressure on gold, one-line note. Compute each FRED 1-day change from the last two rows of that series' table and show your arithmetic to yourself before writing it: a test run reported the real-yield move as +2bp when FRED's last two rows were 2.85 and 2.76, which is +9bp. Where a driver's one-day pressure differs from its trend, say both rather than averaging them into one verdict — "BULLISH (1d), bearish trend" is more useful than "NEUTRAL". Then two or three sentences on whichever driver is doing the most work right now. Every number needs a date and a source.
 
 4. WHY THIS IS HAPPENING — about 250 words of causal narrative tying the drivers together. This is the section that earns the report. Not a list of facts: an argument about mechanism. Why are real yields where they are? What is the Fed reacting to? Who is buying, and why now?
 
