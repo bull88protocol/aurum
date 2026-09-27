@@ -3,8 +3,7 @@
 
     python3 aws/brief-feed/check_report.py ~/Downloads/"Daily Gold Deep Research - Test Run.docx"
 
-Takes a .docx, .json or .txt, finds the JSON block, and checks it against the live FRED feed and
-the gold quote the app itself is using. Exists because the first test run (2026-09-26) looked
+Takes a .docx, .json or .txt, finds the JSON block, and checks it against the live FRED feed. Exists because the first test run (2026-09-26) looked
 authoritative and had the 2-year yield 27bp wrong, GLD support above the GLD close, a bearish call
 scored 75/100 bullish, and five news links pointing at homepages. None of that is visible by
 reading; all of it is one command.
@@ -82,8 +81,6 @@ def main():
 
     fred = fetch(FRED_FEED) or {}
     brief = fetch(BRIEF_FEED) or {}
-    quote = (brief.get("quote_at_generation") or {})
-    gld = quote.get("price")
     series = {k: v["values"][-1] for k, v in (fred.get("series") or {}).items()}
     dates = {k: v["dates"][-1] for k, v in (fred.get("series") or {}).items()}
 
@@ -103,16 +100,6 @@ def main():
         check(isinstance(score, int) and score > 50, "bullish call scores above 50", f"score={score}")
     else:
         check(True, "neutral", f"score={score}")
-
-    print("\nLEVELS vs the gold quote the app is using")
-    lv = report.get("levels") or {}
-    if gld:
-        for key, want_below in (("gld_support", True), ("gld_resistance", False)):
-            for x in lv.get(key) or []:
-                ok = (x < gld) if want_below else (x > gld)
-                check(ok, f"{key} {x}", f"GLD close ${gld:.2f}")
-    else:
-        print("  SKIP  brief feed unreachable, cannot check GLD levels")
 
     print("\nDRIVER NUMBERS vs FRED")
     # Look for each driver's value near its own name in the full report, not just anywhere in it.
@@ -139,22 +126,6 @@ def main():
         ok = any(abs(x - truth) <= TOLERANCE for x in cited)
         check(ok, f"{label} matches FRED {truth}",
               f"as of {dates[fred_id]}; report cites {cited}")
-
-    print("\nLEVELS — derived or researched?")
-    if gld and lv.get("gld_support") and lv.get("gld_resistance"):
-        sup, res = lv["gld_support"][0], lv["gld_resistance"][0]
-        down, up = sup / gld - 1, res / gld - 1
-        # Real support and resistance are not equidistant from the close; that only happens when
-        # one was computed from the other. Run 4 mirrored Friday's session low to the cent.
-        check(abs(down + up) > 0.0015,
-              "GLD levels are not a mirror of each other",
-              f"support {down*100:+.2f}%, resistance {up*100:+.2f}% — symmetric to within "
-              f"{abs(down + up)*100:.3f}pp, which means one was derived from the other")
-        for label, vals in (("GLD", lv.get("gld_support", []) + lv.get("gld_resistance", [])),
-                            ("spot", lv.get("spot_support", []) + lv.get("spot_resistance", []))):
-            cents = [v for v in vals if round(v, 2) != round(v * 2) / 2]
-            check(not cents, f"{label} levels rounded like a desk would quote them",
-                  f"quoted to the cent: {cents} — that is a calculation, not a level")
 
     print("\nNEWS LINKS")
     news = b.get("news") or []

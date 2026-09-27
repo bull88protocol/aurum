@@ -56,21 +56,11 @@ Spot and GLD track the same metal, so their one-day percentage moves should be w
 
 5. WHAT THE MARKET IS TALKING ABOUT — the prevailing narrative, and whether it is right. Positioning, flows, what the loud voices are saying, what is crowded. Flag where consensus looks wrong or stretched — including when the crowded trade is the same side as your own call in section 1. If you are bearish and the short is crowded, say so; that is the most useful sentence in the section, not a contradiction of it. About 150 words.
 
-6. WHAT IT MEANS — two or three scenarios for the next 1-4 weeks. For each: a rough probability, the trigger that would produce it, and roughly where gold would be trading. Probabilities should sum to about 100%. Targets are estimates, so round them — \$4,300, not \$4,296.59. A scenario target quoted to the cent is claiming a precision the reasoning cannot support.
+6. WHAT IT MEANS — two or three scenarios for the next 1-4 weeks. This is where "where might gold go" belongs; there is no separate levels section, because you cannot read a chart and every attempt to produce support and resistance from text has come back either invented or trivial. For each: a rough probability, the trigger that would produce it, and roughly where gold would be trading. Probabilities should sum to about 100%. Targets are estimates, so round them — \$4,300, not \$4,296.59. A scenario target quoted to the cent is claiming a precision the reasoning cannot support.
 
 7. THE CALENDAR — scheduled events in the next five trading days that could move gold, by date, with why each matters. Fed speakers, CPI/PCE, jobs, FOMC, major auctions.
 
-8. LEVELS — support and resistance for spot XAU/USD and for the GLD ETF.
-
-Each of the four must be a level you FOUND, with what makes it one: a prior swing high or low and its date, a moving-average value (state the value), a prior breakdown or breakout level, a heavily-traded option strike, a round number the market is visibly defending. "Not found" is a legitimate answer for any of them.
-
-Do not derive any level from any other. In particular, do not take one instrument's level and rescale it into the other's — find each independently, from its own chart. A test run returned all four levels as Friday's GLD session low mirrored and rescaled, to the cent, while describing one of them as a "prior breakdown level". It was arithmetic wearing the clothes of analysis, and it was produced by trying to satisfy a consistency rule rather than by looking anything up.
-
-Round to what a desk would actually quote: GLD to the nearest \$0.50, spot to the nearest \$5. A level quoted to the cent is a calculation, not a level, and reads as false precision.
-
-Then sanity-check: every support below the current price, every resistance above it, for both instruments. The GLD and spot levels should imply roughly similar percentage moves — but if they do not, that means you have misread a chart, so go back and re-read it. Do NOT adjust one number to make the two agree.
-
-9. WHAT WOULD CHANGE MY MIND — the section that makes the rest of the report worth trusting. Exactly three items, one line each, no padding. Give the trigger with a specific number or named event, then what it does to the call.
+8. WHAT WOULD CHANGE MY MIND — the section that makes the rest of the report worth trusting. Exactly three items, one line each, no padding. Give the trigger with a specific number or named event, then what it does to the call.
 
 - One that would SOFTEN the view: the thesis weakens but survives. A level, a print, a figure.
 - One that would INVERT it — bearish to bullish or the reverse. Name the number that does it, not a mood.
@@ -80,7 +70,7 @@ Each needs a clock: which print, which date, how soon you would know. A falsifie
 
 STYLE
 
-- Concise and dense. Under 1,100 words excluding the table and the JSON. Cut every sentence that would survive deletion. The news section was removed from this report because the app sources headlines elsewhere and a summary of things the reader can look up is noise; spend that budget on sections 4 and 9, which are the two nobody else can produce.
+- Concise and dense. Under 1,100 words excluding the table and the JSON. Cut every sentence that would survive deletion. The news section was removed from this report because the app sources headlines elsewhere and a summary of things the reader can look up is noise; spend that budget on sections 4 and 8, which are the two nobody else can produce.
 - Have a point of view. "Gold is consolidating as markets weigh various factors" is worthless. Say what you think and why.
 - Every number carries a date and a source. A figure without provenance is a liability.
 - Where sources disagree, say so and say which you believe. Do not average them into mush.
@@ -105,6 +95,5 @@ End the report with the following, as a fenced json code block, filled in from w
     "kf": ["<driver doing the most work>", "<second>", "<third>"],
     "news": []                          // Always empty. Do not populate it, and do not write URLs anywhere.
   },
-  "levels": {"spot_support": [0], "spot_resistance": [0], "gld_support": [0], "gld_resistance": [0]},
   "scenarios": [{"label": "", "probability": 0, "trigger": "", "target": ""}]
 }

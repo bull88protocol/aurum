@@ -32,6 +32,29 @@ model what to append to the report. Paste it along with everything else.
 The Gemini app's **Scheduled Actions** (Pro/Ultra) can run this daily. Set it for ~16:00 ET so it
 lands before the 17:17 ET feed run and the 6 PM ET report.
 
+## When to add a rule and when to delete one
+
+Five runs in, the prompt had doubled to ~1,900 words while the failure count went 8 → 1 → 2 → 3.
+Adding stopped helping around run 2, and twice a fix produced the next failure. The owner's
+instinct — remove the offending rule rather than layer another on it — is right, with one
+qualification that makes it safe:
+
+> **Delete output constraints. Keep process constraints.**
+
+Deleting a rule does not return you to neutral, it returns you to the original failure: drop "go to
+fred.stlouisfed.org and take the bottom row" and the 2-year is wrong again within one run. But the
+two rules that backfired both described what the answer should *look like*, and both could simply
+go.
+
+**Section 8 (LEVELS) was deleted outright on that basis.** Five runs produced: support above the
+price; a level derived from an estimated low; a level derived by rescaling; all four mirrored from
+one number to the cent; and finally an honest "Not found" for spot with GLD's levels being nothing
+but Friday's high and low, where "resistance" sat 0.15% above the close. The cause is structural —
+**Deep Research reads text, not charts** — so no phrasing was going to fix it. That is ~250 words
+of prompt returned, the worst-performing section gone, and the app already computes technicals from
+real price data. "Where might gold go" now lives in the scenarios, where it was always better
+placed.
+
 ## The pattern across four runs
 
 **Every fix worked, and two of them created the next problem.** That turns out to be the most
