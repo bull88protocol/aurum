@@ -14,7 +14,12 @@ import sys
 import urllib.error
 import urllib.request
 
-sys.path.insert(0, __file__.rsplit("/", 2)[0] + "/.github/brief-feed")
+import os
+# abspath, not a string split on __file__: run as "python3 aws/brief-feed/check_doc.py" the
+# relative form resolves to "aws/.github/brief-feed" and the import fails on a doc that is
+# otherwise fine.
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                "..", "..", ".github", "brief-feed"))
 
 
 def main():
