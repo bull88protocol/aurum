@@ -14,7 +14,8 @@ Go to these exact sources. Do not take any of these six from a news article, a c
 - GLD close, session high and low: https://finance.yahoo.com/quote/GLD — read the exact figures
   off the quote page. Report them to the cent with no "~" and no rounding. A test run quoted the
   close exactly (because it is widely repeated) but estimated the intraday range and had the low
-  $2.75 out, which quietly moves every support level derived from it.
+  $2.75 out. The range is what tells you how the session actually traded, so an estimate there
+  quietly misstates the whole session.
 - Spot XAU/USD: https://finance.yahoo.com/quote/GC=F or another primary quote source
 - DXY: https://finance.yahoo.com/quote/DX-Y.NYB
 
@@ -22,13 +23,13 @@ FRED publishes these with a one-business-day lag, so the latest value may be dat
 
 Take the BOTTOM row of FRED's table — the most recent observation — and copy its date from that same row. Do not assume the latest value is dated today. A test run reported DFII10 as "2.76% (September 25)" when 2.76 was the September 23 print and the latest was 2.85; the number was real, the row was wrong, and the whole argument was then built on a stale figure while claiming it was current.
 
-A test run on 2026-09-26 stated the 2-year at 5.14% when FRED had it at 4.87%, and put GLD support at $395 when GLD had closed at $393.41. Both errors came from reasoning off commentary instead of pinning the data first. Do not do that.
+A test run on 2026-09-26 stated the 2-year at 5.14% when FRED had it at 4.87%, because it reasoned off a commentary piece instead of pinning the data first. Do not do that.
 
 EVERY NUMBER YOU WRITE MUST BE ONE YOU READ
 
 This holds everywhere in the report, not just in the block above. Do not estimate, round, interpolate, carry forward a figure you remember from training, or derive one from another estimate. If you cannot find a number, write "not found" and move on — a gap is honest and the reader can work around it. An invented figure that looks like a datum is the most damaging thing this report can contain, because everything downstream inherits it and nothing about it looks wrong.
 
-This applies to levels and percentages as much as to yields. A support level worked out from an intraday low you guessed at is a guess wearing a number's clothes, and it will be read as a fact.
+This applies to percentages and price targets as much as to yields. A figure worked out from another figure you guessed at is a guess wearing a number's clothes, and it will be read as a fact.
 
 THE FRAMEWORK — use these five drivers and no others as your spine
 
@@ -56,7 +57,7 @@ Spot and GLD track the same metal, so their one-day percentage moves should be w
 
 5. WHAT THE MARKET IS TALKING ABOUT — the prevailing narrative, and whether it is right. Positioning, flows, what the loud voices are saying, what is crowded. Flag where consensus looks wrong or stretched — including when the crowded trade is the same side as your own call in section 1. If you are bearish and the short is crowded, say so; that is the most useful sentence in the section, not a contradiction of it. About 150 words.
 
-6. WHAT IT MEANS — two or three scenarios for the next 1-4 weeks. This is where "where might gold go" belongs; there is no separate levels section, because you cannot read a chart and every attempt to produce support and resistance from text has come back either invented or trivial. For each: a rough probability, the trigger that would produce it, and roughly where gold would be trading. Probabilities should sum to about 100%. Targets are estimates, so round them — \$4,300, not \$4,296.59. A scenario target quoted to the cent is claiming a precision the reasoning cannot support.
+6. WHAT IT MEANS — two or three scenarios for the next 1-4 weeks. This is where "where might gold go" belongs; there is no separate levels section, because you cannot read a chart and every attempt to produce support and resistance from text has come back either invented or trivial. For each: a rough probability, the trigger that would produce it, and roughly where gold would be trading. Probabilities should sum to about 100%. Targets are estimates, so round them — $4,300, not $4,296.59. A scenario target quoted to the cent is claiming a precision the reasoning cannot support.
 
 7. THE CALENDAR — scheduled events in the next five trading days that could move gold, by date, with why each matters. Fed speakers, CPI/PCE, jobs, FOMC, major auctions.
 
