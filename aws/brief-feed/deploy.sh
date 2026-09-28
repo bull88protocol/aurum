@@ -20,14 +20,17 @@ REPO=${GITHUB_REPO:-bull88protocol/aurum}
 # Three a day, UTC, evenly spaced. EventBridge cron is 6 fields and needs ? for one of
 # day-of-month / day-of-week. Unlike GitHub's scheduler this actually fires, so three means three.
 #
-#   05:17 UTC — 01:17 ET, the Asia session
-#   13:17 UTC — 09:17 ET, just before the US equity open
-#   21:17 UTC — 17:17 ET, after the 4 PM close and the 4:15 H.15 post, and before the app's
-#               6 PM ET daily report, which reads this feed
+#   05:45 UTC — 01:45 ET, the Asia session
+#   13:45 UTC — 09:45 ET, just after the US equity open
+#   22:45 UTC — 18:45 ET, AFTER the Deep Research report is written (~18:20-18:28 ET)
+#
+# That last slot was 17:17 ET and had to move: the report is written after the close settles, so
+# a feed run before it can only ever publish the RSS brief. Verified on 2026-09-28 — the 17:17
+# run published analysis_source: rss while a perfectly good report appeared at 18:20.
 #
 # Hourly was the original plan and it was overkill: Search grounding quota is the scarce resource
 # and gold's macro story does not turn over in an hour (owner's call, 2026-09-25).
-SCHEDULE=${SCHEDULE:-"cron(17 5,13,21 * * ? *)"}
+SCHEDULE=${SCHEDULE:-"cron(45 5,13,22 * * ? *)"}
 
 : "${GEMINI_API_KEY:?set GEMINI_API_KEY in the environment}"
 : "${GITHUB_TOKEN:?set GITHUB_TOKEN in the environment}"
