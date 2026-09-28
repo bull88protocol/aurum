@@ -78,6 +78,31 @@ aws lambda invoke --function-name aurum-brief-feed \
 git fetch origin brief-data && git show FETCH_HEAD:brief_daily.json | python3 -m json.tool | head -20
 ```
 
+## How a run decides what to publish
+
+Every run does the same three things in this order, and the order matters.
+
+1. **RSS** — three Google News queries, ~190 deduped headlines. Free, no key.
+2. **Look for a Deep Research report** — today's, or the newest that still covers the current
+   session. Done *before* the Gemini call so a Gemini outage has something to fall back on.
+3. **Gemini** — picks five headlines by index and writes their summaries, and writes the
+   analysis when no report applies.
+
+That yields three outcomes, and `analysis_source` in the published feed always says which:
+
+| | `analysis_source` | analysis from | news |
+|---|---|---|---|
+| normal, report applies | `deep-research` | the report | RSS + Gemini summaries |
+| normal, no report | `rss` | Gemini | RSS + Gemini summaries |
+| Gemini down, report applies | `deep-research-only` | the report | RSS headlines, **no summaries** |
+| Gemini down, no report | — | nothing published; last good feed stays | |
+
+The third row exists because losing the whole feed to a Gemini outage is disproportionate when a
+report already holds the entire analysis — Gemini was only needed to summarise headlines. Google
+News `<description>` was checked as a substitute and is just the headline and publisher repeated,
+so the summaries are simply omitted. The shipped app renders an empty summary as an empty view,
+so this needs no release.
+
 ## Optional: feeding in the Deep Research report
 
 Set `DEEP_RESEARCH_DOC_ID` and the day's Deep Research report supplies the **analysis** while the

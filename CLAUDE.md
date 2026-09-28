@@ -84,44 +84,36 @@ three sections rendered from a real Deep Research report. Play copy: `release-2.
 The maintained answer to "what is pending". Ordered by what actually matters. Keep it current —
 when an item is done, delete it rather than leaving it ticked.
 
-0. **Upload v2.9.1** — AAB built and verified, see §Ready to upload. Internal testing first
-   (R8 full mode has never been on a device), then promote.
-1. **Watch both feeds for a week.** Brief: 05:45 / 13:45 / 22:45 UTC. FRED: 12:25 / 20:25 /
-   21:25 / 22:25 / 23:25 UTC weekdays. `aws logs tail /aws/lambda/aurum-{brief,fred}-feed
-   --region us-east-1 --since 24h`, and `analysis_source` in `brief_daily.json` says whether the
-   Deep Research report was picked up. Known gap: the app's daily PDF fires at 18:00 ET, ahead of
-   the ~18:20 ET report, so the PDF carries the RSS brief while the tabs get the deep analysis
-   from 18:45 — closing it needs an earlier report or a later worker, and the worker time is
-   compiled into the shipped app.
-2. **Store listing/screenshots** still don't mention the 20 Days tab or the keyless data feeds.
-3. **Watch Play vitals for v2.9.0**, live since 2026-09-25. Two reasons it is worth a look
+0. **Upload v2.9.1** — AAB built and verified 2026-09-28, sha256 `a23a4b6a…`, versionCode 18.
+   Internal testing first (R8 full mode has never been on a device), then promote. Play copy is
+   in `release-2.9/RELEASE_NOTES.md`.
+1. **Tomorrow is the first fully unattended day.** Everything so far has been forced runs. Check
+   around 19:00 ET: `analysis_source` in `brief_daily.json` should be `deep-research` if the
+   18:45 run found `Gold Brief <date>` in the folder. `aws logs tail
+   /aws/lambda/aurum-brief-feed --region us-east-1 --since 24h` says why if not.
+2. **The daily PDF misses the deep analysis.** The app's report worker fires at 18:00 ET, the
+   Deep Research report is written ~18:20, the feed picks it up at 18:45. So the tabs get the
+   deep sections and the PDF does not. Closing it needs an earlier report or a later worker, and
+   the worker time is compiled into the shipped app — so it is a v2.9.2 decision, not config.
+3. **Watch Play vitals for v2.9.0**, live since 2026-09-25, and v2.9.1 once it lands. Two reasons it is worth a look
    rather than a glance: it restructured `refresh()` into parallel market and brief jobs, and
    refresh is exactly what v2.7.0 was fixing; and 2.7.0, 2.8.0-skipped and 2.9.0 landed close
    enough together that a new signal cannot be cleanly attributed to one of them. **ANR rate
    first.**
-4. **Did the FRED cron respread work?** The old question is **answered, and the answer was no**:
-   six days of runs (2026-09-17..23) showed 2 of 10 slots a day, the 12:30 UTC slot firing 4-5¾h
-   late and the nine bunched evening slots collapsing into one run at ~22:5x UTC — *after* the
-   22:00 UTC report, every weekday. Keyless users' reports carried the previous publish the whole
-   time. Reading: GitHub coalesces a burst into one run. v2.9.0 respreads the cron to four slots an
-   hour apart (`15 20-23 * * 1-5`). **Now check whether an evening run lands before 22:00 UTC**
-   (`gh run list --workflow fred-feed.yml --limit 60`). If not, the trigger has to leave GitHub's
-   scheduler. Softening it: at that hour DFII10 and DGS2 only reach the previous business day
-   anyway, so T10YIE is what's actually missed — the real loss is redundancy.
-5. **PDF "Open" tile on a gap day.** The one v2.6.0 fix never confirmed in the wild — the old bug
+4. **PDF "Open" tile on a gap day.** The one v2.6.0 fix never confirmed in the wild — the old bug
    (previous close shown as the open) was only visible when the previous close fell outside the
    day's range. One look, next time gold gaps.
-6. **Duplicate "Aurum Market Data" spreadsheets in Drive.** v2.7.0 stops new ones; it does **not**
+5. **Duplicate "Aurum Market Data" spreadsheets in Drive.** v2.7.0 stops new ones; it does **not**
    clean up existing ones. Delete strays by hand.
-7. **`resolveOpen` and the refresh-timeout paths have no unit tests** — `MainViewModel` needs a
+6. **`resolveOpen` and the refresh-timeout paths have no unit tests** — `MainViewModel` needs a
    context. (The other blocker, `org.json` being a throwing stub in unit tests, is fixed on
    `feat/20-day-drivers` by `testImplementation("org.json:json:20180813")`.) Moving the pure logic
    into `:shared` still fixes both; folded into `api-37/API_37_UPGRADE_PLAN.md` §4.
-8. **API 37 / Android 17** — the next *forced* work, and the only item with a deadline. Needs
+7. **API 37 / Android 17** — the next *forced* work, and the only item with a deadline. Needs
    AGP 9.1.1 + Gradle 9.3.1 + Kotlin 2.x (three major migrations; JDK 17 still fine). No Play
    deadline published; the annual pattern points at **August 2027**. Revisit Q1-Q2 2027.
    Plan, with a trial run behind it: `api-37/API_37_UPGRADE_PLAN.md`.
-9. **Store polish — consciously skipped 2026-09-04, not forgotten.** No screenshot shows the PDF
+8. **Store polish — consciously skipped 2026-09-04, not forgotten.** No screenshot shows the PDF
    report; `store/screenshots/02_*.png` still pictures the v1 forward card (stale since 2.2); the
    live full description was never confirmed against `store/STORE_LISTING.md`; the Play R8
    recommendation card was never read (the build already runs R8 full mode, so it is almost
@@ -228,10 +220,14 @@ when an item is done, delete it rather than leaving it ticked.
 - `.github/workflows/brief-feed.yml` + `.github/brief-feed/` (the AI brief *generator*:
   `build_brief.py`, and `mock_server.py`, a local stand-in for Yahoo + Gemini so it runs
   without a key. The workflow is a manual escape hatch only — the schedule is in AWS.)
-- `aws/brief-feed/` — **what actually runs the brief feed**: `lambda_function.py`,
-  `github_publish.py` (Git Data API, orphan commit), `deploy.sh` (idempotent, creates the IAM
-  role, Lambda and EventBridge rule), `README.md` (setup, cost, key handling), and
-  `DEEP_RESEARCH_PROMPT.md` + `deep_research_prompt.txt` (the not-yet-wired upgrade path)
+- `aws/` — **what actually runs both feeds.** `deploy.sh <brief|fred>` (one script; creates the
+  IAM role, Lambda and EventBridge rule, idempotent), `README.md` (setup, cost, key handling, and
+  the table of what a run publishes when), `brief-feed/` and `fred-feed/` (a `lambda_function.py`
+  each), `brief-feed/github_publish.py` (Git Data API, orphan commit — shared by both),
+  `brief-feed/deep_research_prompt.txt` + `DEEP_RESEARCH_PROMPT.md` (the daily Deep Research
+  prompt and the record of eight test runs), `brief-feed/check_report.py` and `check_doc.py`
+  (verify a report and its doc before trusting either), `brief-feed/sync_latest_report.gs`
+  (an Apps Script bridge, now unnecessary — the folder lists without credentials)
 - `data/cb_quarterly.json` (hosted CB feed) · `release-2.0/` (v2.0 docs) · `ios/` (Apple plan) ·
   `release-2.0/cb-data/` (CB feed tool) · `research/` (Gold Index backtest: scripts + results; `cache/` gitignored,
   regenerate via `research/README.md`).
@@ -279,94 +275,47 @@ adb pull /sdcard/Android/data/com.sun.aurum.debug/files/reports/   # the generat
 adb shell run-as com.sun.aurum.debug cat files/symbol_cache.json
 ```
 
-### Hosted FRED feed (GitHub Action → `fred-data` branch)
-Why: the app scores the FRED components for every user without shipping the owner's key (FRED's
-terms make the key holder "solely responsible" for all use, and every install's worker fires at
-18:00 ET: ~40 phones × 3 calls hits the ~120 req/min per-key limit). The feed is a static file on
-GitHub, not an API call, so serving it to everyone costs FRED nothing.
-**Scope changed in v2.9.0:** it was report-only (the owner's call, 2026-09-16), which left a keyless
-user's Gold Index blank everywhere except the PDF. `DataRepository` now downloads it too, lazily —
-a user whose own key works never fetches it. Revert by dropping the `fromFeed` fallback in
-`buildSymbolState`.
-- **Runs by itself** on GitHub: weekdays every 20 min 20:10–22:50 UTC (covers the 4:15 PM ET H.15
-  post → 6 PM report in both EDT and EST) + 12:30 UTC. Publishes only when data changed; each
-  publish force-pushes a single orphan commit (`fred_daily.json` + README) to `fred-data`.
-  App URL: `https://raw.githubusercontent.com/bull88protocol/aurum/fred-data/fred_daily.json`.
-- **Secret:** `FRED_API_KEY` (repo Settings → Secrets and variables → Actions). Never in the app,
-  never in the repo. The builder never prints request URLs (they carry the key). **Set 2026-09-17**
-  by the owner signed in as `bull88protocol`. The `gh` CLI on the Linux box is logged in as
-  `CoinTranscend`, which has read access only: it can read runs and the branch but can't manage
-  secrets or start runs. Git pushes go over SSH and work.
-- **Live since 2026-09-17** (first run 20:42 ET). At that hour DFII10 and DGS2 reached the previous
-  business day and T10YIE the same day; the "FRED feed through <date>" commit shows the latest.
-- **Order:** the user's own key first, the feed only when that fetch comes back empty (no key, or
-  it failed). The first build had the feed first; fixed 2026-09-17 (`2b9b7df`) because GitHub delays
-  or skips scheduled runs. Note this is the **opposite** of the AI brief feed's order, and the
-  reason is that here the key is the fresher source while there it is the slower one.
-- **Failure = safe:** bad key / FRED down / short, stale or out-of-range data → the run fails,
-  nothing is published, GitHub emails the owner. The app drops any series older than 10 days, and a
-  dropped series shows as "No FRED data — pull to refresh" rather than as a missing key (the
-  `keyRequired` flag now means "neither the key nor the feed produced data").
-- **Run-page notices (2026-09-17), both harmless:** `actions/checkout@v4` targets Node 20 (GitHub
-  forces Node 24; bump to `@v7`, see Open items), and `ubuntu-latest` moves to Ubuntu 26 from
-  2026-10-19 (nothing to do: `build_feed.py` uses only the Python standard library).
-- **Watch:** GitHub auto-disables scheduled workflows in public repos after 60 days with no repository
-  activity (unclear whether the bot's pushes count). If the feed goes stale, check Actions → "FRED
-  feed" → Enable / Run workflow.
-- **Required notice** (FRED API ToU, applies with or without a key): "This product uses the FRED® API
-  but is not endorsed or certified by the Federal Reserve Bank of St. Louis." + a link to the ToU and
-  users agreeing to it. Lives in Settings (DATA SOURCES card — deliberately *outside* the collapsible
-  keys section, so collapsing it never hides the notice), the 20 Days tab, TERMS.md §3a, PRIVACY.md §3.
-- Local test without a key: `FRED_API_BASE=http://127.0.0.1:PORT FRED_API_KEY=x python3
-  .github/fred-feed/build_feed.py --out /tmp/f.json` against a mock (see research log for how it was done).
+### The two hosted feeds (AWS Lambda → `fred-data` and `brief-data`)
+**Both feeds run on AWS Lambda + EventBridge. Neither runs on GitHub any more.** The workflows
+survive as manual `workflow_dispatch` escape hatches with no schedules. Code, setup, cost and key
+handling: **`aws/README.md`**. Deploy: `./aws/deploy.sh brief` or `./aws/deploy.sh fred`.
 
-### Hosted AI brief feed (AWS Lambda → `brief-data` branch)
-Why hosted: the Gemini call takes 15-60s, which made it the slowest thing in the app, and without a
-key the AI Brief and News tabs were simply empty. Generating it centrally means every install reads
-a ~200ms static file instead. **Live since 2026-09-26.**
-- **Trigger: AWS Lambda + EventBridge, not GitHub.** `cron(17 5,13,21 * * ? *)` — 01:17 / 09:17 /
-  17:17 ET, three a day. The last lands before the 6 PM ET report, which reads this same feed.
-  GitHub's scheduler was tried first and cannot do it: ~2 dispatches/day for this repo and **zero**
-  for a newly added hourly workflow over six hours across two cron variants, while `fred-feed.yml`
-  kept getting its usual two. See [[aurum-github-cron-unreliable]].
-- **Code:** `aws/brief-feed/` — `lambda_function.py`, `github_publish.py`, `deploy.sh`, `README.md`.
-  It packages `.github/brief-feed/build_brief.py` **verbatim**, so there is one prompt, one
-  validator and one output shape whichever side runs. `.github/workflows/brief-feed.yml` survives
-  as a manual `workflow_dispatch` escape hatch with **no schedule**.
-- **Publishing:** the same single orphan commit the workflow made, through the Git Data API
-  (blob → tree → parentless commit → forced ref update), because Lambda has no git. Keeps
-  `brief-data` at one commit instead of ~1,100 a year.
-- **Redeploy:** `GEMINI_API_KEY=… GITHUB_TOKEN=… ./aws/deploy.sh brief`. Idempotent. Keys are
-  Lambda env vars; `tok/` holds them locally and is gitignored. **Cost: inside the always-free
-  tier** (~90 requests and ~1.3k GB-seconds a month).
-- **No Search grounding — headlines come from RSS.** Grounding is unavailable on this key's tier
-  entirely: 429 RESOURCE_EXHAUSTED on every model for three days while plain generation answered
-  fine. It was never load-bearing anyway — prices come from Yahoo and the prompt defers to them.
-  `fetch_news` pulls three Google News RSS queries (~195 deduped items), and **the model picks
-  headlines by index and never writes a URL**; `to_brief` maps indices back to real RSS metadata,
-  so a hallucinated link is structurally impossible. Out-of-range or repeated indices are dropped.
-- **Two retry layers once cost 9 grounded calls an hour instead of 1** — `generate()` retried 429
-  three times, and Lambda's default async policy retried the invocation twice. Both fixed: all 4xx
-  fail fast, `MaximumRetryAttempts=0` (set by `deploy.sh`, so a fresh deploy cannot inherit the
-  default), and `MIN_AGE_MINUTES` is 400 as a backstop under the 480-minute schedule gap.
+| | function | schedule (ET) | branch |
+|---|---|---|---|
+| AI brief | `aurum-brief-feed` | 01:45 / 09:45 / 18:45, **daily** | `brief-data` |
+| FRED | `aurum-fred-feed` | 08:25 / 16:25 / 17:25 / 18:25 / 19:25, **weekdays** | `fred-data` |
+
+- **Why they left GitHub.** Its scheduler fires ~2 of the day's slots, hours late, across two cron
+  layouts tried. On 2026-09-28 the FRED workflow ran once, at 19:44 UTC, missing three evening
+  slots — and the published feed was **two business days behind Treasury's own numbers**, so every
+  install's Gold Index was scoring stale yields while the app looked healthy. Moving it to Lambda
+  advanced the feed a full day within one invocation. See [[aurum-github-cron-unreliable]].
+- **What a run does, in order:** RSS (~190 headlines, free, no key) → look for a Deep Research
+  report → Gemini. The report is looked up *before* Gemini so an outage has a fallback.
+- **Three outcomes**, and `analysis_source` in the feed always says which: `deep-research` (report
+  applies), `rss` (none does), `deep-research-only` (Gemini down but a report applies — its
+  analysis plus bare RSS headlines, no summaries). Gemini down with no report publishes nothing
+  and the last good feed stays.
+- **The Deep Research report** comes from a **link-shared Drive folder** (`DEEP_RESEARCH_FOLDER_ID`),
+  which lists through `embeddedfolderview` with **no credentials** — no Drive API, no OAuth, no
+  Apps Script. Matches `Gold Brief <YYYY-MM-DD>` exactly, falling back to the newest dated report
+  so yesterday's carries into this morning; `fetch_deep_research`'s `lsl` check then decides
+  whether it still covers the current session.
+- **Docs mangles the JSON on export, two ways so far** — newlines to literal `\n`, and unescaped
+  quotes inside prose. `_loads_forgiving` tries the raw text first and repairs only on failure,
+  logging which repair it used. No prompt can fix this; the damage happens after the model is done.
 - **Model:** `MODELS = ("gemini-3.6-flash", "gemini-flash-latest")`, tried in order — a pinned id
-  first, the alias behind it. Both failure modes are real and pull opposite ways: a pinned id gets
-  **retired** (2.5-flash did, and 404'd for every new user of the shipped app), while the `-latest`
-  alias tracks the newest model and is the most **overloaded** (503 on repeated attempts the same
-  week). Keep in step between `build_brief.py` and `GeminiClient.kt`.
-- **Failure = safe:** a bad key, an exhausted quota or a brief that fails validation (missing
-  prose, fewer than 2 news items, an unusable summary) raises, publishes nothing and logs to
-  CloudWatch; the last good brief stays up until the app ages it out.
-- **Watch:** the GitHub PAT expiring is the likeliest silent failure — fine-grained, Contents
-  read/write on this repo only, and nothing warns you when it lapses.
-- **Upgrade path:** `aws/brief-feed/DEEP_RESEARCH_PROMPT.md` + `deep_research_prompt.txt` — a daily
-  Gemini Deep Research prompt, pinned to the app's own five drivers, that emits the feed's exact
-  JSON schema. Not wired up; its URLs are model-written and would need validating first.
-- Local test without a key: `python3 .github/brief-feed/mock_server.py &` then
-  `GEMINI_API_BASE=http://127.0.0.1:8731 YAHOO_API_BASE=http://127.0.0.1:8731 GEMINI_API_KEY=x
-  python3 .github/brief-feed/build_brief.py --out /tmp/b.json`. The mock asserts the key stays in
-  the header; `--thin` returns a brief that should fail validation. NB `fetch_news` is not mocked —
-  it hits Google News RSS for real, which is free and keyless.
+  first, the alias behind it. Pinned ids get **retired** (2.5-flash did, 404ing for every new user
+  of the shipped app); the `-latest` alias tracks the most **overloaded** model. Keep in step
+  between `build_brief.py` and `GeminiClient.kt`.
+- **Spend** is capped by `MIN_AGE_MINUTES` (400) in `build_brief.py`, not by the cron. Both
+  Lambdas sit inside the always-free tier, and `MaximumRetryAttempts=0` is set by `deploy.sh` —
+  AWS defaults to 2, which once turned one tick into nine Gemini calls.
+- **Likeliest silent failure: the GitHub PAT expiring.** Fine-grained, Contents read/write on this
+  repo only. Nothing warns you.
+- **Verify a report before trusting it:** `python3 aws/brief-feed/check_report.py <file>` and
+  `python3 aws/brief-feed/check_doc.py <id>`. Local test without keys:
+  `python3 .github/brief-feed/mock_server.py &` then the CLI with `*_API_BASE` overrides.
 
 ### Google Sign-In / OAuth (Cloud Console — the SHA-1 trap)
 Sign-In powers only the **optional** Sheets sync (`GoogleAuthManager`, scope `drive.file`); quotes
