@@ -394,6 +394,43 @@ def fetch_deep_research(doc_id, now_utc, expect_lsl):
     return doc["brief"]
 
 
+def _escape_inner_quotes(raw):
+    """Escape double quotes that sit inside a JSON string value.
+
+    The other thing a Docs export does to a code block: a report whose prose contains a quoted
+    phrase — 'the "imminent Fed pivot" thesis' — comes back with those quotes unescaped, which
+    ends the string early and breaks the parse a couple of thousand characters in.
+
+    A quote is a real terminator when the next non-space character is one of , : } ] — anywhere
+    else inside a string it is part of the prose. That is a heuristic, not a parser, which is why
+    it only runs after the strict parse has already failed.
+    """
+    out, in_str, i = [], False, 0
+    while i < len(raw):
+        ch = raw[i]
+        if not in_str:
+            if ch == '"':
+                in_str = True
+            out.append(ch)
+        elif ch == "\\":
+            out.append(raw[i:i + 2])
+            i += 2
+            continue
+        elif ch == '"':
+            j = i + 1
+            while j < len(raw) and raw[j] in " \t\r\n":
+                j += 1
+            if j < len(raw) and raw[j] in ",:}]":
+                in_str = False
+                out.append(ch)
+            else:
+                out.append('\\"')
+        else:
+            out.append(ch)
+        i += 1
+    return "".join(out)
+
+
 def _loads_forgiving(raw):
     """(parsed, repair_used) — json.loads, progressively repairing what Docs does to a code block.
 
@@ -408,9 +445,12 @@ def _loads_forgiving(raw):
     """
     attempts = (
         ("as written", lambda t: t),
+        ("escaping quotes inside string values", _escape_inner_quotes),
         ("un-escaping literal \\n", lambda t: t.replace("\\n", "\n")),
         ("straightening smart quotes", lambda t: t.replace("\u201c", '"').replace("\u201d", '"')),
         ("both", lambda t: t.replace("\\n", "\n").replace("\u201c", '"').replace("\u201d", '"')),
+        ("all three", lambda t: _escape_inner_quotes(
+            t.replace("\\n", "\n").replace("\u201c", '"').replace("\u201d", '"'))),
     )
     for label, repair in attempts:
         try:
