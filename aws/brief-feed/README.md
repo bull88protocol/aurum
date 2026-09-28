@@ -97,10 +97,18 @@ authenticated as you, so no credential leaves Google and the AWS side is untouch
     Lambda (17:17 ET)  ->  reads the inbox doc, merges, publishes
     App report (18:00 ET)  ->  reads the merged feed
 
-Setup is in the file's header comment. Two details worth knowing: it picks the newest by Drive's
-**creation time**, not by the date in the filename, because a mistyped name would otherwise win or
-lose silently where a timestamp cannot be wrong; and it refuses to copy a doc with no JSON block,
-so a failed Deep Research run leaves the inbox intact rather than blanking it.
+**The inbox doc id never changes.** That is what the script buys: drop a new `gold_report_<date>`
+into the folder each day and nothing downstream is touched — no doc id to update, no redeploy.
+
+**The source folder needs no sharing.** The script runs as you and already has access to your own
+Drive. Only the inbox doc is link-shared, and it holds the same report the app publishes anyway.
+
+Three details worth knowing. It picks the newest by Drive's **creation time**, not by the date in
+the filename, because a mistyped name would win or lose silently where a timestamp cannot be wrong.
+It refuses to copy a doc with no JSON block, so a failed Deep Research run leaves the inbox intact
+rather than blanking it. And it looks at **every** file with the prefix, not only native Docs, so an
+uploaded `.docx` is reported by name and MIME type rather than skipped in silence — Apps Script
+cannot read one without converting it, and the fix is to let Gemini write a Doc directly.
 
 `DEEP_RESEARCH_DOC_ID` also accepts a full URL, so if you would rather have Apps Script serve the
 report from a web app than copy it into a doc, that works with no code change.
