@@ -386,8 +386,25 @@ def find_todays_doc(folder_id, now_et):
     if want in found:
         print(f"deep research: found '{want}'")
         return found[want]
-    print(f"deep research: no '{want}' in the folder "
-          f"({len(found)} file(s): {', '.join(sorted(found)[:3])}) — using the RSS brief")
+
+    # No report for today yet — which is normal for the 01:45 and 09:45 ET runs, since the report
+    # is written after the close. Fall back to the most recent one by the date in its name.
+    # Yesterday's report is still CORRECT this morning: until today's 4pm close, yesterday is
+    # still the last closed session, and fetch_deep_research's lsl check is what actually decides
+    # that. Without this the deep sections would vanish from the tab overnight and reappear at
+    # 18:45, which reads as a bug rather than as a schedule.
+    dated = []
+    for name, fid in found.items():
+        m = re.fullmatch(r"Gold Brief (\d{4}-\d{2}-\d{2})", name)
+        if m:
+            dated.append((m.group(1), name, fid))
+    if dated:
+        when, name, fid = max(dated)
+        print(f"deep research: no '{want}' yet — falling back to '{name}'")
+        return fid
+
+    print(f"deep research: nothing named 'Gold Brief <date>' in the folder "
+          f"({len(found)} file(s)) — using the RSS brief")
     return None
 
 
