@@ -61,44 +61,38 @@ and show them **all** of it, most-actionable first, with a one-line status on th
 Do not improvise a list from git log — that section is the maintained answer. Verify anything
 time-sensitive (Play status, whether a build is stale) before repeating it.
 
-## ▶ Release in flight — nothing. v2.9.0 is live and both feeds are publishing
-**v2.9.0 / versionCode 17 is live on Google Play Production** (approved and confirmed installed
-from the store 2026-09-25). Code on `master`, tagged **`v2.9.0`**; **17 is claimed**. Notes:
-**`release-2.9/RELEASE_NOTES.md`**.
+## ▶ Release in flight — v2.9.1 AAB built, ready to upload
+**v2.9.0 / versionCode 17 is live on Production** (approved 2026-09-25). Both hosted feeds are
+publishing and the app reads them with no keys.
 
-Confirmed working in production, from the owner's own install: the Gold Index shows all five
-components **with no FRED key**, and since 2026-09-26 the AI Brief and News tabs fill from the
-hosted brief feed **with no Gemini key**. That is the whole point of the release, true on a Play
-build rather than a debug one.
+### Ready to upload — v2.9.1 / versionCode 18
+**Signed AAB built 2026-09-28** from `master`:
 
-**v2.8.0 / versionCode 16 was SKIPPED**, superseded by v2.9.0, the same way v2.1.1 and v2.2.0
-were. **Do not upload versionCode 16.**
+    sha256 a23a4b6adf836598c5052706633751c15cdc5f40af1b4ad5c38d28215857102f
+    manifest: com.sun.aurum, versionCode 18, versionName 2.9.1
 
-### Built but deliberately not shipped — v2.9.1 / versionCode 18
-Committed on `master`, 86 tests green, **no AAB built**. Deferred by the owner 2026-09-26: "if one
-[run] is lost it won't matter." It carries two things, neither urgent:
-- `BriefFeedClient.MAX_STALE_HOURS` 12 → 26, so a single missed feed run does not empty the tab.
-- The `MODELS` fallback (pinned id, then the `-latest` alias), which survives both a model
-  retirement and an overloaded newest model.
+Carries: the three deep sections on the AI Brief tab and in the PDF (`why` / `consensus` /
+`falsifiers`, populated only by a Deep Research brief, with a one-line note when absent);
+`MAX_STALE_HOURS` 12 → 26; the `MODELS` fallback (pinned id, then the `-latest` alias); the
+KEY FACTORS label; corrected onboarding copy. 93 tests.
 
-**Ship it with whatever goes next.** Nothing is broken without it; the version is already bumped,
-so the next release either goes out as 2.9.1 or gets renumbered.
+**Device pass done 2026-09-28** on the Pixel 11, against the live feed rather than a fixture: all
+three sections rendered from a real Deep Research report. Play copy: `release-2.9/RELEASE_NOTES.md`.
 
 ## Open items (nothing here is blocking; reviewed 2026-09-23)
 
 The maintained answer to "what is pending". Ordered by what actually matters. Keep it current —
 when an item is done, delete it rather than leaving it ticked.
 
-0. **Watch the brief feed for a week** now that it publishes (first ever publish 2026-09-26
-   16:55 UTC). Three runs a day at 01:17 / 09:17 / 17:17 ET. Check
-   `aws logs tail /aws/lambda/aurum-brief-feed --region us-east-1 --since 24h` and
-   `git log -1 FETCH_HEAD` on `brief-data`. What could go wrong: the Gemini free tier throttling
-   plain generation the way it refuses grounding, the GitHub PAT expiring silently, or RSS
-   returning too few gold items to pass validation.
-1. **Ship v2.9.1 whenever something else needs a release** — see §Built but deliberately not
-   shipped. Deferred by the owner 2026-09-26, with the reasoning recorded so it is not
-   re-litigated: a lost feed run leaves the tab empty for a few hours and nothing else, which
-   does not justify a Play review on its own. Deferred, not forgotten.
+0. **Upload v2.9.1** — AAB built and verified, see §Ready to upload. Internal testing first
+   (R8 full mode has never been on a device), then promote.
+1. **Watch both feeds for a week.** Brief: 05:45 / 13:45 / 22:45 UTC. FRED: 12:25 / 20:25 /
+   21:25 / 22:25 / 23:25 UTC weekdays. `aws logs tail /aws/lambda/aurum-{brief,fred}-feed
+   --region us-east-1 --since 24h`, and `analysis_source` in `brief_daily.json` says whether the
+   Deep Research report was picked up. Known gap: the app's daily PDF fires at 18:00 ET, ahead of
+   the ~18:20 ET report, so the PDF carries the RSS brief while the tabs get the deep analysis
+   from 18:45 — closing it needs an earlier report or a later worker, and the worker time is
+   compiled into the shipped app.
 2. **Store listing/screenshots** still don't mention the 20 Days tab or the keyless data feeds.
 3. **Watch Play vitals for v2.9.0**, live since 2026-09-25. Two reasons it is worth a look
    rather than a glance: it restructured `refresh()` into parallel market and brief jobs, and
