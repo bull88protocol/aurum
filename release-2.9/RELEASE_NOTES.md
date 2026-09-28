@@ -176,7 +176,20 @@ Changed:
 
 **Not yet verified: anything on a device.** The 20 Days tab from v2.8.0 is also still unseen.
 
-## What's new (Play "What's new" copy)
+## What's new — v2.9.1 (Play copy)
+
+Paste-ready, 429 characters of Play's 500.
+
+> What's new in 2.9.1:
+> • The AI brief now goes deeper — why gold is moving, what the market is actually saying, and what would change the view. These arrive with the evening update, after the US close.
+> • Still no API keys needed. The Gold Index and the brief refresh for you through the day, the last one after the 4pm ET close. Want it live instead? Add your own free FRED or Gemini key in Settings and both refresh on every pull.
+
+Deliberately vague on exact times — the schedule is 05:45 / 13:45 / 22:45 UTC for the brief and
+five weekday slots for FRED, which is both meaningless to a reader in another timezone and a
+hostage to fortune if it changes. "Through the day, the last one after the 4pm ET close" is true,
+useful, and survives a schedule tweak.
+
+## What's new — v2.9.0 (Play copy, already shipped)
 
 Paste-ready, 492 characters — within Play's 500 limit. Covers both releases, since 2.8 is skipped.
 
