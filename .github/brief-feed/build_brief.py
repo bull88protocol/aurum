@@ -577,6 +577,32 @@ def overlay_deep_research(brief, dr):
     return merged
 
 
+def brief_from_deep_research(dr, articles, last_short, next_short):
+    """A publishable brief from the Deep Research report alone, with bare RSS headlines.
+
+    For when Gemini is unavailable. Losing the whole feed then is disproportionate: the report
+    already contains the entire analysis, and Gemini was only ever needed to pick five headlines
+    out of ~190 and summarise them. Here the top five go in with their real headline, source, date
+    and link, and no summary — which is what most news apps show anyway. Checked against the
+    shipped app: NewsFragment renders an empty summary as an empty view, not a broken card.
+    """
+    brief = {
+        "sig": dr.get("sig", "NEUTRAL"),
+        "score": dr.get("score", 50),
+        "desc": dr.get("desc", ""),
+        "yr": dr.get("yr", ""),
+        "to": dr.get("to", ""),
+        "lsl": last_short, "nsl": next_short,
+        "kf": dr.get("kf", []),
+        "news": [{"h": a["headline"], "s": "", "src": a["source"], "url": a["url"], "dt": a["date"]}
+                 for a in articles[:NEWS_PICK]],
+    }
+    for field in ("why", "cons", "fals"):
+        if dr.get(field):
+            brief[field] = dr[field]
+    return brief
+
+
 # ── Parse + validate ──────────────────────────────────────────────────────────
 # The output uses GeminiCache's short field names (sig/score/desc/yr/to/lsl/nsl/kf/news) so the app
 # deserializes a feed brief with exactly the code that reads its own on-disk cache.
@@ -626,8 +652,12 @@ def to_brief(raw, last_short, next_short, articles):
     }
 
 
-def validate(brief):
-    """Exits non-zero rather than publish a brief that would look broken on the tab."""
+def validate(brief, require_summaries=True):
+    """Raises rather than publish a brief that would look broken on the tab.
+
+    [require_summaries] is False only on the Gemini-unavailable path, where the headlines are
+    real but nobody was available to summarise them.
+    """
     problems = []
     for field, label, min_len in (("desc", "description", 40),
                                   ("yr", "yesterday_recap", 80),
@@ -640,7 +670,7 @@ def validate(brief):
         problems.append(f"{len(brief['news'])} usable news items (need at least 2)")
     # URL and headline come from RSS so they are real by construction; the summary is the part
     # the model writes, and an empty one renders as a bare headline with a gap under it.
-    if any(len(n["s"].strip()) < 15 for n in brief["news"]):
+    if require_summaries and any(len(n["s"].strip()) < 15 for n in brief["news"]):
         problems.append("a news item has no usable summary")
     if problems:
         raise BriefError("refusing to publish: " + "; ".join(problems))
@@ -679,8 +709,32 @@ def build_feed(key, now_utc=None):
         print("no Yahoo quote — the brief will be generated unanchored")
 
     articles = fetch_news(now_utc)
+
+    # A folder is preferred: the day's doc id changes, the folder id does not. Looked up BEFORE
+    # the Gemini call, not after, so that a Gemini outage has something to fall back on rather
+    # than taking the whole run down with a good report sitting in the folder.
+    doc_id = (find_todays_doc(os.environ.get("DEEP_RESEARCH_FOLDER_ID", "").strip(), now_et)
+              or os.environ.get("DEEP_RESEARCH_DOC_ID", "").strip())
+    dr = fetch_deep_research(doc_id, now_utc, last_short)
+
     prompt = build_prompt(last_long, next_long, facts_block(quote), headlines_block(articles))
-    raw_response, model = generate(prompt, key)
+    try:
+        raw_response, model = generate(prompt, key)
+    except BriefError as e:
+        if not dr:
+            raise
+        print(f"gemini unavailable ({e}) — publishing the report's analysis with bare headlines")
+        brief = brief_from_deep_research(dr, articles, last_short, next_short)
+        validate(brief, require_summaries=False)
+        return {
+            "schema": SCHEMA,
+            "generated_utc": now_utc.isoformat(timespec="seconds").replace("+00:00", "Z"),
+            "model": "none (gemini unavailable)",
+            "symbol": SYMBOL,
+            "quote_at_generation": quote,
+            "analysis_source": "deep-research-only",
+            "brief": brief,
+        }
     try:
         text = raw_response["candidates"][0]["content"]["parts"][0]["text"]
     except (KeyError, IndexError, TypeError):
@@ -691,13 +745,8 @@ def build_feed(key, now_utc=None):
 
     brief = to_brief(parsed, last_short, next_short, articles)
 
-    # Optional overlay. Anything wrong with the doc — missing, stale, wrong session, unparseable —
-    # logs a line and leaves the RSS brief untouched, so the feed degrades to its normal output
-    # rather than failing.
-    # A folder is preferred: the day's doc id changes, the folder id does not.
-    doc_id = (find_todays_doc(os.environ.get("DEEP_RESEARCH_FOLDER_ID", "").strip(), now_et)
-              or os.environ.get("DEEP_RESEARCH_DOC_ID", "").strip())
-    dr = fetch_deep_research(doc_id, now_utc, last_short)
+    # Overlay. The report was already looked up above, before the Gemini call; anything wrong
+    # with it was logged there and leaves the RSS brief untouched.
     analysis_source = "rss"
     if dr:
         merged = overlay_deep_research(brief, dr)
