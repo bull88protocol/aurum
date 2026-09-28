@@ -31,6 +31,7 @@ import os
 import sys
 import time
 import urllib.error
+import re
 import urllib.parse
 import urllib.request
 from zoneinfo import ZoneInfo
@@ -92,6 +93,13 @@ MIN_AGE_MINUTES = 400
 # skipped and the feed behaves exactly as before.
 DEEP_RESEARCH_DOC = "https://docs.google.com/document/d/{doc_id}/export?format=txt"
 DEEP_RESEARCH_MAX_AGE_H = 24
+
+# Or point at a link-shared FOLDER and let the feed find the day's report itself, which is what
+# DEEP_RESEARCH_FOLDER_ID does. A link-shared folder lists through embeddedfolderview with no
+# credentials at all, so this needs no Drive API, no OAuth and no Apps Script bridge — the doc id
+# can change every day and nothing here is reconfigured.
+DEEP_RESEARCH_FOLDER = "https://drive.google.com/embeddedfolderview?id={folder_id}#list"
+DEEP_RESEARCH_NAME = "Gold Brief {date}"
 
 SCHEMA = 1
 
@@ -346,6 +354,42 @@ def extract_json(text):
 
 
 # ── Deep Research overlay ────────────────────────────────────────────────────
+
+def find_todays_doc(folder_id, now_et):
+    """The id of today's report in a link-shared folder, or None.
+
+    Matches "Gold Brief <YYYY-MM-DD>" EXACTLY. The folder also accumulates drafts — on the day
+    this was written it held "Gold Brief 2026-09-28", "… (test run v1, superseded)" and
+    "… (test run, cross-checked)" — and an exact match is what separates the day's report from
+    them without guessing which suffix means what.
+    """
+    if not folder_id:
+        return None
+    want = DEEP_RESEARCH_NAME.format(date=now_et.date().isoformat())
+    try:
+        req = urllib.request.Request(DEEP_RESEARCH_FOLDER.format(folder_id=folder_id),
+                                     headers={"User-Agent": "Mozilla/5.0 (aurum-brief-feed/1)"})
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            page = resp.read().decode("utf-8", "replace")
+    except (urllib.error.URLError, TimeoutError, OSError) as e:
+        print(f"deep research: folder unreadable ({type(e).__name__}) — using the RSS brief")
+        return None
+
+    import html as _html
+    found = {}
+    for chunk in page.split('<div class="flip-entry"')[1:]:
+        mid = re.search(r'id="entry-([A-Za-z0-9_-]{20,})"', chunk)
+        mnm = re.search(r'flip-entry-title">([^<]+)</div>', chunk)
+        if mid and mnm:
+            found[_html.unescape(mnm.group(1)).strip()] = mid.group(1)
+
+    if want in found:
+        print(f"deep research: found '{want}'")
+        return found[want]
+    print(f"deep research: no '{want}' in the folder "
+          f"({len(found)} file(s): {', '.join(sorted(found)[:3])}) — using the RSS brief")
+    return None
+
 
 def fetch_deep_research(doc_id, now_utc, expect_lsl):
     """The JSON block from the Deep Research doc, or None if unusable.
@@ -633,8 +677,10 @@ def build_feed(key, now_utc=None):
     # Optional overlay. Anything wrong with the doc — missing, stale, wrong session, unparseable —
     # logs a line and leaves the RSS brief untouched, so the feed degrades to its normal output
     # rather than failing.
-    dr = fetch_deep_research(os.environ.get("DEEP_RESEARCH_DOC_ID", "").strip(),
-                             now_utc, last_short)
+    # A folder is preferred: the day's doc id changes, the folder id does not.
+    doc_id = (find_todays_doc(os.environ.get("DEEP_RESEARCH_FOLDER_ID", "").strip(), now_et)
+              or os.environ.get("DEEP_RESEARCH_DOC_ID", "").strip())
+    dr = fetch_deep_research(doc_id, now_utc, last_short)
     analysis_source = "rss"
     if dr:
         merged = overlay_deep_research(brief, dr)

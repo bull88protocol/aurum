@@ -4,7 +4,8 @@
 #
 #   export GEMINI_API_KEY=...        # the maintainer's Gemini key
 #   export GITHUB_TOKEN=...          # fine-grained PAT, Contents: read and write, this repo only
-#   export DEEP_RESEARCH_DOC_ID=...  # optional; the link-shared Google Doc holding today's report
+#   export DEEP_RESEARCH_FOLDER_ID=... # optional; link-shared folder of 'Gold Brief <date>' docs
+#   export DEEP_RESEARCH_DOC_ID=...  # optional fallback; one fixed link-shared doc
 #   ./aws/brief-feed/deploy.sh
 #
 # Needs the AWS CLI logged in (`aws configure`) with rights to create an IAM role, a Lambda and an
@@ -61,7 +62,7 @@ fi
 
 # DEEP_RESEARCH_DOC_ID is optional. Set it and the day's Deep Research report supplies the
 # analysis while the RSS pass keeps supplying the headlines; leave it empty and nothing changes.
-ENV="Variables={GEMINI_API_KEY=${GEMINI_API_KEY},GITHUB_TOKEN=${GITHUB_TOKEN},GITHUB_REPO=${REPO},DEEP_RESEARCH_DOC_ID=${DEEP_RESEARCH_DOC_ID:-}}"
+ENV="Variables={GEMINI_API_KEY=${GEMINI_API_KEY},GITHUB_TOKEN=${GITHUB_TOKEN},GITHUB_REPO=${REPO},DEEP_RESEARCH_DOC_ID=${DEEP_RESEARCH_DOC_ID:-},DEEP_RESEARCH_FOLDER_ID=${DEEP_RESEARCH_FOLDER_ID:-}}"
 
 if aws lambda get-function --function-name "$FUNCTION" --region "$REGION" >/dev/null 2>&1; then
   echo "==> updating function code"
