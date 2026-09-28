@@ -342,7 +342,7 @@ a ~200ms static file instead. **Live since 2026-09-26.**
 - **Publishing:** the same single orphan commit the workflow made, through the Git Data API
   (blob → tree → parentless commit → forced ref update), because Lambda has no git. Keeps
   `brief-data` at one commit instead of ~1,100 a year.
-- **Redeploy:** `GEMINI_API_KEY=… GITHUB_TOKEN=… ./aws/brief-feed/deploy.sh`. Idempotent. Keys are
+- **Redeploy:** `GEMINI_API_KEY=… GITHUB_TOKEN=… ./aws/deploy.sh brief`. Idempotent. Keys are
   Lambda env vars; `tok/` holds them locally and is gitignored. **Cost: inside the always-free
   tier** (~90 requests and ~1.3k GB-seconds a month).
 - **No Search grounding — headlines come from RSS.** Grounding is unavailable on this key's tier

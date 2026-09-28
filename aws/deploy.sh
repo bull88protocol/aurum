@@ -1,49 +1,66 @@
 #!/usr/bin/env bash
-# Creates or updates everything the hosted AI brief feed needs in AWS. Idempotent: run it again
-# to ship a code change or move the schedule.
+# Deploys a feed to AWS Lambda + EventBridge. Idempotent: run it again to ship a code change or
+# move a schedule.
 #
-#   export GEMINI_API_KEY=...        # the maintainer's Gemini key
-#   export GITHUB_TOKEN=...          # fine-grained PAT, Contents: read and write, this repo only
-#   export DEEP_RESEARCH_FOLDER_ID=... # optional; link-shared folder of 'Gold Brief <date>' docs
-#   export DEEP_RESEARCH_DOC_ID=...  # optional fallback; one fixed link-shared doc
-#   ./aws/brief-feed/deploy.sh
+#   ./aws/deploy.sh brief    # the AI brief feed  -> brief-data
+#   ./aws/deploy.sh fred     # the FRED feed      -> fred-data
 #
-# Needs the AWS CLI logged in (`aws configure`) with rights to create an IAM role, a Lambda and an
-# EventBridge rule. See README.md in this directory for the whole setup, cost and key handling.
+# Both read their keys from the environment:
+#   export GITHUB_TOKEN=...            # fine-grained PAT, Contents: read and write, this repo
+#   export GEMINI_API_KEY=...          # brief only
+#   export FRED_API_KEY=...            # fred only
+#   export DEEP_RESEARCH_FOLDER_ID=... # brief, optional; link-shared folder of Gold Brief <date>
+#
+# One script rather than one per feed: they differ in four lines of config and share ninety of
+# deployment, and a duplicated deploy script is how one of the two quietly stops matching.
+#
+# See aws/brief-feed/README.md for setup, cost and key handling.
 set -euo pipefail
 
-FUNCTION=${FUNCTION:-aurum-brief-feed}
+FEED="${1:-}"
+case "$FEED" in
+  brief)
+    FUNCTION=${FUNCTION:-aurum-brief-feed}
+    BUILDER=build_brief.py
+    BRANCH=brief-data
+    # Three a day. The evening slot is 18:45 ET, after the Deep Research report is written
+    # (~18:20) — it was 17:17 and could only ever publish the RSS brief.
+    SCHEDULE=${SCHEDULE:-"cron(45 5,13,22 * * ? *)"}
+    : "${GEMINI_API_KEY:?set GEMINI_API_KEY in the environment}"
+    ENV_VARS="GEMINI_API_KEY=${GEMINI_API_KEY},GITHUB_TOKEN=${GITHUB_TOKEN:-},GITHUB_REPO=${GITHUB_REPO:-bull88protocol/aurum},DEEP_RESEARCH_DOC_ID=${DEEP_RESEARCH_DOC_ID:-},DEEP_RESEARCH_FOLDER_ID=${DEEP_RESEARCH_FOLDER_ID:-}"
+    ;;
+  fred)
+    FUNCTION=${FUNCTION:-aurum-fred-feed}
+    BUILDER=build_feed.py
+    BRANCH=fred-data
+    # Five a weekday, which is affordable here in a way it was not on GitHub: FRED's series are
+    # daily, a run that finds nothing new publishes nothing, and each invocation is three API
+    # calls against a ~120/min limit. 20:25-23:25 UTC covers the 4:15 PM ET H.15 post in both
+    # EDT and EST, with retries; 12:25 catches late revisions.
+    SCHEDULE=${SCHEDULE:-"cron(25 12,20,21,22,23 ? * MON-FRI *)"}
+    : "${FRED_API_KEY:?set FRED_API_KEY in the environment}"
+    ENV_VARS="FRED_API_KEY=${FRED_API_KEY},GITHUB_TOKEN=${GITHUB_TOKEN:-},GITHUB_REPO=${GITHUB_REPO:-bull88protocol/aurum}"
+    ;;
+  *)
+    echo "usage: $0 <brief|fred>" >&2; exit 2 ;;
+esac
+
 ROLE=${ROLE:-${FUNCTION}-role}
 RULE=${RULE:-${FUNCTION}-schedule}
 REGION=${REGION:-$(aws configure get region || echo us-east-1)}
 REPO=${GITHUB_REPO:-bull88protocol/aurum}
-# Three a day, UTC, evenly spaced. EventBridge cron is 6 fields and needs ? for one of
-# day-of-month / day-of-week. Unlike GitHub's scheduler this actually fires, so three means three.
-#
-#   05:45 UTC — 01:45 ET, the Asia session
-#   13:45 UTC — 09:45 ET, just after the US equity open
-#   22:45 UTC — 18:45 ET, AFTER the Deep Research report is written (~18:20-18:28 ET)
-#
-# That last slot was 17:17 ET and had to move: the report is written after the close settles, so
-# a feed run before it can only ever publish the RSS brief. Verified on 2026-09-28 — the 17:17
-# run published analysis_source: rss while a perfectly good report appeared at 18:20.
-#
-# Hourly was the original plan and it was overkill: Search grounding quota is the scarce resource
-# and gold's macro story does not turn over in an hour (owner's call, 2026-09-25).
-SCHEDULE=${SCHEDULE:-"cron(45 5,13,22 * * ? *)"}
 
-: "${GEMINI_API_KEY:?set GEMINI_API_KEY in the environment}"
 : "${GITHUB_TOKEN:?set GITHUB_TOKEN in the environment}"
 
-HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT="$(cd "$HERE/../.." && pwd)"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+HERE="$ROOT/aws/$FEED-feed"
 BUILD="$(mktemp -d)"
 trap 'rm -rf "$BUILD"' EXIT
 
 echo "==> packaging"
 # The generator is shared verbatim with the GitHub workflow — one brief, one prompt, one validator.
-cp "$HERE/lambda_function.py" "$HERE/github_publish.py" "$BUILD/"
-cp "$ROOT/.github/brief-feed/build_brief.py" "$BUILD/"
+cp "$HERE/lambda_function.py" "$ROOT/aws/brief-feed/github_publish.py" "$BUILD/"
+cp "$ROOT/.github/$FEED-feed/$BUILDER" "$BUILD/"
 ( cd "$BUILD" && zip -q -r function.zip . )
 echo "    $(du -h "$BUILD/function.zip" | cut -f1) — stdlib only, nothing vendored"
 
@@ -65,7 +82,7 @@ fi
 
 # DEEP_RESEARCH_DOC_ID is optional. Set it and the day's Deep Research report supplies the
 # analysis while the RSS pass keeps supplying the headlines; leave it empty and nothing changes.
-ENV="Variables={GEMINI_API_KEY=${GEMINI_API_KEY},GITHUB_TOKEN=${GITHUB_TOKEN},GITHUB_REPO=${REPO},DEEP_RESEARCH_DOC_ID=${DEEP_RESEARCH_DOC_ID:-},DEEP_RESEARCH_FOLDER_ID=${DEEP_RESEARCH_FOLDER_ID:-}}"
+ENV="Variables={$ENV_VARS}"
 
 if aws lambda get-function --function-name "$FUNCTION" --region "$REGION" >/dev/null 2>&1; then
   echo "==> updating function code"
@@ -113,7 +130,7 @@ cat <<EOF
 Deployed.
   function  $FUNCTION  ($REGION)
   schedule  $SCHEDULE
-  publishes to  $REPO  branch brief-data
+  publishes to  $REPO  branch $BRANCH
 
 Test it now, ignoring the 50-minute freshness guard:
   aws lambda invoke --function-name $FUNCTION --region $REGION \\

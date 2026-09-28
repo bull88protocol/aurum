@@ -1,7 +1,33 @@
-# AI brief feed — AWS Lambda
+# The feeds — AWS Lambda
 
-The thing that actually runs the hourly brief. `.github/workflows/brief-feed.yml` stays as a
-manual escape hatch, but its schedule is gone.
+Both hosted feeds run here. The GitHub workflows survive as manual `workflow_dispatch` escape
+hatches with no schedules.
+
+| | function | schedule (UTC) | publishes to |
+|---|---|---|---|
+| AI brief | `aurum-brief-feed` | 05:45 / 13:45 / 22:45 daily | `brief-data` |
+| FRED | `aurum-fred-feed` | 12:25 / 20:25 / 21:25 / 22:25 / 23:25 weekdays | `fred-data` |
+
+    ./aws/deploy.sh brief
+    ./aws/deploy.sh fred
+
+One script for both: they differ in four lines of config and share ninety of deployment, and a
+duplicated deploy script is how one of two quietly stops matching the other.
+
+## Why neither runs on GitHub any more
+
+GitHub's scheduler does not deliver. Measured on this repo across two cron layouts — bunched every
+20 minutes, then spread hourly — it fires roughly two of the day's slots, hours late. On
+2026-09-28 the FRED workflow ran once, at 19:44 UTC, and missed 20:15, 21:15 and 22:15 entirely.
+
+That is not cosmetic. That same day the published FRED feed was **two business days behind
+Treasury's own numbers**, so every install's Gold Index was scoring stale yields while the app
+looked perfectly healthy. The brief feed moved off GitHub on 2026-09-24 for the same reason; FRED
+followed on 2026-09-28 once the cost of staying was measurable.
+
+Running FRED often is affordable in a way it was not on GitHub: its series are daily, a run that
+finds nothing new publishes nothing, and each invocation is three API calls against a limit of
+about 120 a minute. Hence five weekday slots rather than one or two.
 
 ## Why this is not just the GitHub Action
 
@@ -38,11 +64,11 @@ Lambda has no git. The app cannot tell which one wrote a given brief.
 ```bash
 export GEMINI_API_KEY=...
 export GITHUB_TOKEN=github_pat_...
-./aws/brief-feed/deploy.sh
+./aws/deploy.sh brief
 ```
 
 Idempotent — run it again for a code change or to move the schedule
-(`SCHEDULE="cron(17 * * * ? *)" ./aws/brief-feed/deploy.sh`).
+(`SCHEDULE="cron(17 * * * ? *)" ./aws/deploy.sh brief`).
 
 Then test, bypassing the 50-minute guard:
 
@@ -78,7 +104,7 @@ published feed records which it used in `analysis_source`.
    ```bash
    python3 aws/brief-feed/check_doc.py <ID>
    ```
-6. `DEEP_RESEARCH_DOC_ID=<ID> GEMINI_API_KEY=… GITHUB_TOKEN=… ./aws/brief-feed/deploy.sh`
+6. `DEEP_RESEARCH_DOC_ID=<ID> GEMINI_API_KEY=… GITHUB_TOKEN=… ./aws/deploy.sh brief`
 
 ### Making it hands-off
 

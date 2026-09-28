@@ -39,6 +39,12 @@ MAX_STALE_DAYS = 10          # FredFeedClient.MAX_STALE_DAYS drops anything olde
 MIN_OBS_PER_YEAR = 200       # ~250 trading days a year, less holidays and missing prints
 
 
+class FeedError(Exception):
+    """A reason not to publish. The CLI turns it into a non-zero exit (failing the GitHub run and
+    emailing the owner); the Lambda turns it into a failed invocation. Either way nothing is
+    published and the last good feed stays up."""
+
+
 def years_ago(day, n):
     try:
         return day.replace(year=day.year - n)
@@ -63,7 +69,7 @@ def fetch(series_id, key, start, limit):
         except (urllib.error.URLError, TimeoutError, OSError, KeyError, ValueError) as e:
             last_error = type(e).__name__
         time.sleep(15 * (attempt + 1))
-    sys.exit(f"{series_id}: FRED request failed ({last_error})")
+    raise FeedError(f"{series_id}: FRED request failed ({last_error})")
 
 
 def clean(series_id, observations, today, years, value_range):
@@ -84,8 +90,30 @@ def clean(series_id, observations, today, years, value_range):
     if any(a >= b for a, b in zip(dates, dates[1:])):
         problems.append("dates not strictly ascending")
     if problems:
-        sys.exit(f"{series_id}: refusing to publish: " + "; ".join(problems))
+        raise FeedError(f"{series_id}: refusing to publish: " + "; ".join(problems))
     return {"dates": dates, "values": values}
+
+
+def build_payload(key, today=None):
+    """Fetches every series and returns the feed dict, or raises [FeedError].
+
+    The whole job minus where the answer goes: the GitHub workflow writes it to a file and pushes,
+    the Lambda commits it through the GitHub API. One function so the two cannot drift.
+    """
+    today = today or dt.datetime.now(dt.timezone.utc).date()
+    series = {}
+    for sid, (years, limit, value_range) in SERIES.items():
+        obs = fetch(sid, key, years_ago(today, years).isoformat(), limit)
+        series[sid] = clean(sid, obs, today, years, value_range)
+        print(f"{sid}: {len(series[sid]['dates'])} observations through {series[sid]['dates'][-1]}")
+    return {
+        "schema": 1,
+        "generated_utc": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
+        "source": "FRED, Federal Reserve Bank of St. Louis",
+        "notice": NOTICE,
+        "terms": TERMS,
+        "series": series,
+    }
 
 
 def main():
@@ -98,12 +126,11 @@ def main():
     if not key:
         sys.exit("FRED_API_KEY is not set (add it under Settings > Secrets and variables > Actions)")
 
-    today = dt.datetime.now(dt.timezone.utc).date()
-    series = {}
-    for sid, (years, limit, value_range) in SERIES.items():
-        obs = fetch(sid, key, years_ago(today, years).isoformat(), limit)
-        series[sid] = clean(sid, obs, today, years, value_range)
-        print(f"{sid}: {len(series[sid]['dates'])} observations through {series[sid]['dates'][-1]}")
+    try:
+        feed = build_payload(key)
+    except FeedError as e:
+        sys.exit(str(e))
+    series = feed["series"]
 
     previous = None
     if args.previous and os.path.exists(args.previous) and os.path.getsize(args.previous) > 0:
@@ -115,14 +142,6 @@ def main():
     changed = series != previous
     last_date = max(s["dates"][-1] for s in series.values())
 
-    feed = {
-        "schema": 1,
-        "generated_utc": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
-        "source": "FRED, Federal Reserve Bank of St. Louis",
-        "notice": NOTICE,
-        "terms": TERMS,
-        "series": series,
-    }
     os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
     with open(args.out, "w") as f:
         json.dump(feed, f, separators=(",", ":"), ensure_ascii=False)
