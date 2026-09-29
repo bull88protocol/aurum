@@ -61,40 +61,57 @@ and show them **all** of it, most-actionable first, with a one-line status on th
 Do not improvise a list from git log — that section is the maintained answer. Verify anything
 time-sensitive (Play status, whether a build is stale) before repeating it.
 
-## ▶ Release in flight — v2.9.2 built, fixing a bug that shipped in v2.9.1
-**v2.9.1 / versionCode 18 is live on Production** (submitted and released 2026-09-28, same day).
-It shipped with a scroll bug on the AI Brief and News tabs, found immediately after.
+## ▶ Release in flight — v2.9.2 submitted 2026-09-28, awaiting review
+**v2.9.2 / versionCode 19 was submitted to Google Play on 2026-09-28.** AAB
+`08724d7bffbb1081e1dd72adc765caf7bbdfdaa4cdf50e9a5ce1251c791f9ece`. It carries one fix: the AI
+Brief and News tabs took every downward drag as a pull-to-refresh, so you could not scroll back
+up. Verified on a Pixel 11 before submitting, both directions.
 
-### Ready to upload — v2.9.2 / versionCode 19
-**Signed AAB built 2026-09-28:**
+**v2.9.1 / versionCode 18 is live** (submitted and released the same day, 2026-09-28) and has that
+scroll bug in it. **v2.9.0 / versionCode 17** is the release before it. 17, 18 and 19 are all
+claimed.
 
-    sha256 08724d7bffbb1081e1dd72adc765caf7bbdfdaa4cdf50e9a5ce1251c791f9ece
-    manifest: com.sun.aurum, versionCode 19, versionName 2.9.2
+This app's review times, since it keeps coming up: 2.9.1 same day, 2.9.0 next day, 2.6.0 next day.
+Fast is normal here, never guaranteed.
 
-One fix. `SwipeRefreshLayout` asks its *direct* child whether the content can scroll up; on the
-AI Brief and News tabs that child is a `FrameLayout` overlaying the content and the empty state,
-and a FrameLayout is never scrollable, so it answered "no" and claimed every downward drag as a
-refresh — you could not scroll back up. Gold and 20 Days nest the other way and were unaffected.
-Pre-existing, but v2.9.1's three new sections doubled the tab's height and made it unmissable.
+### ▶ Pick up here (2026-09-28 evening)
 
-**⚠ Not yet confirmed on a device** — the phone was disconnected when it was built. It is a
-gesture fix; watch the drag on both tabs before uploading.
+Everything is committed, pushed and deployed. Nothing is half-done. Two things are simply waiting.
 
-**Review timing, from this app's own history:** v2.9.1 same day, v2.9.0 next day, v2.6.0 next day,
-v2.5.0 longer as a first promotion to Production. Fast is normal here but never guaranteed.
+**1. Confirm v2.9.2 cleared review.** Play Console → Production. Nothing to do if it did.
+
+**2. The first fully unattended feed day is 2026-09-29.** Every Deep Research pickup so far has
+been a forced `aws lambda invoke`; the 18:45 ET run on the 29th is the first one nobody triggers.
+Check after ~19:00 ET:
+
+```bash
+git fetch origin brief-data && git show FETCH_HEAD:brief_daily.json \
+  | python3 -m json.tool | grep -E 'analysis_source|generated_utc|"sig"'
+```
+
+**Good** is `analysis_source: deep-research` and a `generated_utc` from that evening. `rss` means
+the report was not picked up, and the log says why in one line:
+
+```bash
+aws logs tail /aws/lambda/aurum-brief-feed --region us-east-1 --since 24h
+```
+
+The likely reasons, in order: nothing named `Gold Brief 2026-09-29` in the folder (Gemini's
+scheduled action did not write one — **still the one unverified link in the chain**); the doc lost
+its link-sharing; or Docs mangled the JSON a third new way, which
+`python3 aws/brief-feed/check_doc.py <id>` will show.
+
+Also worth a glance that day: the FRED feed should now stay current. It was two business days
+behind Treasury on the 28th, which is why it moved to Lambda.
 
 ## Open items (nothing here is blocking; reviewed 2026-09-23)
 
 The maintained answer to "what is pending". Ordered by what actually matters. Keep it current —
 when an item is done, delete it rather than leaving it ticked.
 
-0. **Upload v2.9.2**, which fixes a scroll bug that shipped in v2.9.1. AAB built, sha256
-   `08724d7b…`, versionCode 19 — **but not device-checked**; watch the drag on the AI Brief and
-   News tabs first. Play copy in `release-2.9/RELEASE_NOTES.md`.
-1. **Tomorrow is the first fully unattended day.** Everything so far has been forced runs. Check
-   around 19:00 ET: `analysis_source` in `brief_daily.json` should be `deep-research` if the
-   18:45 run found `Gold Brief <date>` in the folder. `aws logs tail
-   /aws/lambda/aurum-brief-feed --region us-east-1 --since 24h` says why if not.
+0. **Confirm the first unattended feed run**, 2026-09-29 after 19:00 ET — see §Pick up here for
+   the commands and what the failure modes look like. Every pickup so far has been forced.
+1. **Confirm v2.9.2 cleared review** (submitted 2026-09-28). Nothing to do if it did.
 2. **The daily PDF misses the deep analysis.** The app's report worker fires at 18:00 ET, the
    Deep Research report is written ~18:20, the feed picks it up at 18:45. So the tabs get the
    deep sections and the PDF does not. Closing it needs an earlier report or a later worker, and
@@ -151,8 +168,14 @@ when an item is done, delete it rather than leaving it ticked.
   collapsed behind "Use your own API keys" in Settings; and `gemini-flash-latest` replaced the
   retired `gemini-2.5-flash`. Confirmed in production with no keys: FRED components 2026-09-25,
   AI brief and news 2026-09-26. See `release-2.9/RELEASE_NOTES.md`.
-  **v2.9.1 / versionCode 18** — committed, **not built**, deferred by the owner 2026-09-26:
-  `MAX_STALE_HOURS` 12 → 26 and the `MODELS` fallback. Ship with whatever goes next.
+  **v2.9.1 / versionCode 18** — **live on Production**, submitted and released the same day
+  2026-09-28. `MAX_STALE_HOURS` 12 → 26, the `MODELS` fallback, and the three deep sections on the
+  AI Brief tab and in the PDF. Shipped with a scroll bug found straight after release, fixed in
+  2.9.2.
+  **v2.9.2 / versionCode 19** — **submitted 2026-09-28, awaiting review.** One fix: pull-to-refresh
+  on the AI Brief and News tabs was eating upward scrolls, because `SwipeRefreshLayout` asks its
+  direct child — a `FrameLayout` there — whether the content can scroll up, and a FrameLayout never
+  can. Pre-existing; 2.9.1's three new sections made the tab long enough to expose it.
   **v2.8.0 / versionCode 16** — **SKIPPED**, superseded by v2.9.0. Do not upload 16. Its AAB was
   built and all three gates were met (including the on-device pass on a Pixel 11, 2026-09-24);
   it was dropped because v2.9.0 is a strict superset and also fixes the retired-model bug 2.8.0

@@ -1,6 +1,9 @@
 # Aurum88 Protocol v2.9 — Release Notes
 
-## v2.9.2 (versionCode 19) — one fix
+## v2.9.2 (versionCode 19) — one fix — SUBMITTED 2026-09-28, awaiting review
+
+    sha256 08724d7bffbb1081e1dd72adc765caf7bbdfdaa4cdf50e9a5ce1251c791f9ece
+
 
 **Pull-to-refresh on the AI Brief and News tabs swallowed upward scrolls.**
 
@@ -24,7 +27,9 @@ Play copy:
 
 ## v2.9.0 (versionCode 17)
 
-**Status: LIVE on Google Play Production, approved 2026-09-25.**
+**v2.9.0 status: LIVE on Google Play Production, approved 2026-09-25.** v2.9.1 followed on
+2026-09-28 (same-day release) and v2.9.2 was submitted the same evening — see the top of this
+file.
 
 Confirmed working in production from the owner's own install, with no API keys of any kind:
 the Gold Index shows all five components (2026-09-25), and the AI Brief and News tabs fill from
