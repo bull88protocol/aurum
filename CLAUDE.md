@@ -117,7 +117,10 @@ when an item is done, delete it rather than leaving it ticked.
    AGP 9.1.1 + Gradle 9.3.1 + Kotlin 2.x (three major migrations; JDK 17 still fine). No Play
    deadline published; the annual pattern points at **August 2027**. Revisit Q1-Q2 2027.
    Plan, with a trial run behind it: `api-37/API_37_UPGRADE_PLAN.md`.
-8. **Store polish — consciously skipped 2026-09-04, not forgotten.** No screenshot shows the PDF
+8. **Optional: `enableEdgeToEdge()` for Android 8-14.** The only Play recommendation that is
+   actually true — see §Play Console recommended actions. Cosmetic, and it disturbs the inset
+   handling v2.6.0 fixed, so it wants a device to test on rather than a quick edit.
+9. **Store polish — consciously skipped 2026-09-04, not forgotten.** No screenshot shows the PDF
    report; `store/screenshots/02_*.png` still pictures the v1 forward card (stale since 2.2); the
    live full description was never confirmed against `store/STORE_LISTING.md`; the Play R8
    recommendation card was never read (the build already runs R8 full mode, so it is almost
@@ -341,6 +344,26 @@ It means "app not authorized", never a bad account. This bit v2.3.0 and was fixe
 adding the Play-cert client — **console-side only, no rebuild, no versionCode bump**. The consent
 screen carries no key and is project-wide; publishing it to Production is right (Testing mode caps
 sign-in to listed test users and expires refresh tokens after 7 days) but cannot fix a code 10.
+
+### Play Console "recommended actions" — checked 2026-09-28, all four declined
+They reappear on every release, so here is the reasoning rather than a fresh investigation each
+time. Recheck if the app starts decoding images, or if `minifyEnabled` ever changes.
+
+- **"Edge-to-edge may not display for all users"** — *true, and deliberately not acted on.* The app
+  never calls `enableEdgeToEdge()`. On targetSdk 36 the system enforces it, so Android 15+ gets it;
+  `minSdk` 26 means Android 8-14 users see conventional system bars instead. Cosmetic only. Adding
+  the call would re-run the inset handling v2.6.0 specifically fixed, on devices that are hard to
+  test — a poor trade.
+- **"Uses deprecated APIs or parameters for edge-to-edge"** — *cannot reproduce.* No
+  `statusBarColor`, `navigationBarColor`, `setSystemUiVisibility`, `SYSTEM_UI_FLAG` or
+  `setDecorFitsSystemWindows` anywhere in code or themes; the theme omits the first two with a
+  comment saying why. Only `windowLightStatusBar` / `windowLightNavigationBar`, neither deprecated.
+  Most likely a library's contribution to the merged manifest.
+- **"Bitmap downsampling"** — *not applicable.* No `BitmapFactory` or decode call in the app at
+  all; the charts are drawn, not loaded. 15 raster drawables, all launcher and notification icons.
+- **"R8 optimization"** — *already on.* `isMinifyEnabled` + `isShrinkResources` +
+  `proguard-android-optimize.txt`, and R8 full mode is AGP 8.x's default and is not disabled in
+  `gradle.properties`. Generic.
 
 ### Toolchain (as of v2.3.0 — do not downgrade)
 `targetSdk`/`compileSdk` **36** · AGP **8.10.1** · Gradle wrapper **8.11.1** · Kotlin **1.9.24** ·
