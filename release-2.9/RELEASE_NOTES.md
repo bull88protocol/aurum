@@ -1,5 +1,27 @@
 # Aurum88 Protocol v2.9 — Release Notes
 
+## v2.9.2 (versionCode 19) — one fix
+
+**Pull-to-refresh on the AI Brief and News tabs swallowed upward scrolls.**
+
+`SwipeRefreshLayout` asks its *direct* child whether the content can scroll up. On those two tabs
+that child is a `FrameLayout` — it overlays the content ScrollView and the empty state — and a
+FrameLayout is never scrollable, so it always answered "no" and claimed every downward drag as a
+refresh. You could not scroll back up. Gold and 20 Days nest the other way round
+(`FrameLayout > SwipeRefreshLayout > ScrollView`) and were never affected.
+
+Pre-existing, but v2.9.1's three new sections roughly doubled the AI Brief tab's height and made
+it unmissable. News had it too and is fixed as well — five cards barely scroll, which is the only
+reason it went unnoticed there.
+
+`setOnChildScrollUpCallback` now points at whichever ScrollView is actually visible.
+
+Play copy:
+
+> What's new in 2.9.2:
+> • Fixes scrolling on the AI Brief and News tabs — swiping up to read back through a brief no longer triggers a refresh.
+
+
 ## v2.9.0 (versionCode 17)
 
 **Status: LIVE on Google Play Production, approved 2026-09-25.**

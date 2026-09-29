@@ -61,32 +61,36 @@ and show them **all** of it, most-actionable first, with a one-line status on th
 Do not improvise a list from git log — that section is the maintained answer. Verify anything
 time-sensitive (Play status, whether a build is stale) before repeating it.
 
-## ▶ Release in flight — v2.9.1 AAB built, ready to upload
-**v2.9.0 / versionCode 17 is live on Production** (approved 2026-09-25). Both hosted feeds are
-publishing and the app reads them with no keys.
+## ▶ Release in flight — v2.9.2 built, fixing a bug that shipped in v2.9.1
+**v2.9.1 / versionCode 18 is live on Production** (submitted and released 2026-09-28, same day).
+It shipped with a scroll bug on the AI Brief and News tabs, found immediately after.
 
-### Ready to upload — v2.9.1 / versionCode 18
-**Signed AAB built 2026-09-28** from `master`:
+### Ready to upload — v2.9.2 / versionCode 19
+**Signed AAB built 2026-09-28:**
 
-    sha256 a23a4b6adf836598c5052706633751c15cdc5f40af1b4ad5c38d28215857102f
-    manifest: com.sun.aurum, versionCode 18, versionName 2.9.1
+    sha256 08724d7bffbb1081e1dd72adc765caf7bbdfdaa4cdf50e9a5ce1251c791f9ece
+    manifest: com.sun.aurum, versionCode 19, versionName 2.9.2
 
-Carries: the three deep sections on the AI Brief tab and in the PDF (`why` / `consensus` /
-`falsifiers`, populated only by a Deep Research brief, with a one-line note when absent);
-`MAX_STALE_HOURS` 12 → 26; the `MODELS` fallback (pinned id, then the `-latest` alias); the
-KEY FACTORS label; corrected onboarding copy. 93 tests.
+One fix. `SwipeRefreshLayout` asks its *direct* child whether the content can scroll up; on the
+AI Brief and News tabs that child is a `FrameLayout` overlaying the content and the empty state,
+and a FrameLayout is never scrollable, so it answered "no" and claimed every downward drag as a
+refresh — you could not scroll back up. Gold and 20 Days nest the other way and were unaffected.
+Pre-existing, but v2.9.1's three new sections doubled the tab's height and made it unmissable.
 
-**Device pass done 2026-09-28** on the Pixel 11, against the live feed rather than a fixture: all
-three sections rendered from a real Deep Research report. Play copy: `release-2.9/RELEASE_NOTES.md`.
+**⚠ Not yet confirmed on a device** — the phone was disconnected when it was built. It is a
+gesture fix; watch the drag on both tabs before uploading.
+
+**Review timing, from this app's own history:** v2.9.1 same day, v2.9.0 next day, v2.6.0 next day,
+v2.5.0 longer as a first promotion to Production. Fast is normal here but never guaranteed.
 
 ## Open items (nothing here is blocking; reviewed 2026-09-23)
 
 The maintained answer to "what is pending". Ordered by what actually matters. Keep it current —
 when an item is done, delete it rather than leaving it ticked.
 
-0. **Upload v2.9.1** — AAB built and verified 2026-09-28, sha256 `a23a4b6a…`, versionCode 18.
-   Internal testing first (R8 full mode has never been on a device), then promote. Play copy is
-   in `release-2.9/RELEASE_NOTES.md`.
+0. **Upload v2.9.2**, which fixes a scroll bug that shipped in v2.9.1. AAB built, sha256
+   `08724d7b…`, versionCode 19 — **but not device-checked**; watch the drag on the AI Brief and
+   News tabs first. Play copy in `release-2.9/RELEASE_NOTES.md`.
 1. **Tomorrow is the first fully unattended day.** Everything so far has been forced runs. Check
    around 19:00 ET: `analysis_source` in `brief_daily.json` should be `deep-research` if the
    18:45 run found `Gold Brief <date>` in the folder. `aws logs tail
