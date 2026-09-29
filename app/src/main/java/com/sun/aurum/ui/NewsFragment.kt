@@ -36,6 +36,18 @@ class NewsFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         binding.swipeRefresh.setOnRefreshListener { vm.refresh() }
+        // SwipeRefreshLayout asks its DIRECT child whether the content can scroll up, and here
+        // that child is a FrameLayout holding the content and the empty state as siblings. A
+        // FrameLayout is never scrollable, so it always answered "no" and every downward drag
+        // anywhere in the tab was taken as a pull-to-refresh — you could not scroll back up.
+        // The Gold and 20 Days tabs nest the other way round and were never affected. Point the
+        // check at whichever ScrollView is actually showing.
+        binding.swipeRefresh.setOnChildScrollUpCallback { _, _ ->
+            val shown = if (binding.newsScroll.visibility == View.VISIBLE)
+                binding.newsScroll else binding.newsEmptyState
+            shown.canScrollVertically(-1)
+        }
+
         viewLifecycleOwner.lifecycleScope.launch {
             vm.isRefreshing.collectLatest { binding.swipeRefresh.isRefreshing = it }
         }
